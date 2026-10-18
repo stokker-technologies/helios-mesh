@@ -1,0 +1,144 @@
+# === Workspace === #
+
+[workspace]
+resolver = "3"
+members = [
+  "crates/common/hnm-protocol",
+  "crates/system/hnm-macros",
+  "crates/system/hnm",
+  "crates/system/hnm-cli",
+  "crates/system/hnm-python",
+  "crates/firmware/hnm-core",
+  "crates/firmware/hnm-drivers",
+  "crates/firmware/hnm-board-feather-rp2040",
+  "crates/firmware/hnm-nodes",
+]
+default-members = [
+  "crates/common/hnm-protocol",
+  "crates/system/hnm",
+  "crates/system/hnm-cli",
+  "crates/system/hnm-python",
+  "crates/firmware/hnm-core",
+  "crates/firmware/hnm-drivers",
+]
+
+# === Workspace Package === #
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+repository = "https://github.com/stokker-technologies/helios-node-mesh"
+
+# === Workspace Dependencies === #
+
+[workspace.dependencies]
+# Local
+hnm = { path = "crates/system/hnm", default-features = false, version = "0.1.0" }
+hnm-board-feather-rp2040 = { path = "crates/firmware/hnm-board-feather-rp2040", version = "0.1.0" }
+hnm-core = { path = "crates/firmware/hnm-core", version = "0.1.0" }
+hnm-drivers = { path = "crates/firmware/hnm-drivers", version = "0.1.0" }
+hnm-macros = { path = "crates/system/hnm-macros", version = "0.1.0" }
+hnm-protocol = { path = "crates/common/hnm-protocol", version = "0.1.0" }
+
+# Git
+
+# Error Handling
+thiserror = { version = "2.0", default-features = false }
+
+# Logging
+defmt = "1.0"
+defmt-rtt = { version = "1.0" }
+panic-probe = { version = "1.0" }
+
+# Utilities
+cortex-m-rt = "0.7"
+embassy-embedded-hal = "0.6"
+embassy-rp = { version = "0.10" }
+embedded-graphics = "0.8"
+embedded-hal = "1.0"
+embedded-hal-async = "1.0"
+heapless = { version = "0.9", default-features = false, features = ["serde"] }
+pwm-pca9685 = { version = "1.0.0", default-features = false, features = ["async"] }
+pyo3 = { version = "0.29.0", features = ["abi3-py310", "extension-module"] }
+rp-pac = { version = "7.0" }
+
+# Serialization
+postcard = { version = "1.1", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_json = { version = "1.0" }
+
+# Configuration
+dotenvy = "0.15.7"
+
+# Filesystem
+
+# Parsing
+proc-macro2 = "=1.0.107"
+quote = "=1.0.47"
+syn = { version = "=2.0.119" }
+
+# Concurrency
+critical-section = { version = "1.2" }
+portable-atomic = { version = "1.5" }
+static_cell = { version = "2.1" }
+
+# Async
+embassy-executor = { version = "0.10" }
+embassy-futures = "0.1"
+embassy-sync = "0.8"
+embassy-time = "0.5"
+embassy-usb = { version = "0.6", default-features = false }
+pyo3-async-runtimes = { version = "0.29" }
+tokio = { version = "1.47" }
+
+# Networking
+lora-phy = { version = "=3.0.1", default-features = false }
+tokio-serial = { version = "5.4" }
+
+# Storage
+embedded-storage = "0.3"
+
+# UI
+clap = { version = "4.5" }
+sky-ili9341 = { version = "0.1.1", default-features = false }
+smart-leds = "0.4"
+
+# Testing
+tempfile = "3.27"
+
+# === Workspace Lints === #
+
+[workspace.lints.rust]
+unsafe_code = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+# === Lints === #
+
+# === Profiles === #
+
+[profile.release]
+debug = 2
+lto = true
+codegen-units = 1
+
+[profile.dev]
+debug = 1
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.bench]
+opt-level = 3
+lto = false
+incremental = false
+debug = "line-tables-only"
+
+# === Patches === #
+
+# === Other === #

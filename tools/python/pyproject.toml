@@ -1,0 +1,35 @@
+# ***
+#
+# Helios Node Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+[project]
+name = "hnm-tools"
+version = "0.0.0"
+description = "Repository automation for Helios Node Mesh"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+dependencies = []
+
+[dependency-groups]
+dev = ["ruff==0.17.0", "ty==0.0.86", "basedpyright==1.39.10", "mypy==1.20.2", "maturin>=1.9,<2"]
+test = ["pytest>=9,<10", "pytest-cov>=7,<8", "pytest-timeout>=2,<3"]
+
+[build-system]
+requires = ["hatchling==1.32.3"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/hnm_tools"]
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "UP", "B"]
+
+[tool.ty.environment]
+python-version = "3.13"

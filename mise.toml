@@ -1,0 +1,310 @@
+# === Settings === #
+
+[settings]
+lockfile = true
+
+# === Tools === #
+
+[tools]
+# Languages And Runtimes
+python = "3.15.0"
+rust = { version = "1.99.0", components = "clippy,rustfmt,llvm-tools-preview", profile = "minimal", targets = "thumbv6m-none-eabi" }
+
+# Package Managers
+uv = "0.13.0"
+
+# Rust Toolchain
+"aqua:nextest-rs/nextest/cargo-nextest" = "0.9.148"
+"aqua:taiki-e/cargo-llvm-cov" = "0.9.1"
+sccache = "0.18.0"
+
+# Formatting And Linting
+"aqua:rhysd/actionlint" = "1.7.12"
+taplo = "0.10.0"
+
+# Release And Signing
+gh = "2.102.0"
+git-cliff = "2.14.2"
+glab = "1.123.0"
+
+# Project Statistics
+"aqua:boyter/scc" = "4.1.0"
+
+# Product Tools
+"cargo:elf2uf2-rs" = "2.2.0"
+
+# === Environment === #
+
+[env]
+TMPDIR = { value = '''{{exec(command=`python -c "from pathlib import Path; p = Path('target/tmp'); p.mkdir(parents=True, exist_ok=True); print(p.resolve())"` )}}''', tools = true }
+UV_PROJECT_ENVIRONMENT = "{{config_root}}/.venv"
+SCCACHE_STARTUP_DIR = "{{env.XDG_RUNTIME_DIR | default(value='/tmp')}}"
+
+# === Variables === #
+
+[vars]
+
+# === Prepare === #
+
+[tasks.prepare]
+description = "Prepare Tools And Inputs"
+run = ["rustup target add thumbv6m-none-eabi", "uv sync --locked --project tools/python --all-groups"]
+
+# === Format === #
+
+[tasks.format]
+description = "Format Every Language"
+usage = 'flag "--check"'
+depends = [
+  "format:toml {% if usage.check %}--check{% endif %}",
+  "format:rust {% if usage.check %}--check{% endif %}",
+  "format:python {% if usage.check %}--check{% endif %}",
+]
+
+[tasks."format:python"]
+description = "Format Python"
+usage = 'flag "--check"'
+run = 'uv run --locked --project tools/python ruff format "tools/python" "crates/system/hnm-python"{% if usage.check %} --check{% endif %}'
+
+[tasks."format:rust"]
+description = "Format Rust"
+usage = 'flag "--check"'
+run = "cargo fmt --all{% if usage.check %} --check{% endif %}"
+
+[tasks."format:toml"]
+description = "Format TOML"
+usage = 'flag "--check"'
+run = "git ls-files -z -- '*.toml' | xargs -0 taplo fmt --option column_width=140{% if usage.check %} --check{% endif %}"
+
+# === Lint === #
+
+[tasks.lint]
+description = "Lint Every Language"
+depends = ["lint:rust", "lint:python"]
+
+[tasks."lint:python"]
+description = "Lint Python"
+run = [
+  'uv run --locked --project tools/python ruff check "tools/python" "crates/system/hnm-python"',
+  'uv run --locked --project tools/python ty check tools/python',
+  'uv run --locked --project tools/python basedpyright --project crates/system/hnm-python/pyproject.toml',
+]
+
+[tasks."lint:rust"]
+description = "Lint Rust"
+run = [
+  "cargo clippy --locked --workspace --exclude hnm-nodes --all-targets --all-features -- -D warnings",
+  "cargo clippy --locked --package hnm-nodes --lib --all-features -- -D warnings",
+  "cargo clippy --locked --package hnm-nodes --bins --target thumbv6m-none-eabi --features firmware -- -D warnings",
+]
+
+# === Check === #
+
+[tasks.check]
+description = "Check Rust Feature Proofs And Conventions"
+depends = ["check:rust", "lint", "format --check"]
+run = "actionlint"
+
+[tasks."check:rust"]
+description = "Check Rust"
+run = [
+  "cargo check --locked --workspace --exclude hnm-nodes --all-targets --all-features",
+  "cargo check --locked --workspace --exclude hnm-nodes --all-targets --no-default-features",
+  "cargo check --locked --package hnm-nodes --lib --all-features",
+  "cargo check --locked --package hnm-nodes --lib --no-default-features",
+  "cargo check --locked --package hnm-nodes --bins --target thumbv6m-none-eabi --all-features",
+  "cargo check --locked --package hnm-nodes --bins --target thumbv6m-none-eabi --no-default-features --features firmware",
+]
+
+# === Build === #
+
+[tasks.build]
+description = "Build Binaries, Fixtures, Wheels And The Test Archive"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"; flag "--hardware-unknown"'
+run = "uv run --locked --project tools/python python -m hnm_tools.build.product --profile {{usage.profile}} {% if usage.hardware_unknown %}--hardware-unknown{% endif %}"
+
+# === Dev === #
+
+[tasks."dev:cli"]
+description = "Run The HNM Command-Line Interface"
+run = "cargo run --locked --package hnm-cli --"
+
+[tasks."dev:python"]
+description = "Install The Python Extension For Local Development"
+run = "uv run --locked --project tools/python maturin develop --manifest-path crates/system/hnm-python/Cargo.toml --uv"
+
+# === Test === #
+
+[tasks.test]
+description = "Test Every Layer"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = [
+  "test:unit --profile {{usage.profile}}",
+  "test:integration --profile {{usage.profile}}",
+  "test:acceptance --profile {{usage.profile}}",
+  "test:generated --profile {{usage.profile}}",
+]
+
+[tasks."test:coverage"]
+description = "Measure Coverage Over Instrumented Lanes"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = [
+  "uv run --locked --project tools/python python -m hnm_tools.test.run coverage --language rust --profile {{usage.profile}}",
+  "uv run --locked --project tools/python python -m hnm_tools.test.run coverage --language python --profile {{usage.profile}}",
+]
+
+[tasks."test:unit"]
+description = "Test Unit Layer"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = ["test:unit:rust --profile {{usage.profile}}"]
+
+[tasks."test:unit:rust"]
+description = "Test Unit Rust"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.test.run test --profile {{usage.profile}} --category unit --language rust"
+
+[tasks."test:integration"]
+description = "Test Integration Layer"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = ["test:integration:rust --profile {{usage.profile}}", "test:integration:python --profile {{usage.profile}}"]
+
+[tasks."test:integration:python"]
+description = "Test Integration Python"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.test.run test --profile {{usage.profile}} --category integration --language python --project crates/system/hnm-python"
+
+[tasks."test:integration:rust"]
+description = "Test Integration Rust"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.test.run test --profile {{usage.profile}} --category integration --language rust"
+
+[tasks."test:acceptance"]
+description = "Test Installed Product Behavior"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = ["test:acceptance:rust --profile {{usage.profile}}", "test:acceptance:python --profile {{usage.profile}}"]
+env = { CARGO_INCREMENTAL = "0" }
+
+[tasks."test:acceptance:python"]
+description = "Test Installed Python Distribution"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.test.run test --profile {{usage.profile}} --category acceptance --language python --project crates/system/hnm-python"
+env = { CARGO_INCREMENTAL = "0" }
+
+[tasks."test:acceptance:rust"]
+description = "Test CLI Acceptance"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.test.run test --profile {{usage.profile}} --category acceptance --language rust"
+env = { CARGO_INCREMENTAL = "0" }
+
+[tasks."test:generated"]
+description = "Verify Generated Bindings"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = ["test:generated:python --profile {{usage.profile}}"]
+env = { CARGO_INCREMENTAL = "0" }
+
+[tasks."test:generated:python"]
+description = "Verify Native Python Exports Against Stubs"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.test.bindings --profile {{usage.profile}}"
+env = { CARGO_INCREMENTAL = "0" }
+
+# === Bench === #
+
+# === Docs === #
+
+# === Package === #
+
+[tasks.package]
+description = "Package Every Language"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = ["package:rust --profile {{usage.profile}}", "package:python --profile {{usage.profile}}"]
+
+[tasks."package:python"]
+description = "Package Python"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m hnm_tools.package.product --language python --profile {{usage.profile}}"
+
+[tasks."package:rust"]
+description = "Package Rust"
+usage = 'flag "--profile <profile>" default="dev"'
+run = [
+  "uv run --locked --project tools/python python -m hnm_tools.package.product --language rust --profile {{usage.profile}}",
+  "cargo package --locked --workspace --no-verify",
+]
+
+# === CI === #
+
+[tasks.ci]
+description = "Run The CI Flow Locally"
+usage = 'flag "--profile <profile>" default="dev"'
+run = [
+  { task = "format:toml --check" },
+  { task = "format:rust --check" },
+  { task = "format:python --check" },
+  { task = "build --profile {{usage.profile}}" },
+  { task = "check" },
+  { task = "lint" },
+  { task = "test --profile {{usage.profile}}" },
+]
+
+[tasks."ci:nightly"]
+description = "Run The Nightly Coverage And Bench Flow"
+run = [{ task = "build" }, { task = "test:coverage" }]
+
+# === Release === #
+
+[tasks.release]
+description = "Prepare And Validate A Release"
+run = [{ task = "release:prepare" }, { task = "ci" }, { task = "release:publish:dry" }]
+
+[tasks."release:prepare"]
+description = "Prepare The Release Branch"
+run = "uv run --locked --project tools/python python -m hnm_tools.release.run prepare"
+
+[tasks."release:publish"]
+description = "Publish A Tagged Release"
+run = [{ task = "release:publish:rust" }, { task = "release:publish:python" }, { task = "release:publish:assets" }]
+
+[tasks."release:publish:assets"]
+description = "Publish Signed Release Assets"
+run = [
+  "uv run --locked --project tools/python python -m hnm_tools.release.run publish",
+  "uv run --locked --project tools/python python -m hnm_tools.release.run finalize",
+]
+
+[tasks."release:publish:dry"]
+description = "Dry-Run Every Publication"
+run = [
+  "cargo publish --locked --workspace --dry-run",
+  "uv run --locked --project tools/python python -m hnm_tools.test.publish --python crates/system/hnm-python",
+]
+
+[tasks."release:publish:python"]
+description = "Publish Python Packages"
+run = "uv publish --trusted-publishing always target/package/python/*"
+
+[tasks."release:publish:rust"]
+description = "Publish Rust Crates"
+run = "cargo publish --workspace"
+
+[tasks."release:stage"]
+description = "Stage Native Release Assets"
+run = "uv run --locked --project tools/python python -m hnm_tools.release.run stage"
+
+# === Housekeeping === #
+
+[tasks.housekeeping]
+description = "Clean Owned Build Outputs And State"
+run = "stkr project housekeeping"
+
+[tasks."housekeeping:stats"]
+description = "Count Source Lines"
+run = "scc"

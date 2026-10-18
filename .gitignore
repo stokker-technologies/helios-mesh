@@ -1,0 +1,23 @@
+target/
+Cargo.lock.orig
+.venv
+__pycache__/
+.pytest_cache/
+*.so
+
+# Per-workspace compiler cache and machine-specific settings.
+.mise.local.toml
+
+# Private Agent Artifacts
+/.stkr/agents/
+/.stkr/specifications/
+/.stkr/state/
+
+# Hub Machine State
+/.stkr/task/
+/.stkr/tests/
+/.stkr/benchmarks/
+
+# BEGIN Stkr CI
+/.cache/
+# END Stkr CI

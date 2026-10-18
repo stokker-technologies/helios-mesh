@@ -1,0 +1,16 @@
+# Rendered by stkr project update from templates/tools/ruff.toml; sha256:a577012d60e318b54ca7436e4cf4f6757dd9576235f9aa195ad610c8b310a838
+# ***
+#
+# Helios Node Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+# === Formatting === #
+
+# Width 140 matches every Hub-rendered formatter: wide displays are the norm and two files still sit side by side in a
+# diff on a 4K display.
+line-length = 140
+# The package's own pyproject.toml keeps every other setting.
+extend = "pyproject.toml"

@@ -1,0 +1,120 @@
+# === Package === #
+
+[package]
+name = "hnm-board-feather-rp2040"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# === Package Targets === #
+
+# === Features === #
+
+# === Dependencies === #
+
+[dependencies]
+# Local
+hnm-protocol = { workspace = true }
+
+# Git
+
+# Error Handling
+thiserror = { workspace = true }
+
+# Logging
+
+# Utilities
+embedded-hal.workspace = true
+embedded-hal-async.workspace = true
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+embassy-futures.workspace = true
+
+# Networking
+lora-phy.workspace = true
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Build Dependencies === #
+
+# === Dev Dependencies === #
+
+# === Target Dependencies === #
+
+[target.'cfg(target_arch = "arm")'.dependencies]
+# Local
+hnm-core = { workspace = true }
+hnm-drivers = { workspace = true }
+
+# Git
+
+# Error Handling
+
+# Logging
+defmt = { workspace = true }
+
+# Utilities
+embassy-rp = { workspace = true, features = ["rp2040", "time-driver", "critical-section-impl", "boot2-generic-03h", "defmt"] }
+heapless = { workspace = true }
+rp-pac = { workspace = true, features = ["rp2040"] }
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+portable-atomic = { workspace = true, features = ["critical-section"] }
+static_cell = { workspace = true }
+
+# Async
+embassy-executor = { workspace = true, features = ["platform-cortex-m", "executor-thread", "defmt"] }
+embassy-sync = { workspace = true }
+embassy-time = { workspace = true }
+embassy-usb = { workspace = true, default-features = false, features = ["defmt"] }
+
+# Networking
+
+# Storage
+
+# UI
+smart-leds = { workspace = true }
+
+# Testing
+
+# === Test Targets === #
+
+# === Bench Targets === #
+
+# === Example Targets === #
+
+# === Workspace Lints === #
+
+# === Lints === #
+
+[lints]
+workspace = true
+
+# === Profiles === #
+
+# === Patches === #
+
+# === Other === #

@@ -1,0 +1,11 @@
+# ***
+#
+# Helios Node Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+self-hosted-runner:
+  labels:
+    - stokker-local-linux-x64

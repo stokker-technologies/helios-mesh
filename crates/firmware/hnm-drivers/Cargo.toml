@@ -1,0 +1,148 @@
+# === Package === #
+
+[package]
+name = "hnm-drivers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# === Package Targets === #
+
+# === Features === #
+
+# === Dependencies === #
+
+[dependencies]
+# Local
+hnm-protocol = { workspace = true }
+
+# Git
+
+# Error Handling
+thiserror = { workspace = true }
+
+# Logging
+defmt = { workspace = true }
+
+# Utilities
+embassy-embedded-hal = { workspace = true }
+embedded-graphics = { workspace = true }
+embedded-hal = { workspace = true }
+embedded-hal-async = { workspace = true }
+heapless = { workspace = true }
+pwm-pca9685 = { workspace = true }
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+embassy-futures = { workspace = true }
+embassy-sync = { workspace = true }
+embassy-time = { workspace = true }
+
+# Networking
+
+# Storage
+
+# UI
+sky-ili9341 = { workspace = true, default-features = false, features = ["async"] }
+
+# Testing
+
+# === Build Dependencies === #
+
+# === Dev Dependencies === #
+
+[dev-dependencies]
+# Local
+
+# Git
+
+# Error Handling
+
+# Logging
+
+# Utilities
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+critical-section = { workspace = true, features = ["std"] }
+
+# Async
+embassy-time = { workspace = true, features = ["generic-queue-8", "mock-driver"] }
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Target Dependencies === #
+
+[target.'cfg(all(target_arch = "arm", target_os = "none"))'.dependencies]
+# Local
+
+# Git
+
+# Error Handling
+
+# Logging
+
+# Utilities
+embassy-rp = { workspace = true, features = ["rp2040", "unstable-pac"] }
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Test Targets === #
+
+# === Bench Targets === #
+
+# === Example Targets === #
+
+# === Workspace Lints === #
+
+# === Lints === #
+
+[lints]
+workspace = true
+
+# === Profiles === #
+
+# === Patches === #
+
+# === Other === #

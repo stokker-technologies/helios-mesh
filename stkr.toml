@@ -1,0 +1,153 @@
+# Project Policy Owned By The Hub
+# Native manifests own package metadata; mise owns executable recipes.
+# Defaults stay implicit. Commented sections do not declare configuration.
+
+# === Project === #
+
+[project]
+name = "Helios Node Mesh"
+visibility = "public"
+platforms = ["linux", "windows"]
+
+[languages.rust]
+roots = ["crates"]
+targets = ["thumbv6m-none-eabi"]
+
+[languages.python]
+roots = ["tools/python", "crates/system/hnm-python"]
+generated = ["crates/system/hnm-python"]
+
+# === Repository === #
+
+# === CI === #
+
+[ci]
+mirror = true
+
+[ci.setup]
+linux = [
+  "if [ \"$(id -u)\" -eq 0 ]; then apt-get update && apt-get install --yes --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get install --yes --no-install-recommends libudev-dev pkg-config; fi",
+]
+
+[ci.runners]
+windows = ["windows-latest"]
+nightly = ["stokker-local-linux-x64"]
+
+# === Agents === #
+
+# === Hooks === #
+
+[hooks]
+step_timeout_seconds = 1200
+
+# === Conventions === #
+
+[conventions.rust]
+# The PyO3 Adapter Emits An rlib For Rust Checks And Has No Independent Rust Error API.
+bindings = ["hnm-python"]
+
+[conventions.testing]
+hosts = ["target/fixtures/bin/hnm{exe}"]
+
+# === Templates === #
+
+# === Release === #
+
+[release]
+provider = "github"
+repository = "stokker-technologies/helios-node-mesh"
+product = "hnm"
+package = "hnm-cli"
+tag = "v0.1.0"
+notes = "CHANGELOG.md"
+targets = ["linux-x86_64", "windows-x86_64"]
+tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python", "acceptance-python"]
+
+[[release.assets]]
+target = "linux-x86_64"
+path = "target/package/native/hnm"
+name = "{product}-{version}-{target}"
+
+[[release.assets]]
+target = "windows-x86_64"
+path = "target/package/native/hnm.exe"
+name = "{product}-{version}-{target}.exe"
+
+[[release.assets]]
+target = "linux-x86_64"
+path = "target/package/firmware/hnm-node-gateway.uf2"
+name = "{product}-{version}-{target}-gateway.uf2"
+
+[[release.assets]]
+target = "linux-x86_64"
+path = "target/package/firmware/hnm-node-rotator.uf2"
+name = "{product}-{version}-{target}-rotator.uf2"
+
+[[release.assets]]
+target = "linux-x86_64"
+path = "target/package/firmware/hnm-node-sidecar.uf2"
+name = "{product}-{version}-{target}-sidecar.uf2"
+
+[version]
+value = "0.1.0"
+files = ["Cargo.toml"]
+
+# === Documentation === #
+
+# === Screenshots === #
+
+# === PyO3 === #
+
+[[pyo3.modules]]
+name = "_native"
+crate = "hnm-python"
+module_rename = "_native"
+rust = "crates/system/hnm-python/src"
+stub = "crates/system/hnm-python/python/hnm/_native.pyi"
+import = "hnm._native"
+root = true
+flatten = ["node", "motion", "wire", "gateway", "journal"]
+# Retained on the private native module for cancellation tests.
+renames = { PyPendingProbe = "_PendingProbe" }
+class_modules = { PyUsbDevice = "hnm", PyNodeType = "hnm", PyDiscoveredNode = "hnm", PySidecarNode = "hnm", PyGatewayNode = "hnm.gateway", PyRotatorNode = "hnm" }
+
+[[pyo3.modules]]
+name = "node"
+crate = "hnm-python"
+module_rename = "node"
+rust = "crates/system/hnm-python/src/node"
+stub = "crates/system/hnm-python/python/hnm/node/__init__.pyi"
+import = "hnm.node"
+
+[[pyo3.modules]]
+name = "motion"
+crate = "hnm-python"
+module_rename = "motion"
+rust = "crates/system/hnm-python/src/motion"
+stub = "crates/system/hnm-python/python/hnm/motion/__init__.pyi"
+import = "hnm.motion"
+
+[[pyo3.modules]]
+name = "wire"
+crate = "hnm-python"
+module_rename = "wire"
+rust = "crates/system/hnm-python/src/motion/wire"
+stub = "crates/system/hnm-python/python/hnm/motion/wire/__init__.pyi"
+import = "hnm.motion.wire"
+
+[[pyo3.modules]]
+name = "gateway"
+crate = "hnm-python"
+module_rename = "gateway"
+rust = "crates/system/hnm-python/src/gateway"
+stub = "crates/system/hnm-python/python/hnm/gateway/__init__.pyi"
+import = "hnm.gateway"
+
+[[pyo3.modules]]
+name = "journal"
+crate = "hnm-python"
+module_rename = "journal"
+rust = "crates/system/hnm-python/src/journal"
+stub = "crates/system/hnm-python/python/hnm/journal/__init__.pyi"
+import = "hnm.journal"
+state_exceptions = { PyRecord = "A journal entry is paired with its cursor position and shared source metadata." }
