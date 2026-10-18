@@ -1,6 +1,7 @@
 # === Settings === #
 
 [settings]
+jobs = 1
 lockfile = true
 
 # === Tools === #
