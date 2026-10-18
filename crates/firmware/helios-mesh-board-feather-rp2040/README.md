@@ -151,6 +151,74 @@ The protocol version changes when the GPIO status/error encoding changes;
 all participating boards and the host must use matching firmware. The Cargo
 and reported firmware version remain `0.1.0` during development.
 
+## Motor Setup
+
+The tested Rotator stack uses Adafruit Motor FeatherWing product 2927 at I2C
+address `0x60` with Adafruit product 324 motors: 12 V, 350 mA, 200-step NEMA-17.
+Connect motor power to the FeatherWing motor-power terminal. Each channel holds
+its microstep mode, absolute speed and acceleration limits, movement and hold
+duty, and electrical direction for the current boot. The host pushes these
+definitions after connection. Individual operations may request lower speed
+or acceleration without changing the active limits.
+
+Position is an open-loop estimate. Without encoders or limit switches, physical
+position at boot is unknown; home every channel after every restart before
+commanding movement. The Python sweep and tuning examples operate real motors.
+
+## Identity, Indicators, And Radio
+
+Each board derives a stable six-digit ID from its onboard flash unique ID.
+The ID survives firmware updates without provisioning. The onboard NeoPixel
+uses slow blue breathing for ready, a brief dim cyan tick for protocol traffic,
+and three magenta pulses for identification.
+
+The proof-of-concept RFM95 link uses 869.525 MHz, spreading factor 7, 250 kHz
+bandwidth, coding rate 4/5, and 10 dBm output power. This configuration assumes
+operation in Liechtenstein; deployment elsewhere requires checking local
+spectrum rules. Attach suitable antennas before powering radio firmware.
+
+## Firmware Packages And Flashing
+
+Linux Build produces matching-profile ELF fixtures under
+`target/fixtures/firmware/`. Package converts those bytes to UF2 and assembles
+`target/package/firmware/helios-mesh-firmware-feather-rp2040.zip` without
+recompiling. The archive contains:
+
+```text
+README.txt
+helios-mesh-node-gateway.uf2
+helios-mesh-node-rotator.uf2
+helios-mesh-node-sidecar.uf2
+debug/
+  helios-mesh-node-gateway.elf
+  helios-mesh-node-rotator.elf
+  helios-mesh-node-sidecar.elf
+```
+
+The README identifies the profile, role hardware, and flashing procedure. ELF
+files retain the exact build's symbols for diagnostics; UF2s are the flashable
+images. Individual UF2s remain beside the ZIP for local flashing. Release asset
+names include the version and Linux native target, identifying the build host;
+the actual firmware target is Feather RP2040. Host CLI downloads and Python
+wheels remain separate. Release-level `SHA256SUMS` and `release.json` cover the
+firmware archive with the other assets.
+
+Flash one board at a time. A blank board enters BOOTSEL by holding BOOTSEL
+while connecting USB. A compatible running node can enter the same mode with
+`mise run dev:cli -- --device <id> restart --bootloader`. Copy the selected
+role's UF2 to the mounted `RPI-RP2` volume, or run:
+
+```sh
+mise run dev:cli -- flash target/package/firmware/helios-mesh-node-sidecar.uf2
+```
+
+The CLI refuses to copy unless exactly one BOOTSEL volume is mounted.
+`mise run dev:cli -- --device <id> flash <image.uf2>` combines the selected
+node's bootloader restart, volume wait, copy, and post-flash status check.
+After flashing, inspect `status`, `describe`, and, for a Gateway, `nodes`.
+Protocol changes require matching hosts and firmware on every board; see
+[Flashing Across A Protocol Bump](#flashing-across-a-protocol-bump).
+
 ## Authoring A Node
 
 ### Error Boundaries
@@ -746,8 +814,8 @@ resets -- there is no persistent journal to reconstruct after the fact.
 ### Flashing Across A Protocol Bump
 
 `mise run build --profile release` produces ELFs; `mise run package --profile release`
-is the one that produces flashable UF2 images. `helios_mesh flash <uf2> --device
-<id>` (or `helios_mesh --device <id> flash <uf2>`) schedules the bootloader restart
+is the one that produces flashable UF2 images. `helios-mesh flash <uf2> --device
+<id>` (or `helios-mesh --device <id> flash <uf2>`) schedules the bootloader restart
 and copies the image.
 
 Crossing a `PROTOCOL_VERSION` bump mid-fleet needs a bridge: the CLI itself

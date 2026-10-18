@@ -120,4 +120,93 @@ selection, `await gateway.scan_one(helios_mesh.NodeType.ROTATOR)` followed by
 The published stubs express the dynamic connection result as a union of the
 three concrete classes, allowing `isinstance` narrowing.
 
+## Device Selection
+
+The CLI uses one command tree. With exactly one node attached over USB, that
+node is selected automatically. With several attached, the single Gateway
+takes precedence; otherwise select the attachment with `--device <id>` or
+`--port <serial-port>`. IDs have six decimal digits. `--node <id>` addresses a
+remote node through the selected Gateway; without it, commands address the
+attached node itself.
+
+```sh
+mise run dev:cli -- --device 273282 status
+mise run dev:cli -- --device 273282 --node 566114 status
+mise run dev:cli -- --port /dev/ttyACM1 status
+```
+
+Ambiguous-device errors list the attached nodes. Remote addressing requires a
+Gateway, and gateway brokerage commands such as `nodes` remain gateway-only.
+USB product strings retain the `Helios Node Mesh` prefix and node identifiers
+retain `hnm.*`, preserving discovery and stored identities across the rename.
+
+On Linux, grant the current user access to the serial device. Fedora and Debian
+family systems commonly use `sudo usermod -aG dialout $USER`, followed by a new
+login. Windows exposes the node as a COM port without an additional driver.
+
+The Python distribution is named `helios-mesh` and imports as `helios_mesh`.
+Build with `mise run build --profile dev`; `mise run dev:python` installs the
+extension for local development. Wheels are ABI3 packages for each native host.
+The release workflow supports PyPI publication from protected stable tags;
+first-publication account setup and package registration require separate
+maintainer authorization. Before first publication, configure crates.io
+ownership for publishable libraries and the PyPI `helios-mesh` project, then
+GitHub trusted publishing for `ci.yml` and its protected `release` environment.
+No published package is required for source builds.
+
+## Operation Ownership
+
+`RotatorNode` owns `configure` and `axes`; `SidecarNode` owns `set_gpio` and
+`pulse_gpio`. Python operations are native awaitables, so independent channels
+can run with `asyncio.gather`. `operation.cancel()` requests cleanup without
+terminating the worker. Disconnecting the host does not cancel admitted work.
+Execution and cleanup failures remain distinct in operation snapshots.
+
+Universal requests live on the typed handle's `node()` accessor in Rust and
+`node` property in Python. `NodeHandle` provides universal access directly.
+Firmware resources and bounded queues belong to their initialized channels;
+the node macro supplies worker tasks and permanent storage. Completion futures
+compose with Embassy `join`.
+
+## Transport And Diagnostics
+
+USB has one framing reader and writer and correlates concurrent requests by
+request ID. Callers do not hold a connection-wide lock while awaiting responses;
+completed requests can return out of order. A corrupt frame costs one frame,
+not the connection. The half-duplex radio resident exclusively owns the RFM95
+and executes one selected transaction at a time.
+
+LoRa exchanges use a random boot-session ID, a 32-bit request ID, three bounded
+interactive attempts, a fixed low-latency retry interval, and receiver-side
+response replay. Retries reuse the same session/request pair. Background
+discovery and maintenance use one short attempt rather than a foreground retry
+budget. Long-running requests return an operation ID on admission; status reads
+the worker's completion state, including cleanup errors.
+
+The Gateway has capacity for 16 registered nodes and 32 pending radio jobs,
+including two emergency slots. Selection orders emergency, interactive,
+operation, maintenance, and discovery work, then deadline and least-recently
+served node. Maintenance deadlines are staggered over thirty seconds; an
+arriving host request takes precedence over new background work. Node listings
+are paged in stable ID order. Best-effort broadcast discovery continues while
+nodes are registered so newly powered nodes can join without a Gateway restart.
+
+Transport establishes request origin; caller metadata does not establish it.
+Gateway brokerage arriving over radio is rejected before replay and dispatch.
+Ordinary node reads remain open over radio; mutations use the firmware's
+[write binding](../../firmware/helios-mesh-board-feather-rp2040/README.md#radio-write-binding).
+A radio source ID is a transport identity, not a cryptographically authenticated
+principal. USB bypasses this radio write binding.
+
+`diagnostics` projects the selected node's live request counters; `events` reads
+its bounded in-memory journal. `record journal.jsonl` follows events into the
+versioned `helios_mesh::journal` record schema. Recording does not await or fill
+the behavioral mailbox. Journal sequence numbers and boot-relative timestamps
+are local to each node; compare intervals and ordering rather than absolute
+timestamps between boards. Capture evidence before rebooting.
+
+`restart` reboots the selected attached node; `--node <id> restart` forwards
+the request and follows radio write-binding admission. `--bootloader` enters
+the selected node's USB BOOTSEL mode.
+
 
