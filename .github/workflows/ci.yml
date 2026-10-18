@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:4ae2741109b8449d71ae7f8a13a30e19e97966735e2af100ad4d66a7af0fa5ec
+# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:952bf4680a6d25301811337561f888905eeaf257d099e12b38e735af277d3a2f
 name: CI
 "on":
   push:
@@ -46,6 +46,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -65,10 +69,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - run: mise run format:toml --check
     - run: mise run --skip-deps check
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -114,6 +114,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -133,10 +137,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - run: mise run format:python --check
     - run: mise run lint:python
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -183,6 +183,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -208,12 +214,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - run: mise run format:rust --check
     - run: mise run lint:rust
     - run: >-
@@ -275,6 +275,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -300,12 +306,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - run: mise run build --profile dev
     - name: Archive Build
       if: matrix.os != 'windows'
@@ -392,6 +392,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -417,12 +423,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - run: mise run build --profile release
     - name: Archive Build
       if: matrix.os != 'windows'
@@ -512,6 +512,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -531,10 +535,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-linux
@@ -608,6 +608,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -627,12 +633,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: >-
@@ -716,6 +716,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -735,10 +739,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-linux
@@ -808,6 +808,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -827,12 +833,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: >-
@@ -916,6 +916,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -935,10 +939,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-linux
@@ -1008,6 +1008,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -1027,12 +1033,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: >-
@@ -1126,6 +1126,12 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
+      if: matrix.os == 'linux'
+      shell: bash
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -1145,12 +1151,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-      if: matrix.os == 'linux'
-      shell: bash
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: >-
@@ -1259,6 +1259,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -1278,10 +1282,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-linux
@@ -1354,6 +1354,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -1373,10 +1377,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - run: mise run release:publish:dry
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       if: >-
@@ -1427,6 +1427,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -1446,10 +1450,6 @@ jobs:
     - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
       with:
         version: v0.18.0
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         pattern: package-release-*
@@ -1549,6 +1549,10 @@ jobs:
       with:
         path: .cache/mise/
         key: ${{ runner.os }}-${{ runner.arch }}-mise-${{ hashFiles('mise.lock') }}
+    - run: >-
+        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
+        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
+        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         TEMP: ${{ runner.temp }}
@@ -1558,10 +1562,6 @@ jobs:
         install: true
         cache: false
         mise_dir: ${{ github.workspace }}/.cache/mise
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         name: build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-linux

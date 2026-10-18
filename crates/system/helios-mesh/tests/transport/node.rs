@@ -101,7 +101,7 @@ async fn gpio_pulse_admission() {
         };
         // A long pulse must acknowledge promptly, without a host sleep,
         // completion poll, or follow-up low command.
-        sidecar.pulse_gpio(AuxGpioId(1), Duration::from_secs(60)).await.unwrap();
+        sidecar.pulse_gpio(AuxGpioId(1), Duration::from_mins(1)).await.unwrap();
         sidecar.pulse_gpio(AuxGpioId(1), Duration::from_millis(1)).await.unwrap();
         assert!(matches!(
             sidecar.pulse_gpio(AuxGpioId(2), Duration::from_secs(1)).await,

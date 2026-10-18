@@ -172,6 +172,9 @@ collapsing every cause into one marker. Root errors use `thiserror` without
 requiring `std`. The Python adapter translates host errors into its existing
 `HeliosMeshError` exception hierarchy.
 
+Native firmware tests use `defmt`'s byte-capture test runtime through development
+dependencies. RP2040 images use `defmt-rtt` through the normal firmware graph.
+
 A node implements `helios_mesh::Node`. Its typed routes submit ordinary job structs to
 independent channels. The shared runtime owns the protocol entry points, transport
 rules, replay protection, and diagnostics. Firmware authors depend on `helios_mesh`

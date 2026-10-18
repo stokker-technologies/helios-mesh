@@ -71,6 +71,7 @@ embedded-storage = { workspace = true }
 # Error Handling
 
 # Logging
+defmt = { workspace = true, features = ["unstable-test"] }
 
 # Utilities
 

@@ -56,6 +56,38 @@ lora-phy.workspace = true
 
 # === Target Dependencies === #
 
+[target.'cfg(not(target_os = "none"))'.dev-dependencies]
+# Local
+
+# Git
+
+# Error Handling
+
+# Logging
+defmt = { workspace = true, features = ["unstable-test"] }
+
+# Utilities
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
 [target.'cfg(target_arch = "arm")'.dependencies]
 # Local
 helios-mesh-core = { workspace = true }
