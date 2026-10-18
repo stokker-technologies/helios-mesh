@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/publish.py; sha256:0b7bd1caa38f9590aa240fea606619b79f727b0bcf5104865b63406f001fcaa3
+# Rendered by stkr project update from templates/python/test/publish.py; sha256:f9a65d409ca83d08937b3fd23e0da1862dbdfe7ca325f30de4280f6431fcfd8e
 # ***
 #
 # Helios Mesh
@@ -14,6 +14,7 @@
 # Standard Library Imports
 import argparse
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -54,7 +55,12 @@ def main() -> None:
     options = parser.parse_args()
     directory = policy.root()
     for command in commands(directory, options.rust, options.python):
-        subprocess.run(command, cwd=directory, check=True)
+        environment = dict(os.environ)
+        if command[0] == "uv":
+            target = str(directory / "target/publish-dry/cargo")
+            for name in ("CARGO_TARGET_DIR", "CARGO_BUILD_TARGET_DIR", "CARGO_BUILD_BUILD_DIR"):
+                environment[name] = target
+        subprocess.run(command, cwd=directory, check=True, env=environment)
 
 
 # === Private Functions === #

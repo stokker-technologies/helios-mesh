@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:9c33d47f9fcf40da3be2ed14fa9803aadbcd11283d82ee2f410790770174290d
+# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:4ae2741109b8449d71ae7f8a13a30e19e97966735e2af100ad4d66a7af0fa5ec
 name: CI
 "on":
   push:
@@ -50,6 +50,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -117,6 +118,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -185,6 +187,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -276,6 +279,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -328,6 +332,14 @@ jobs:
         name: build-dev-${{ matrix.os }}
         path: target/tmp/build-dev-${{ matrix.os }}.tar.zst
         if-no-files-found: error
+        retention-days: 7
+        include-hidden-files: true
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      if: always()
+      with:
+        name: build-diagnostics-dev-${{ matrix.os }}
+        path: target/nextest/*/compiler.json
+        if-no-files-found: ignore
         retention-days: 7
         include-hidden-files: true
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -384,6 +396,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -436,6 +449,14 @@ jobs:
         name: build-release-${{ matrix.os }}
         path: target/tmp/build-release-${{ matrix.os }}.tar.zst
         if-no-files-found: error
+        retention-days: 7
+        include-hidden-files: true
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      if: always()
+      with:
+        name: build-diagnostics-release-${{ matrix.os }}
+        path: target/nextest/*/compiler.json
+        if-no-files-found: ignore
         retention-days: 7
         include-hidden-files: true
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -495,6 +516,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -590,6 +612,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -697,6 +720,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -788,6 +812,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -895,6 +920,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -986,6 +1012,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -1103,6 +1130,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -1235,6 +1263,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -1329,6 +1358,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -1401,6 +1431,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -1522,6 +1553,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false
@@ -1551,4 +1583,6 @@ jobs:
         if-no-files-found: ignore
         retention-days: 7
         include-hidden-files: true
-    if: always()
+    if: >-
+      always() && github.event_name == 'schedule' && !contains(needs.*.result,
+      'failure') && !contains(needs.*.result, 'cancelled')

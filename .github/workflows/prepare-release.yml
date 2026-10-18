@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/prepare-release.yml; sha256:022bbb30b39c0ec9563219211402da40692f2f901c10fb9c569d844f833fe105
+# Rendered by stkr project update from templates/ci/.github/workflows/prepare-release.yml; sha256:9a8661fee8e8fc22f57771bca0aadf5560a3bd77bb35e797e68ccaf631aa8eed
 name: Prepare Release
 "on":
   workflow_dispatch:
@@ -36,6 +36,7 @@ jobs:
       env:
         TEMP: ${{ runner.temp }}
         TMP: ${{ runner.temp }}
+        RUSTC_WRAPPER: ""
       with:
         install: true
         cache: false

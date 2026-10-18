@@ -55,11 +55,18 @@ def main() -> None:
 
     # Keep Each Native Wheel In Its Platform's Package Artifact.
     destination = ROOT / "target/package/python"
-    if destination.exists():
-        shutil.rmtree(destination)
-    destination.mkdir(parents=True)
+    destination.mkdir(parents=True, exist_ok=True)
+    expected = {wheel.name for wheel in wheels}
+    for old in destination.glob("*.whl"):
+        if old.name not in expected:
+            old.unlink(missing_ok=True)
     for wheel in wheels:
-        shutil.copy2(wheel, destination / wheel.name)
+        temporary = destination / f".{wheel.name}.{os.getpid()}"
+        try:
+            shutil.copy2(wheel, temporary)
+            temporary.replace(destination / wheel.name)
+        finally:
+            temporary.unlink(missing_ok=True)
     if options.language == "python":
         return
 

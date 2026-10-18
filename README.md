@@ -400,6 +400,12 @@ releases use patch-only git-cliff calculation, including breaking and feature
 commits. There are no prereleases. Only separately authorized protected stable
 tags run release-profile packaging and registry/provider publication.
 
+Before the first publication, maintainers must configure crates.io ownership for
+the publishable workspace libraries and a PyPI project for `helios-mesh`, then
+configure GitHub trusted publishing for this repository's `ci.yml` workflow and
+protected `release` environment. First-publication account setup and any package
+name registration require separate maintainer authorization.
+
 Project guardrails and skeleton authoring use the local Stokker CLI; required
 public CI uses repository-native tools without that private CLI. Trust project
 hooks through the agent's native trust flow. Private specifications and machine

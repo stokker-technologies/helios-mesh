@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/archive.py; sha256:a9b9118e8be0d2a409ae28900322cd9d06d2498672078c1dd358580b3979ecf5
+# Rendered by stkr project update from templates/python/test/archive.py; sha256:d6cb646218992bb36877e6940ba4ff0a00124d8551ad427bdc59b8fb69bff9c9
 # ***
 #
 # Helios Mesh
@@ -87,7 +87,12 @@ def build(directory: Path, profile: str, extra: Sequence[str] = ()) -> Path:
         result = subprocess.run(command, cwd=directory, stdout=output, check=False)
     if result.returncode:
         path.unlink(missing_ok=True)
-        raise policy.TestError("nextest archive build failed")
+        for line in path.with_name(MESSAGES).read_text(encoding="utf-8").splitlines():
+            message = json.loads(line)
+            diagnostic = message.get("message", {}).get("rendered")
+            if diagnostic:
+                print(diagnostic, file=sys.stderr, end="")
+        raise policy.TestError(f"nextest archive build failed; compiler messages: {path.with_name(MESSAGES)}")
     require(directory, profile)
     files = []
     messages = []
