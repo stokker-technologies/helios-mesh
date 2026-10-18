@@ -1,6 +1,6 @@
 # Helios Mesh
 
-Helios Mesh (Helios Mesh) is a Rust workspace for RP2040 node firmware and the
+Helios Mesh is a Rust workspace for RP2040 node firmware and the
 system software that discovers and controls those nodes.
 
 Gateway, Rotator, and Sidecar expose typed Rust and Python APIs over USB and
