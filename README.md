@@ -385,6 +385,11 @@ unoptimized. Release builds retain firmware symbols for hardware diagnostics.
 | `mise run dev:python` | Install the extension for interactive Python development |
 | `mise run housekeeping:stats` | Count source lines |
 
+Local mise tasks run sequentially because Python validation shares the root
+`.venv` and installs the selected native wheel. This keeps wheel installation
+from changing files used by another lane. Native CI jobs use isolated workspaces
+and retain their declared parallel scheduling.
+
 GitHub is authoritative; GitLab receives a one-way mirror with CI disabled.
 The unified GitHub workflow requires native Linux and Windows host validation,
 with RP2040 cross-compilation on Linux. Pull requests run the complete candidate
