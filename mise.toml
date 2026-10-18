@@ -87,7 +87,7 @@ description = "Lint Python"
 run = [
   'uv run --locked --project tools/python ruff check "tools/python" "crates/system/helios-mesh-python"',
   'uv run --locked --project tools/python ty check tools/python',
-  'uv run --locked --project tools/python basedpyright --project crates/system/helios-mesh-python/pyproject.toml',
+  'uv run --locked --project tools/python --group test basedpyright --project crates/system/helios-mesh-python/pyproject.toml',
 ]
 
 [tasks."lint:rust"]
@@ -178,7 +178,7 @@ depends = ["test:integration:rust --profile {{usage.profile}}", "test:integratio
 description = "Test Integration Python"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language python --project crates/system/helios-mesh-python"
+run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language python --project crates/system/helios-mesh-python"
 
 [tasks."test:integration:rust"]
 description = "Test Integration Rust"
@@ -195,7 +195,7 @@ env = { CARGO_INCREMENTAL = "0" }
 [tasks."test:acceptance:python"]
 description = "Test Installed Python Distribution"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language python --project crates/system/helios-mesh-python"
+run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language python --project crates/system/helios-mesh-python"
 env = { CARGO_INCREMENTAL = "0" }
 
 [tasks."test:acceptance:rust"]

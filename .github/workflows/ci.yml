@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:952bf4680a6d25301811337561f888905eeaf257d099e12b38e735af277d3a2f
+# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:8706b72191f6aaf20e93c1c5e51e89882a95a7a7dddd2f39ff3af4451a7bdc4c
 name: CI
 "on":
   push:
@@ -317,7 +317,7 @@ jobs:
           if [ -e "$path" ]; then outputs+=("$path"); fi
         done
         [ ${#outputs[@]} -gt 0 ]
-        tar --zstd -cf "target/tmp/build-dev-${{ matrix.os }}.tar.zst" -- "${outputs[@]}"
+        tar -cf "target/tmp/build-dev-${{ matrix.os }}.tar" -- "${outputs[@]}"
     - name: Archive Build
       if: matrix.os == 'windows'
       shell: pwsh
@@ -325,12 +325,12 @@ jobs:
         New-Item -ItemType Directory -Force target/tmp | Out-Null
         $outputs = @('target/nextest/', 'target/fixtures/', 'target/wheels/', 'dist/', 'crates/system/helios-mesh-python') | ForEach-Object { $_.TrimEnd('/','\') } | Where-Object { Test-Path -LiteralPath $_ }
         if (!$outputs) { throw 'No build outputs found' }
-        tar -cf "target/tmp/build-dev-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -T0" --force-local -- @outputs
+        tar -cf "target/tmp/build-dev-${{ matrix.os }}.tar" -- @outputs
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: build-dev-${{ matrix.os }}
-        path: target/tmp/build-dev-${{ matrix.os }}.tar.zst
+        path: target/tmp/build-dev-${{ matrix.os }}.tar
         if-no-files-found: error
         retention-days: 7
         include-hidden-files: true
@@ -434,7 +434,7 @@ jobs:
           if [ -e "$path" ]; then outputs+=("$path"); fi
         done
         [ ${#outputs[@]} -gt 0 ]
-        tar --zstd -cf "target/tmp/build-release-${{ matrix.os }}.tar.zst" -- "${outputs[@]}"
+        tar -cf "target/tmp/build-release-${{ matrix.os }}.tar" -- "${outputs[@]}"
     - name: Archive Build
       if: matrix.os == 'windows'
       shell: pwsh
@@ -442,12 +442,12 @@ jobs:
         New-Item -ItemType Directory -Force target/tmp | Out-Null
         $outputs = @('target/nextest/', 'target/fixtures/', 'target/wheels/', 'dist/', 'crates/system/helios-mesh-python') | ForEach-Object { $_.TrimEnd('/','\') } | Where-Object { Test-Path -LiteralPath $_ }
         if (!$outputs) { throw 'No build outputs found' }
-        tar -cf "target/tmp/build-release-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -T0" --force-local -- @outputs
+        tar -cf "target/tmp/build-release-${{ matrix.os }}.tar" -- @outputs
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       with:
         name: build-release-${{ matrix.os }}
-        path: target/tmp/build-release-${{ matrix.os }}.tar.zst
+        path: target/tmp/build-release-${{ matrix.os }}.tar
         if-no-files-found: error
         retention-days: 7
         include-hidden-files: true
@@ -541,8 +541,8 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-linux.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-linux.tar"
     - run: >-
         mise exec -- uv run --locked --project tools/python python -m
         helios_mesh_tools.test.archive --profile ${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
@@ -641,13 +641,13 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-${{ matrix.os }}.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-${{ matrix.os }}.tar"
       if: matrix.os != 'windows'
     - name: Extract Build
       shell: pwsh
       run: |-
-        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -d" --force-local
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: matrix.os == 'windows'
     - run: >-
@@ -745,8 +745,8 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-linux.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-linux.tar"
     - run: >-
         mise run test:integration:python --profile ${{ startsWith(github.ref,
         'refs/tags/v') && 'release' || 'dev' }}
@@ -841,13 +841,13 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-${{ matrix.os }}.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-${{ matrix.os }}.tar"
       if: matrix.os != 'windows'
     - name: Extract Build
       shell: pwsh
       run: |-
-        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -d" --force-local
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: matrix.os == 'windows'
     - run: >-
@@ -945,8 +945,8 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-linux.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-linux.tar"
     - run: >-
         mise run test:acceptance:python --profile ${{ startsWith(github.ref,
         'refs/tags/v') && 'release' || 'dev' }}
@@ -1041,13 +1041,13 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-${{ matrix.os }}.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-${{ matrix.os }}.tar"
       if: matrix.os != 'windows'
     - name: Extract Build
       shell: pwsh
       run: |-
-        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -d" --force-local
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: matrix.os == 'windows'
     - run: >-
@@ -1159,13 +1159,13 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-${{ matrix.os }}.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-${{ matrix.os }}.tar"
       if: matrix.os != 'windows'
     - name: Extract Build
       shell: pwsh
       run: |-
-        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -d" --force-local
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev' }}-${{ matrix.os }}.tar"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: matrix.os == 'windows'
     - run: >-
@@ -1288,8 +1288,8 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-linux.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-linux.tar"
     - run: >-
         mise run package:python --profile ${{ startsWith(github.ref, 'refs/tags/v') &&
         'release' || 'dev' }}
@@ -1336,7 +1336,7 @@ jobs:
   publish_dry:
     name: Publish / Dry
     runs-on:
-    - stokker-local-linux-x64
+    - ubuntu-latest
     timeout-minutes: 30
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -1568,8 +1568,8 @@ jobs:
     - name: Extract Build
       shell: bash
       run: >-
-        tar --zstd -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
-        'dev' }}-linux.tar.zst"
+        tar -xf "build-${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
+        }}-linux.tar"
     - run: >-
         mise run test:coverage --profile ${{ startsWith(github.ref, 'refs/tags/v') &&
         'release' || 'dev' }}
