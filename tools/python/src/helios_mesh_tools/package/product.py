@@ -82,6 +82,7 @@ def main() -> None:
         firmware = ROOT / "target/package/firmware"
         firmware.mkdir(parents=True, exist_ok=True)
         entries: dict[str, bytes] = {}
+        entries["LICENSE-APACHE"] = (ROOT / "LICENSE-APACHE").read_bytes()
         for node in ("gateway", "rotator", "sidecar"):
             source = ROOT / "target/fixtures/firmware" / f"helios-mesh-node-{node}"
             image = firmware / f"helios-mesh-node-{node}.uf2"
@@ -93,8 +94,10 @@ def main() -> None:
             f"Version: {tomllib.loads((ROOT / 'Cargo.toml').read_text())['workspace']['package']['version']}\n"
             "Wire Protocol: 14\n"
             f"Build Profile: {options.profile}\n"
-            "Hardware: Feather RP2040 with RFM95 radio and the declared FeatherWing.\n"
+            "Standard Hardware: Feather RP2040 with RFM95 radio and the declared FeatherWing.\n"
             "Gateway: TFT FeatherWing V2. Rotator: Motor FeatherWing. Sidecar: OLED FeatherWing.\n\n"
+            "Development hardware-unknown builds are USB-only diagnostics using the same filenames.\n"
+            "Confirm your build options before selecting an image.\n\n"
             "Extract this archive, then select the UF2 matching the board's attached hardware.\n"
             "Hold BOOTSEL while connecting USB, then copy that UF2 to the RPI-RP2 volume.\n"
             "Flash one board at a time. The debug directory holds the matching ELF images.\n"

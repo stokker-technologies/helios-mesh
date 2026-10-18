@@ -68,7 +68,10 @@ before connecting a load.
 
 Helios Mesh is pre-1.0. Linux and Windows have native CI coverage; Linux also
 builds the RP2040 firmware. Start from source with the pinned toolchain and
-[mise](https://mise.jdx.dev):
+[mise](https://mise.jdx.dev).
+
+Linux builds need `pkg-config` and the libudev development headers. On Debian
+or Ubuntu, install them with `sudo apt-get install pkg-config libudev-dev`.
 
 ```sh
 git clone https://github.com/stokker-technologies/helios-mesh.git
@@ -190,7 +193,8 @@ mise run package --profile dev
 ```
 
 `target/package/firmware/helios-mesh-firmware-feather-rp2040.zip` contains all
-three UF2 images, their matching ELF files in `debug/`, and flashing instructions.
+three UF2 images, their matching ELF files in `debug/`, flashing instructions,
+and the Apache-2.0 license.
 Individual UF2s also remain in `target/package/firmware/` for local use. Packaging
 consumes the existing build; it does not compile firmware again.
 
