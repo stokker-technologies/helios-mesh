@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:7c70443361c94ab984ccdfb08dadb77557d6eb066028af1fbe9ea1b814121332
+# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:9c33d47f9fcf40da3be2ed14fa9803aadbcd11283d82ee2f410790770174290d
 name: CI
 "on":
   push:
@@ -9,6 +9,7 @@ name: CI
     tags:
     - v*
   pull_request: {}
+  workflow_dispatch: {}
   schedule:
   - cron: 0 2 * * *
 permissions:
@@ -213,13 +214,13 @@ jobs:
     - run: mise run format:rust --check
     - run: mise run lint:rust
     - run: >-
-        mise exec -- cargo check --locked --workspace --exclude hnm-nodes --all-targets
+        mise exec -- cargo check --locked --workspace --exclude helios-mesh-nodes
+        --all-targets --no-default-features
+    - run: >-
+        mise exec -- cargo check --locked --package helios-mesh-nodes --lib
         --no-default-features
     - run: >-
-        mise exec -- cargo check --locked --package hnm-nodes --lib
-        --no-default-features
-    - run: >-
-        mise exec -- cargo check --locked --package hnm-nodes --bins --target
+        mise exec -- cargo check --locked --package helios-mesh-nodes --bins --target
         thumbv6m-none-eabi --no-default-features --features firmware
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       if: >-
@@ -308,7 +309,7 @@ jobs:
       run: |-
         mkdir -p target/tmp
         outputs=()
-        for path in 'target/nextest/' 'target/fixtures/' 'target/wheels/' 'dist/' 'crates/system/hnm-python'; do
+        for path in 'target/nextest/' 'target/fixtures/' 'target/wheels/' 'dist/' 'crates/system/helios-mesh-python'; do
           if [ -e "$path" ]; then outputs+=("$path"); fi
         done
         [ ${#outputs[@]} -gt 0 ]
@@ -318,7 +319,7 @@ jobs:
       shell: pwsh
       run: |-
         New-Item -ItemType Directory -Force target/tmp | Out-Null
-        $outputs = @('target/nextest/', 'target/fixtures/', 'target/wheels/', 'dist/', 'crates/system/hnm-python') | ForEach-Object { $_.TrimEnd('/','\') } | Where-Object { Test-Path -LiteralPath $_ }
+        $outputs = @('target/nextest/', 'target/fixtures/', 'target/wheels/', 'dist/', 'crates/system/helios-mesh-python') | ForEach-Object { $_.TrimEnd('/','\') } | Where-Object { Test-Path -LiteralPath $_ }
         if (!$outputs) { throw 'No build outputs found' }
         tar -cf "target/tmp/build-dev-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -T0" --force-local -- @outputs
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -416,7 +417,7 @@ jobs:
       run: |-
         mkdir -p target/tmp
         outputs=()
-        for path in 'target/nextest/' 'target/fixtures/' 'target/wheels/' 'dist/' 'crates/system/hnm-python'; do
+        for path in 'target/nextest/' 'target/fixtures/' 'target/wheels/' 'dist/' 'crates/system/helios-mesh-python'; do
           if [ -e "$path" ]; then outputs+=("$path"); fi
         done
         [ ${#outputs[@]} -gt 0 ]
@@ -426,7 +427,7 @@ jobs:
       shell: pwsh
       run: |-
         New-Item -ItemType Directory -Force target/tmp | Out-Null
-        $outputs = @('target/nextest/', 'target/fixtures/', 'target/wheels/', 'dist/', 'crates/system/hnm-python') | ForEach-Object { $_.TrimEnd('/','\') } | Where-Object { Test-Path -LiteralPath $_ }
+        $outputs = @('target/nextest/', 'target/fixtures/', 'target/wheels/', 'dist/', 'crates/system/helios-mesh-python') | ForEach-Object { $_.TrimEnd('/','\') } | Where-Object { Test-Path -LiteralPath $_ }
         if (!$outputs) { throw 'No build outputs found' }
         tar -cf "target/tmp/build-release-${{ matrix.os }}.tar.zst" --use-compress-program "zstd -T0" --force-local -- @outputs
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -522,8 +523,8 @@ jobs:
         'dev' }}-linux.tar.zst"
     - run: >-
         mise exec -- uv run --locked --project tools/python python -m
-        hnm_tools.test.archive --profile ${{ startsWith(github.ref, 'refs/tags/v') && 'release' || 'dev'
-        }} --install-wheels
+        helios_mesh_tools.test.archive --profile ${{ startsWith(github.ref, 'refs/tags/v') && 'release' ||
+        'dev' }} --install-wheels
     - run: >-
         mise run test:generated --profile ${{ startsWith(github.ref, 'refs/tags/v') &&
         'release' || 'dev' }}
@@ -1182,9 +1183,9 @@ jobs:
       actions: read
     if: >-
       always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result,
-      'cancelled') && (startsWith(github.ref, 'refs/tags/v') || (github.event_name ==
-      'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref,
-      'refs/heads/release/v'))))
+      'cancelled') && (startsWith(github.ref, 'refs/tags/v') || ((github.event_name ==
+      'push' || github.event_name == 'workflow_dispatch') && (github.ref ==
+      'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/v'))))
     strategy:
       fail-fast: false
       matrix:
@@ -1263,12 +1264,6 @@ jobs:
     - run: >-
         mise run package:python --profile ${{ startsWith(github.ref, 'refs/tags/v') &&
         'release' || 'dev' }}
-    - if: startsWith(github.ref, 'refs/tags/v')
-      run: mise run release:stage
-      env:
-        GH_TOKEN: ${{ github.token }}
-        RELEASE_JOB_NAME: Package / Python (linux)
-        RELEASE_ARTIFACT_NAME: package-release-python-linux
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
       if: always()
       with:
@@ -1298,14 +1293,11 @@ jobs:
         key: ${{ steps.tools.outputs.cache-primary-key }}
     - run: sccache --show-stats
       if: always()
-    permissions:
-      contents: read
-      actions: read
     if: >-
       always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result,
-      'cancelled') && (startsWith(github.ref, 'refs/tags/v') || (github.event_name ==
-      'push' && (github.ref == 'refs/heads/dev' || startsWith(github.ref,
-      'refs/heads/release/v'))))
+      'cancelled') && (startsWith(github.ref, 'refs/tags/v') || ((github.event_name ==
+      'push' || github.event_name == 'workflow_dispatch') && (github.ref ==
+      'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/v'))))
     env:
       RUSTC_WRAPPER: sccache
       SCCACHE_GHA_ENABLED: "true"
@@ -1373,8 +1365,8 @@ jobs:
     - run: sccache --show-stats
       if: always()
     if: >-
-      github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
-      startsWith(github.ref, 'refs/heads/release/v'))
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      (github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/heads/release/v'))
     env:
       RUSTC_WRAPPER: sccache
       SCCACHE_GHA_ENABLED: "true"

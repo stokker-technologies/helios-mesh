@@ -1011,16 +1011,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
-name = "hnm"
+name = "helios-mesh"
 version = "0.1.0"
 dependencies = [
  "embassy-executor",
  "heapless",
- "hnm-board-feather-rp2040",
- "hnm-core",
- "hnm-drivers",
- "hnm-macros",
- "hnm-protocol",
+ "helios-mesh-board-feather-rp2040",
+ "helios-mesh-core",
+ "helios-mesh-drivers",
+ "helios-mesh-macros",
+ "helios-mesh-protocol",
  "postcard",
  "serde",
  "serde_json",
@@ -1031,7 +1031,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hnm-board-feather-rp2040"
+name = "helios-mesh-board-feather-rp2040"
 version = "0.1.0"
 dependencies = [
  "defmt 1.2.0",
@@ -1044,9 +1044,9 @@ dependencies = [
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "heapless",
- "hnm-core",
- "hnm-drivers",
- "hnm-protocol",
+ "helios-mesh-core",
+ "helios-mesh-drivers",
+ "helios-mesh-protocol",
  "lora-phy",
  "portable-atomic",
  "rp-pac",
@@ -1056,12 +1056,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "hnm-cli"
+name = "helios-mesh-cli"
 version = "0.1.0"
 dependencies = [
  "clap",
  "dotenvy",
- "hnm",
+ "helios-mesh",
  "serde",
  "serde_json",
  "tempfile",
@@ -1070,7 +1070,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hnm-core"
+name = "helios-mesh-core"
 version = "0.1.0"
 dependencies = [
  "critical-section",
@@ -1080,7 +1080,7 @@ dependencies = [
  "embassy-time",
  "embedded-storage",
  "heapless",
- "hnm-protocol",
+ "helios-mesh-protocol",
  "lora-phy",
  "postcard",
  "serde",
@@ -1088,7 +1088,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hnm-drivers"
+name = "helios-mesh-drivers"
 version = "0.1.0"
 dependencies = [
  "critical-section",
@@ -1102,14 +1102,14 @@ dependencies = [
  "embedded-hal 1.0.0",
  "embedded-hal-async",
  "heapless",
- "hnm-protocol",
+ "helios-mesh-protocol",
  "pwm-pca9685",
  "sky-ili9341",
  "thiserror",
 ]
 
 [[package]]
-name = "hnm-macros"
+name = "helios-mesh-macros"
 version = "0.1.0"
 dependencies = [
  "proc-macro2",
@@ -1118,7 +1118,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hnm-nodes"
+name = "helios-mesh-nodes"
 version = "0.1.0"
 dependencies = [
  "cortex-m-rt",
@@ -1130,11 +1130,11 @@ dependencies = [
  "embassy-sync",
  "embassy-time",
  "heapless",
- "hnm",
- "hnm-board-feather-rp2040",
- "hnm-core",
- "hnm-drivers",
- "hnm-protocol",
+ "helios-mesh",
+ "helios-mesh-board-feather-rp2040",
+ "helios-mesh-core",
+ "helios-mesh-drivers",
+ "helios-mesh-protocol",
  "lora-phy",
  "panic-probe",
  "portable-atomic",
@@ -1143,22 +1143,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "hnm-protocol"
+name = "helios-mesh-protocol"
 version = "0.1.0"
 dependencies = [
  "heapless",
- "hnm-macros",
+ "helios-mesh-macros",
  "postcard",
  "serde",
  "thiserror",
 ]
 
 [[package]]
-name = "hnm-python"
+name = "helios-mesh-python"
 version = "0.1.0"
 dependencies = [
  "heapless",
- "hnm",
+ "helios-mesh",
  "pyo3",
  "pyo3-async-runtimes",
  "serde_json",

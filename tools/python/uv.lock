@@ -112,7 +112,7 @@ wheels = [
 ]
 
 [[package]]
-name = "hnm-tools"
+name = "helios-mesh-tools"
 version = "0.0.0"
 source = { editable = "." }
 

@@ -1,6 +1,6 @@
-# Helios Node Mesh
+# Helios Mesh
 
-Helios Node Mesh (HNM) is a Rust workspace for RP2040 node firmware and the
+Helios Mesh (Helios Mesh) is a Rust workspace for RP2040 node firmware and the
 system software that discovers and controls those nodes.
 
 Gateway, Rotator, and Sidecar expose typed Rust and Python APIs over USB and
@@ -65,7 +65,7 @@ Declarations must match the complete attached stack and any jumper changes.
 For an unknown attachment, `mise run build --hardware-unknown` builds a
 USB-only diagnostic image with no shared-header buses, probes or GPIO outputs.
 Firmware cannot contain arbitrary electrical faults or guarantee safety
-before it runs; see [Hardware and GPIO Safety](crates/firmware/hnm-board-feather-rp2040/README.md#hardware-and-gpio-safety).
+before it runs; see [Hardware and GPIO Safety](crates/firmware/helios-mesh-board-feather-rp2040/README.md#hardware-and-gpio-safety).
 
 Node implementations expose initialized channels through `Node::channels()`; typed
 fields retain job submission. `NODE_TYPE` selects catalog metadata while the runtime
@@ -76,24 +76,24 @@ owns the device-specific `NodeId`.
 ```text
 crates/
   common/                       cross-runtime contracts only, never generic helpers
-    hnm-protocol/               single wire contract shared by firmware and hosts
+    helios-mesh-protocol/               single wire contract shared by firmware and hosts
   system/
-    hnm/                        main Rust API facade
-    hnm-macros/                 node, route, and job authoring macros
-    hnm-cli/                    thin command-line adapter
-    hnm-python/                 typed PyO3 adapter and Python examples
+    helios-mesh/                        main Rust API facade
+    helios-mesh-macros/                 node, route, and job authoring macros
+    helios-mesh-cli/                    thin command-line adapter
+    helios-mesh-python/                 typed PyO3 adapter and Python examples
   firmware/
-    hnm-core/                   shared dispatcher, Node contract, job workers,
+    helios-mesh-core/                   shared dispatcher, Node contract, job workers,
                                 storage, mesh modes, transport loops, UI model
-    hnm-drivers/                embedded-hal wing and display drivers, shared buses
-    hnm-board-feather-rp2040/   Feather RP2040 hardware construction only
-    hnm-nodes/                  node definitions, job catalogs, and composition roots
+    helios-mesh-drivers/                embedded-hal wing and display drivers, shared buses
+    helios-mesh-board-feather-rp2040/   Feather RP2040 hardware construction only
+    helios-mesh-nodes/                  node definitions, job catalogs, and composition roots
 ```
 
-The `hnm-cli` and `hnm-python` interaction layers consume the public `hnm`
-facade. The [host contracts](crates/system/hnm/README.md) describe discovery,
+The `helios-mesh-cli` and `helios-mesh-python` interaction layers consume the public `helios_mesh`
+facade. The [host contracts](crates/system/helios-mesh/README.md) describe discovery,
 typed node handles, operation ownership, and Python behavior. The
-[board and firmware guide](crates/firmware/hnm-board-feather-rp2040/README.md)
+[board and firmware guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md)
 covers wiring, GPIO safety, node authoring, and field diagnostics.
 
 The wire protocol is version **14**, with exact-match validation in both
@@ -117,8 +117,8 @@ winget install jdx.mise       # Windows (or: scoop install mise)
 Then clone, trust the repository configuration, and install the toolchains:
 
 ```sh
-git clone https://github.com/stokker-technologies/helios-node-mesh.git
-cd helios-node-mesh
+git clone https://github.com/stokker-technologies/helios-mesh.git
+cd helios-mesh
 mise trust
 mise run prepare
 mise run build
@@ -142,16 +142,16 @@ appears as a COM port.
 
 Flashing has two supported entry paths, one board at a time:
 
-- A board already running HNM firmware:
+- A board already running Helios Mesh firmware:
   `mise run dev:cli -- --device <id> restart --bootloader` restarts it into its
   `RPI-RP2` BOOTSEL volume.
 - A blank board: hold BOOTSEL while plugging in USB.
 
-Flash an existing image with `mise run dev:cli -- flash target/package/firmware/hnm-node-gateway.uf2` (or the Rotator/Sidecar image). This requires physical access to the selected board. The
-underlying `hnm flash` command discovers the
+Flash an existing image with `mise run dev:cli -- flash target/package/firmware/helios-mesh-node-gateway.uf2` (or the Rotator/Sidecar image). This requires physical access to the selected board. The
+underlying `helios-mesh flash` command discovers the
 mounted BOOTSEL volume on all three operating systems and refuses to write
 unless exactly one volume is present. Alternatively,
-`hnm --device <id> flash <uf2>` performs the bootloader restart, volume
+`helios-mesh --device <id> flash <uf2>` performs the bootloader restart, volume
 wait, copy, and post-flash `status` confirmation in one step.
 
 Verify the flashed node:
@@ -170,9 +170,9 @@ mise run build
 mise run check
 mise run build
 mise run package --profile dev
-mise run dev:cli -- flash target/package/firmware/hnm-node-rotator.uf2
-mise run dev:cli -- flash target/package/firmware/hnm-node-gateway.uf2
-mise run dev:cli -- flash target/package/firmware/hnm-node-sidecar.uf2
+mise run dev:cli -- flash target/package/firmware/helios-mesh-node-rotator.uf2
+mise run dev:cli -- flash target/package/firmware/helios-mesh-node-gateway.uf2
+mise run dev:cli -- flash target/package/firmware/helios-mesh-node-sidecar.uf2
 
 mise run dev:cli -- describe
 mise run dev:cli -- status
@@ -197,16 +197,19 @@ mise run dev:python
 mise run test:integration:python
 mise run test:generated
 mise run build --profile dev
-crates/system/hnm-python/.venv/bin/python crates/system/hnm-python/examples/rotator_sweep.py \
+mise exec -- uv run --locked --project tools/python python crates/system/helios-mesh-python/examples/rotator_sweep.py \
   --device 273282 --node 566114
 ```
 
-The CLI is one command tree. When exactly one HNM node is attached over USB
+The CLI is one command tree. When exactly one Helios Mesh node is attached over USB
 it is selected automatically, and with several attached the single node
 declaring the Gateway node type wins; otherwise select one by
 stable ID or port with the global `--device` or `--port` flag. The global
 `--node` flag addresses a remote node through the attached gateway; without
 it, commands address the attached node itself.
+
+USB product strings retain the `Helios Node Mesh` prefix, and node identifiers
+retain `hnm.*`, so discovery and stored identities remain stable across the rename.
 
 ```sh
 mise run dev:cli -- --device 273282 status
@@ -214,7 +217,7 @@ mise run dev:cli -- --device 273282 --node 566114 status
 mise run dev:cli -- --port /dev/ttyACM1 status
 ```
 
-Without a selector, an ambiguous-device error lists every attached HNM node.
+Without a selector, an ambiguous-device error lists every attached Helios Mesh node.
 Addressing a remote node requires the attached device to be a Gateway. Node diagnostics stay readable over that mesh path,
 and restart is admitted through the node's radio write binding. Gateway
 brokerage operations such as `nodes` remain attached-gateway-only.
@@ -222,11 +225,11 @@ brokerage operations such as `nodes` remain attached-gateway-only.
 ## Typed Host API
 
 ```rust
-use hnm::{AuxGpioId, ConnectedNode, NodeType};
+use helios_mesh::{AuxGpioId, ConnectedNode, NodeType};
 use std::time::Duration;
 
-let devices = hnm::discover_type(NodeType::Sidecar).await?;
-let device = devices.first().ok_or(hnm::Error::DeviceNotFound)?;
+let devices = helios_mesh::discover_type(NodeType::Sidecar).await?;
+let device = devices.first().ok_or(helios_mesh::Error::DeviceNotFound)?;
 let ConnectedNode::Sidecar(sidecar) = device.connect().await? else { unreachable!() };
 let operation = sidecar.pulse_gpio(AuxGpioId(1), Duration::from_millis(250)).await?;
 let result = operation.completed().await?;
@@ -236,21 +239,21 @@ assert!(result.cleanup_error.is_none());
 ```python
 import asyncio
 from datetime import timedelta
-import hnm
+import helios_mesh
 
 async def main():
-    devices = await hnm.discover(hnm.NodeType.SIDECAR)
+    devices = await helios_mesh.discover(helios_mesh.NodeType.SIDECAR)
     sidecar = await devices[0].connect()
-    assert isinstance(sidecar, hnm.SidecarNode)
-    operation = await sidecar.pulse_gpio(hnm.AuxGpioId(1), timedelta(milliseconds=250))
+    assert isinstance(sidecar, helios_mesh.SidecarNode)
+    operation = await sidecar.pulse_gpio(helios_mesh.AuxGpioId(1), timedelta(milliseconds=250))
     result = await operation.completed()
     assert result.cleanup_error is None
 
 asyncio.run(main())
 ```
 
-Filter gateways with `hnm::discover_type(NodeType::Gateway)` in Rust or
-`await hnm.discover(hnm.NodeType.GATEWAY)` in Python. Gateway scans accept a
+Filter gateways with `helios_mesh::discover_type(NodeType::Gateway)` in Rust or
+`await helios_mesh.discover(helios_mesh.NodeType.GATEWAY)` in Python. Gateway scans accept a
 node-type filter and `connect_node` returns the corresponding typed handle.
 Universal requests live on each typed handle's `node()` accessor in Rust and
 `node` property in Python. `NodeHandle` is also available for universal access.
@@ -262,10 +265,10 @@ can run with `asyncio.gather`. Execution and cleanup errors remain distinct in
 operation snapshots. `operation.cancel()` requests cleanup without terminating
 the worker. Disconnecting the host does not cancel admitted work.
 
-See [Host Contracts](crates/system/hnm/README.md) for gateway
-and discovery examples, and [Authoring A Node](crates/firmware/hnm-board-feather-rp2040/README.md#authoring-a-node)
+See [Host Contracts](crates/system/helios-mesh/README.md) for gateway
+and discovery examples, and [Authoring A Node](crates/firmware/helios-mesh-board-feather-rp2040/README.md#authoring-a-node)
 for the implemented Sidecar, macros, resources, and job lifecycle. The Python
-sweep and tuning examples live under `crates/system/hnm-python/examples/`.
+sweep and tuning examples live under `crates/system/helios-mesh-python/examples/`.
 
 The Python package is built as an ABI3 wheel for each native host. After a
 local build, install its wheel with:
@@ -280,7 +283,7 @@ this migration does not publish a package. Unreleased source is available on
 `dev`:
 
 ```sh
-uv add "hnm @ git+https://github.com/stokker-technologies/helios-node-mesh@dev#subdirectory=crates/system/hnm-python"
+uv add "helios-mesh @ git+https://github.com/stokker-technologies/helios-mesh@dev#subdirectory=crates/system/helios-mesh-python"
 ```
 
 Each flash task writes only when exactly one mounted `RPI-RP2` BOOTSEL
@@ -349,7 +352,7 @@ operation, so observability cannot await or fill the behavioral mailbox. Use
 `diagnostics` for the selected node's live projection, locally or with
 `--node` across the mesh; use `events` for its retained journal, or `record`
 to follow that journal into a JSONL file using the versioned record schema
-from `hnm::journal`. Journal timestamps from different boards have
+from `helios_mesh::journal`. Journal timestamps from different boards have
 independent boot-time origins, so compare intervals and ordering rather than
 absolute values.
 

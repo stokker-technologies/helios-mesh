@@ -1,13 +1,13 @@
-<!-- Rendered by stkr project update from .agents/GUIDANCE.md; sha256:5d70535993257fe323651a49fa0e83d930a7461a36735236b7ef51a884be7697 -->
+<!-- Rendered by stkr project update from .agents/GUIDANCE.md; sha256:1b6e98a782ce5ed9ac9bfe2e59e5696116b052a045781ed8ac4b9b1abbc3772b -->
 
 # Repository Instructions
 
-Helios Node Mesh is a Stokker Technologies Rust and RP2040 firmware project.
+Helios Mesh is a Stokker Technologies Rust and RP2040 firmware project.
 
 - Apply `stkr-conventions`, `stkr-mise`, and the applicable Rust, CLI, Python,
   PyO3, testing, CI, and publishing skills. Use repository mise tasks.
-- Preserve the host contracts in `crates/system/hnm/README.md` and the hardware,
-  wiring, and firmware contracts in `crates/firmware/hnm-board-feather-rp2040/README.md`.
+- Preserve the host contracts in `crates/system/helios-mesh/README.md` and the hardware,
+  wiring, and firmware contracts in `crates/firmware/helios-mesh-board-feather-rp2040/README.md`.
 - Preserve wire version 14 and its encoding. Protocol changes require an explicit
   decision, a version bump, and matching firmware on all participating boards.
 - Keep workspace packages and firmware synchronized. The migration remains at

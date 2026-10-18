@@ -5,7 +5,7 @@
 # === Project === #
 
 [project]
-name = "Helios Node Mesh"
+name = "Helios Mesh"
 visibility = "public"
 platforms = ["linux", "windows"]
 
@@ -14,8 +14,8 @@ roots = ["crates"]
 targets = ["thumbv6m-none-eabi"]
 
 [languages.python]
-roots = ["tools/python", "crates/system/hnm-python"]
-generated = ["crates/system/hnm-python"]
+roots = ["tools/python", "crates/system/helios-mesh-python"]
+generated = ["crates/system/helios-mesh-python"]
 
 # === Repository === #
 
@@ -44,10 +44,10 @@ step_timeout_seconds = 1200
 
 [conventions.rust]
 # The PyO3 Adapter Emits An rlib For Rust Checks And Has No Independent Rust Error API.
-bindings = ["hnm-python"]
+bindings = ["helios-mesh-python"]
 
 [conventions.testing]
-hosts = ["target/fixtures/bin/hnm{exe}"]
+hosts = ["target/fixtures/bin/helios-mesh{exe}"]
 
 # === Templates === #
 
@@ -55,9 +55,9 @@ hosts = ["target/fixtures/bin/hnm{exe}"]
 
 [release]
 provider = "github"
-repository = "stokker-technologies/helios-node-mesh"
-product = "hnm"
-package = "hnm-cli"
+repository = "stokker-technologies/helios-mesh"
+product = "helios-mesh"
+package = "helios-mesh-cli"
 tag = "v0.1.0"
 notes = "CHANGELOG.md"
 targets = ["linux-x86_64", "windows-x86_64"]
@@ -65,27 +65,27 @@ tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/native/hnm"
+path = "target/package/native/helios-mesh"
 name = "{product}-{version}-{target}"
 
 [[release.assets]]
 target = "windows-x86_64"
-path = "target/package/native/hnm.exe"
+path = "target/package/native/helios-mesh.exe"
 name = "{product}-{version}-{target}.exe"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/hnm-node-gateway.uf2"
+path = "target/package/firmware/helios-mesh-node-gateway.uf2"
 name = "{product}-{version}-{target}-gateway.uf2"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/hnm-node-rotator.uf2"
+path = "target/package/firmware/helios-mesh-node-rotator.uf2"
 name = "{product}-{version}-{target}-rotator.uf2"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/hnm-node-sidecar.uf2"
+path = "target/package/firmware/helios-mesh-node-sidecar.uf2"
 name = "{product}-{version}-{target}-sidecar.uf2"
 
 [version]
@@ -100,54 +100,54 @@ files = ["Cargo.toml"]
 
 [[pyo3.modules]]
 name = "_native"
-crate = "hnm-python"
+crate = "helios-mesh-python"
 module_rename = "_native"
-rust = "crates/system/hnm-python/src"
-stub = "crates/system/hnm-python/python/hnm/_native.pyi"
-import = "hnm._native"
+rust = "crates/system/helios-mesh-python/src"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/_native.pyi"
+import = "helios_mesh._native"
 root = true
 flatten = ["node", "motion", "wire", "gateway", "journal"]
 # Retained on the private native module for cancellation tests.
 renames = { PyPendingProbe = "_PendingProbe" }
-class_modules = { PyUsbDevice = "hnm", PyNodeType = "hnm", PyDiscoveredNode = "hnm", PySidecarNode = "hnm", PyGatewayNode = "hnm.gateway", PyRotatorNode = "hnm" }
+class_modules = { PyUsbDevice = "helios_mesh", PyNodeType = "helios_mesh", PyDiscoveredNode = "helios_mesh", PySidecarNode = "helios_mesh", PyGatewayNode = "helios_mesh.gateway", PyRotatorNode = "helios_mesh" }
 
 [[pyo3.modules]]
 name = "node"
-crate = "hnm-python"
+crate = "helios-mesh-python"
 module_rename = "node"
-rust = "crates/system/hnm-python/src/node"
-stub = "crates/system/hnm-python/python/hnm/node/__init__.pyi"
-import = "hnm.node"
+rust = "crates/system/helios-mesh-python/src/node"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/node/__init__.pyi"
+import = "helios_mesh.node"
 
 [[pyo3.modules]]
 name = "motion"
-crate = "hnm-python"
+crate = "helios-mesh-python"
 module_rename = "motion"
-rust = "crates/system/hnm-python/src/motion"
-stub = "crates/system/hnm-python/python/hnm/motion/__init__.pyi"
-import = "hnm.motion"
+rust = "crates/system/helios-mesh-python/src/motion"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/motion/__init__.pyi"
+import = "helios_mesh.motion"
 
 [[pyo3.modules]]
 name = "wire"
-crate = "hnm-python"
+crate = "helios-mesh-python"
 module_rename = "wire"
-rust = "crates/system/hnm-python/src/motion/wire"
-stub = "crates/system/hnm-python/python/hnm/motion/wire/__init__.pyi"
-import = "hnm.motion.wire"
+rust = "crates/system/helios-mesh-python/src/motion/wire"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/motion/wire/__init__.pyi"
+import = "helios_mesh.motion.wire"
 
 [[pyo3.modules]]
 name = "gateway"
-crate = "hnm-python"
+crate = "helios-mesh-python"
 module_rename = "gateway"
-rust = "crates/system/hnm-python/src/gateway"
-stub = "crates/system/hnm-python/python/hnm/gateway/__init__.pyi"
-import = "hnm.gateway"
+rust = "crates/system/helios-mesh-python/src/gateway"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/gateway/__init__.pyi"
+import = "helios_mesh.gateway"
 
 [[pyo3.modules]]
 name = "journal"
-crate = "hnm-python"
+crate = "helios-mesh-python"
 module_rename = "journal"
-rust = "crates/system/hnm-python/src/journal"
-stub = "crates/system/hnm-python/python/hnm/journal/__init__.pyi"
-import = "hnm.journal"
+rust = "crates/system/helios-mesh-python/src/journal"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/journal/__init__.pyi"
+import = "helios_mesh.journal"
 state_exceptions = { PyRecord = "A journal entry is paired with its cursor position and shared source metadata." }

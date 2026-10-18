@@ -1,0 +1,79 @@
+# === Package === #
+
+[package]
+name = "helios-mesh-protocol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# === Package Targets === #
+
+# === Features === #
+
+[features]
+default = []
+std = ["postcard/use-std", "serde/std"]
+
+# === Dependencies === #
+
+[dependencies]
+# Local
+helios-mesh-macros = { workspace = true }
+
+# Git
+
+# Error Handling
+thiserror.workspace = true
+
+# Logging
+
+# Utilities
+heapless = { workspace = true }
+
+# Serialization
+postcard = { workspace = true }
+serde = { workspace = true }
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Build Dependencies === #
+
+# === Dev Dependencies === #
+
+# === Target Dependencies === #
+
+# === Test Targets === #
+
+# === Bench Targets === #
+
+# === Example Targets === #
+
+# === Workspace Lints === #
+
+# === Lints === #
+
+[lints]
+workspace = true
+
+# === Profiles === #
+
+# === Patches === #
+
+# === Other === #

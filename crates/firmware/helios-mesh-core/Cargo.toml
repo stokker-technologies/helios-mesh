@@ -1,0 +1,118 @@
+# === Package === #
+
+[package]
+name = "helios-mesh-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# === Package Targets === #
+
+# === Features === #
+
+[features]
+default = []
+std = ["helios-mesh-protocol/std"]
+
+# === Dependencies === #
+
+[dependencies]
+# Local
+helios-mesh-protocol = { workspace = true }
+
+# Git
+
+# Error Handling
+thiserror = { workspace = true }
+
+# Logging
+defmt = { workspace = true }
+
+# Utilities
+heapless = { workspace = true }
+
+# Serialization
+postcard = { workspace = true }
+serde = { workspace = true }
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+embassy-futures = { workspace = true }
+embassy-sync = { workspace = true }
+embassy-time = { workspace = true }
+
+# Networking
+lora-phy = { workspace = true }
+
+# Storage
+embedded-storage = { workspace = true }
+
+# UI
+
+# Testing
+
+# === Build Dependencies === #
+
+# === Dev Dependencies === #
+
+[dev-dependencies]
+# Local
+
+# Git
+
+# Error Handling
+
+# Logging
+
+# Utilities
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+critical-section = { workspace = true, features = ["std"] }
+
+# Async
+embassy-time = { workspace = true, features = ["generic-queue-8", "mock-driver"] }
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Target Dependencies === #
+
+# === Test Targets === #
+
+# === Bench Targets === #
+
+# === Example Targets === #
+
+# === Workspace Lints === #
+
+# === Lints === #
+
+[lints]
+workspace = true
+
+# === Profiles === #
+
+# === Patches === #
+
+# === Other === #

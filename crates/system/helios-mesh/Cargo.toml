@@ -1,0 +1,164 @@
+# === Package === #
+
+[package]
+name = "helios-mesh"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+# === Package Targets === #
+
+# === Features === #
+
+[features]
+default = ["host"]
+host = ["helios-mesh-protocol/std", "dep:postcard", "dep:serde_json", "dep:thiserror", "dep:tokio", "dep:tokio-serial"]
+testing = ["host"]
+firmware = [
+  "dep:helios-mesh-core",
+  "dep:helios-mesh-drivers",
+  "dep:helios-mesh-board-feather-rp2040",
+  "dep:embassy-executor",
+  "dep:static_cell",
+]
+
+# === Dependencies === #
+
+[dependencies]
+# Local
+helios-mesh-core = { workspace = true, optional = true }
+helios-mesh-drivers = { workspace = true, optional = true }
+helios-mesh-macros = { workspace = true }
+helios-mesh-protocol = { workspace = true }
+
+# Git
+
+# Error Handling
+thiserror = { workspace = true, optional = true }
+
+# Logging
+
+# Utilities
+heapless = { workspace = true }
+
+# Serialization
+postcard = { workspace = true, optional = true, features = ["use-std"] }
+serde = { workspace = true }
+serde_json = { workspace = true, optional = true }
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+tokio = { workspace = true, optional = true, features = ["io-util", "macros", "rt", "sync", "time"] }
+
+# Networking
+tokio-serial = { workspace = true, optional = true }
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Build Dependencies === #
+
+# === Dev Dependencies === #
+
+[dev-dependencies]
+# Local
+
+# Git
+
+# Error Handling
+
+# Logging
+
+# Utilities
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+
+# Async
+tokio = { workspace = true, features = ["test-util"] }
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Target Dependencies === #
+
+[target.'cfg(target_arch = "arm")'.dependencies]
+# Local
+helios-mesh-board-feather-rp2040 = { workspace = true, optional = true }
+
+# Git
+
+# Error Handling
+
+# Logging
+
+# Utilities
+
+# Serialization
+
+# Configuration
+
+# Filesystem
+
+# Parsing
+
+# Concurrency
+static_cell = { workspace = true, optional = true }
+
+# Async
+embassy-executor = { workspace = true, optional = true }
+
+# Networking
+
+# Storage
+
+# UI
+
+# Testing
+
+# === Test Targets === #
+
+[[test]]
+name = "transport"
+path = "tests/transport/main.rs"
+required-features = ["testing"]
+
+# === Bench Targets === #
+
+# === Example Targets === #
+
+# === Workspace Lints === #
+
+# === Lints === #
+
+[lints]
+workspace = true
+
+# === Profiles === #
+
+# === Patches === #
+
+# === Other === #

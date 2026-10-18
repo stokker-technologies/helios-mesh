@@ -3,23 +3,23 @@
 [workspace]
 resolver = "3"
 members = [
-  "crates/common/hnm-protocol",
-  "crates/system/hnm-macros",
-  "crates/system/hnm",
-  "crates/system/hnm-cli",
-  "crates/system/hnm-python",
-  "crates/firmware/hnm-core",
-  "crates/firmware/hnm-drivers",
-  "crates/firmware/hnm-board-feather-rp2040",
-  "crates/firmware/hnm-nodes",
+  "crates/common/helios-mesh-protocol",
+  "crates/system/helios-mesh-macros",
+  "crates/system/helios-mesh",
+  "crates/system/helios-mesh-cli",
+  "crates/system/helios-mesh-python",
+  "crates/firmware/helios-mesh-core",
+  "crates/firmware/helios-mesh-drivers",
+  "crates/firmware/helios-mesh-board-feather-rp2040",
+  "crates/firmware/helios-mesh-nodes",
 ]
 default-members = [
-  "crates/common/hnm-protocol",
-  "crates/system/hnm",
-  "crates/system/hnm-cli",
-  "crates/system/hnm-python",
-  "crates/firmware/hnm-core",
-  "crates/firmware/hnm-drivers",
+  "crates/common/helios-mesh-protocol",
+  "crates/system/helios-mesh",
+  "crates/system/helios-mesh-cli",
+  "crates/system/helios-mesh-python",
+  "crates/firmware/helios-mesh-core",
+  "crates/firmware/helios-mesh-drivers",
 ]
 
 # === Workspace Package === #
@@ -28,18 +28,18 @@ default-members = [
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
-repository = "https://github.com/stokker-technologies/helios-node-mesh"
+repository = "https://github.com/stokker-technologies/helios-mesh"
 
 # === Workspace Dependencies === #
 
 [workspace.dependencies]
 # Local
-hnm = { path = "crates/system/hnm", default-features = false, version = "0.1.0" }
-hnm-board-feather-rp2040 = { path = "crates/firmware/hnm-board-feather-rp2040", version = "0.1.0" }
-hnm-core = { path = "crates/firmware/hnm-core", version = "0.1.0" }
-hnm-drivers = { path = "crates/firmware/hnm-drivers", version = "0.1.0" }
-hnm-macros = { path = "crates/system/hnm-macros", version = "0.1.0" }
-hnm-protocol = { path = "crates/common/hnm-protocol", version = "0.1.0" }
+helios-mesh = { path = "crates/system/helios-mesh", default-features = false, version = "0.1.0" }
+helios-mesh-board-feather-rp2040 = { path = "crates/firmware/helios-mesh-board-feather-rp2040", version = "0.1.0" }
+helios-mesh-core = { path = "crates/firmware/helios-mesh-core", version = "0.1.0" }
+helios-mesh-drivers = { path = "crates/firmware/helios-mesh-drivers", version = "0.1.0" }
+helios-mesh-macros = { path = "crates/system/helios-mesh-macros", version = "0.1.0" }
+helios-mesh-protocol = { path = "crates/common/helios-mesh-protocol", version = "0.1.0" }
 
 # Git
 
