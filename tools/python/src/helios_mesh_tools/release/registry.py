@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/registry.py; sha256:9ea2717ec8edda598b8194b7d6641f6a132223803eb902debc5137b60aac456e
+# Rendered by stkr project update from templates/python/release/registry.py; sha256:a948c1ce827d72f688437bddb36ceeb644e1518ecc055e734274f0ec982d2653
 # ***
 #
 # Helios Mesh
@@ -17,7 +17,7 @@ import io
 import json
 import os
 import re
-import tempfile
+import tarfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -29,6 +29,8 @@ from typing import Any
 # Local Imports
 # isort: split
 from . import policy
+from .. import temporary
+from ..package import run as packages
 
 # Type Checking Imports
 
@@ -109,7 +111,10 @@ def request(
                 headers = {"Authorization": "Bearer " + token}
             else:
                 allowed = (method == "PUT" and endpoint.startswith("packages/generic/")) or (method == "POST" and endpoint == "releases")
-                authoring = method == "POST" and endpoint in ("merge_requests", "repository/tags")
+                authoring = method == "POST" and endpoint in (
+                    "merge_requests",
+                    "repository/tags",
+                )
                 if not allowed and not authoring:
                     raise policy.ToolError("GitLab release write endpoint is not allowed")
                 ci_project = os.environ.get("CI_PROJECT_ID")
@@ -255,7 +260,19 @@ def verify_jobs(settings: dict, receipt: dict, *, require_artifact: bool = True)
         data = request(settings, f"actions/artifacts/{artifact['id']}/zip", binary=True)
         if data is None or artifact.get("digest") != "sha256:" + hashlib.sha256(data).hexdigest():
             raise policy.ToolError("native GitHub artifact archive checksum differs")
-        verify_archive(receipt, data, f"target/release-assets/{receipt['target']}/")
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            payload = archive.read(receipt["artifact_name"] + ".tar")
+        with tarfile.open(fileobj=io.BytesIO(payload)) as archive:
+            prefix = f"target/release-assets/{receipt['target']}/"
+            original = archive.extractfile(prefix + "platform.json")
+            expected = {name: value for name, value in receipt.items() if name != "artifact"}
+            if original is None or json.load(original) != expected:
+                raise policy.ToolError("downloaded native release receipt differs")
+            for asset in receipt["assets"]:
+                file = archive.extractfile(prefix + asset["name"])
+                value = file.read() if file else b""
+                if len(value) != asset["size"] or hashlib.sha256(value).hexdigest() != asset["sha256"]:
+                    raise policy.ToolError("downloaded native asset checksum differs")
         receipt["artifact"] = {key: artifact[key] for key in ["id", "name", "digest"]}
     else:
         run = document(settings, f"pipelines/{run_id}")
@@ -685,13 +702,15 @@ def verify_publication(directory: Path, settings: dict) -> None:
         if receipt.get("sha") != sha:
             raise policy.ToolError("remote release revision differs")
         verify_jobs(settings, receipt, require_artifact=False)
-    with tempfile.TemporaryDirectory(prefix="release-verification-") as temporary:
-        root = Path(temporary)
+    with temporary.directory() as root:
         for item in manifest["files"]:
             path = policy.inside(root, item["name"])
             path.write_bytes(verify_download(settings, downloads[item["name"]], item))
         verified = [{**item, "path": item["name"]} for item in manifest["files"]]
         verify_signatures(directory, settings, root, verified)
+        native = packages.paths.target()
+        if native in settings["targets"]:
+            packages.installed(directory, settings, root, native)
     sums = request(settings, downloads["SHA256SUMS"], binary=True)
     expected = "".join(f"{item['sha256']}  {item['name']}\n" for item in manifest["files"]).encode()
     expected += f"{hashlib.sha256(data or b'').hexdigest()}  release.json\n".encode()
@@ -705,8 +724,7 @@ def verify_publication(directory: Path, settings: dict) -> None:
 
 def verify_signatures(directory: Path, settings: dict, root: Path, selected: list) -> None:
     # Normalize Final Downloads For Product-Owned Signature Commands.
-    with tempfile.TemporaryDirectory(prefix="release-signatures-") as temporary:
-        assets = Path(temporary)
+    with temporary.directory() as assets:
         for item in selected:
             source = policy.inside(root, item.get("path", item["name"]))
             destination = policy.inside(assets, item["name"])

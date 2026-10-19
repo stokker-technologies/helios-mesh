@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/bootstrap.py; sha256:5941d374c3ba1247e941a37e194abcbf1bb1cf42f5a2e4eba26269cc2f107727
+# Rendered by stkr project update from templates/python/release/bootstrap.py; sha256:7979af97544599e83494cf4093905c018632a7347edc8be81fe3d885ca24ad63
 # ***
 #
 # Helios Mesh
@@ -114,6 +114,9 @@ def bootstrap_stkr(directory: Path, document: dict) -> None:
     if not isinstance(project, str) or not project:
         raise policy.ToolError("ci.stkr.project_id must identify the release project")
     filename = f"stkr-{pin['version']}-{target}" + (".exe" if system == "windows" else "")
+    filename = pin.get("filenames", {}).get(target, filename)
+    if Path(filename).name != filename or "\\" in filename or ":" in filename or filename in {".", ".."}:
+        raise policy.ToolError("ci.stkr.filenames must name exact plain release assets")
     url = f"{base}/projects/{urllib.parse.quote(project, safe='')}/packages/generic/stkr/v{pin['version']}/{filename}"
     destination = policy.inside(directory, f"target/ci-tools/{target}")
     destination.mkdir(parents=True, exist_ok=True)

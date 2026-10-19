@@ -63,9 +63,7 @@ fn help_version_loading() {
 
 #[test]
 fn invalid_environment_access() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../target/tmp");
-    fs::create_dir_all(&root).unwrap();
-    let directory = tempfile::tempdir_in(root).unwrap();
+    let directory = tempfile::tempdir().unwrap();
     fs::write(directory.path().join(".env"), "INVALID='unterminated").unwrap();
 
     let output = Command::new(executable()).current_dir(directory.path()).arg("status").output().unwrap();
