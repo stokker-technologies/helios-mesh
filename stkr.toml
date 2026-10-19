@@ -47,7 +47,21 @@ step_timeout_seconds = 1200
 bindings = ["helios-mesh-python"]
 
 [conventions.testing]
+
+[[conventions.testing.lanes]]
+category = "acceptance"
+language = "rust"
 hosts = ["target/build/{profile}/{target}/bin/helios-mesh{exe}"]
+
+[[conventions.testing.lanes]]
+category = "integration"
+language = "python"
+products = ["python"]
+
+[[conventions.testing.lanes]]
+category = "acceptance"
+language = "python"
+products = ["python"]
 
 # === Templates === #
 
