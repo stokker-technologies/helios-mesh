@@ -292,7 +292,10 @@ run = [
 
 [tasks."release:publish:dry"]
 description = "Dry-Run Every Publication"
-run = ["uv run --locked --project tools/python python -m helios_mesh_tools.test.publish --rust --python crates/system/helios-mesh-python"]
+run = [
+  "cargo publish --locked --workspace --dry-run",
+  "uv run --locked --project tools/python python -m helios_mesh_tools.test.publish --python crates/system/helios-mesh-python",
+]
 
 [tasks."release:publish:python"]
 description = "Publish Python Packages"
