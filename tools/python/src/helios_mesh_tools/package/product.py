@@ -21,7 +21,8 @@ from pathlib import Path
 # Third Party Imports
 
 # Local Imports
-from ..test import archive
+from .. import temporary
+from ..build import paths
 
 # Type Checking Imports
 
@@ -43,45 +44,24 @@ def main() -> None:
     parser.add_argument("--profile", choices=("dev", "release"), default="dev")
     parser.add_argument("--language", choices=("rust", "python"), required=True)
     options = parser.parse_args()
-    wheels = sorted((ROOT / "target/wheels").glob("*.whl"))
-    if not wheels:
-        raise archive.policy.TestError("missing native wheels; run the build task first")
-    required = [path.relative_to(ROOT).as_posix() for path in wheels]
-    if options.language == "rust":
-        required.append("target/fixtures/bin/helios-mesh{exe}")
-        if platform.system() == "Linux":
-            required.extend(f"target/fixtures/firmware/helios-mesh-node-{node}" for node in ("gateway", "rotator", "sidecar"))
-    archive.fixtures(ROOT, options.profile, required)
-
-    # Keep Each Native Wheel In Its Platform's Package Artifact.
-    destination = ROOT / "target/package/python"
-    destination.mkdir(parents=True, exist_ok=True)
-    expected = {wheel.name for wheel in wheels}
-    for old in destination.glob("*.whl"):
-        if old.name not in expected:
-            old.unlink(missing_ok=True)
-    for wheel in wheels:
-        temporary = destination / f".{wheel.name}.{os.getpid()}"
-        try:
-            shutil.copy2(wheel, temporary)
-            temporary.replace(destination / wheel.name)
-        finally:
-            temporary.unlink(missing_ok=True)
+    product = paths.output(ROOT, "build", options.profile)
+    destination = paths.output(ROOT, "package", options.profile) / options.language
     if options.language == "python":
+        if not any((product / "python").glob("*.whl")):
+            raise ValueError("missing native wheels; run the matching Product Build first")
+        paths.replace(ROOT, product / "python", destination)
         return
 
     executable = "helios-mesh.exe" if os.name == "nt" else "helios-mesh"
-    source = ROOT / "target/fixtures/bin" / executable
-    native = ROOT / "target/package/native"
-    native.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(source, native / executable)
-
-    if platform.system() == "Linux":
-        firmware = ROOT / "target/package/firmware"
-        firmware.mkdir(parents=True, exist_ok=True)
-        for node in ("gateway", "rotator", "sidecar"):
-            source = ROOT / "target/fixtures/firmware" / f"helios-mesh-node-{node}"
-            subprocess.run(["elf2uf2-rs", str(source), str(firmware / f"helios-mesh-node-{node}.uf2")], cwd=ROOT, check=True)
+    with temporary.directory() as staging:
+        shutil.copy2(product / "bin" / executable, staging / executable)
+        if platform.system() == "Linux":
+            firmware = staging / "firmware"
+            firmware.mkdir()
+            for node in ("gateway", "rotator", "sidecar"):
+                source = product / "firmware" / f"helios-mesh-node-{node}"
+                subprocess.run(["elf2uf2-rs", str(source), str(firmware / f"helios-mesh-node-{node}.uf2")], cwd=ROOT, check=True)
+        paths.replace(ROOT, staging, destination, origin=staging)
 
 
 # === Private Functions === #

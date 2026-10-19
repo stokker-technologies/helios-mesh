@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/run.py; sha256:58e768207208b2928c90b64c3255f01c7651e2b95fd1f53997888cfc1f971926
+# Rendered by stkr project update from templates/python/release/run.py; sha256:39a9e8adc1c29683dcf2eb99ea9e7923f97d11b49db50a78d0fdfadc8fb6f2e7
 # ***
 #
 # Helios Mesh
@@ -58,23 +58,14 @@ LOCKS = (
 def inputs(directory: Path) -> dict:
     """Identify Committed Source And Locked Native Resolved Inputs Across Promotions."""
 
-    def output(command: list[str]) -> str:
-        return subprocess.run(
-            command,
-            cwd=directory,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            check=True,
-        ).stdout
-
-    tree = output(["git", "rev-parse", "HEAD^{tree}"]).strip()
-    if output(["git", "status", "--porcelain", "--untracked-files=normal"]).strip():
+    tree = policy.execute(directory, ["git", "rev-parse", "HEAD^{tree}"], capture=True).strip()
+    if policy.execute(directory, ["git", "status", "--porcelain", "--untracked-files=normal"], capture=True).strip():
         tree = None
     graph = []
     overrides = []
     if (directory / "Cargo.toml").is_file():
-        metadata = json.loads(output(["cargo", "metadata", "--locked", "--offline", "--format-version", "1"]))
+        resolved = policy.execute(directory, ["cargo", "metadata", "--locked", "--format-version", "1"], capture=True)
+        metadata = json.loads(resolved)
         identities = {}
         for package in metadata["packages"]:
             source = package["source"]
@@ -174,7 +165,8 @@ def assets(directory: Path, settings: dict) -> list[dict]:
     for definition in settings.get("assets", []):
         if definition.get("target") != selected:
             continue
-        source = policy.inside(directory, definition["path"])
+        relative = definition["path"].format(profile="release", target=selected)
+        source = policy.inside(directory, relative)
         name = definition.get("name", source.name).format(product=settings["product"], version=value, target=selected)
         if (
             Path(name).name != name
@@ -192,7 +184,7 @@ def assets(directory: Path, settings: dict) -> list[dict]:
         result.append(
             {
                 "name": name,
-                "path": definition["path"],
+                "path": relative,
                 "target": selected,
                 "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
                 "size": source.stat().st_size,
@@ -209,40 +201,17 @@ def prepare(directory: Path, settings: dict) -> None:
         raise policy.ToolError("prepare requires a release/v<version> stabilization branch")
     if policy.execute(directory, ["git", "status", "--porcelain"], capture=True).strip():
         raise policy.ToolError("prepare requires clean committed candidate source")
-    tags = policy.execute(
-        directory,
-        ["git", "tag", "--merged", "HEAD", "--list", "v*", "--sort=-v:refname"],
-        capture=True,
-    ).splitlines()
-    if any(re.fullmatch("v" + STABLE, tag) is None for tag in tags):
-        raise policy.ToolError("prerelease tags require an explicit future policy")
-    current = policy.policy(directory, "version").get("value")
-    if not tags:
-        if not isinstance(current, str) or re.fullmatch(STABLE, current) is None:
-            raise policy.ToolError("initial release requires the current stable version")
-        planned = current
-    else:
-        planned = (
-            policy.execute(
-                directory,
-                [
-                    "git-cliff",
-                    "--bump",
-                    "patch",
-                    "--bumped-version",
-                    "--use-branch-tags",
-                ],
-                capture=True,
-            )
-            .strip()
-            .removeprefix("v")
+    planned = (
+        policy.execute(
+            directory,
+            ["git-cliff", "--bump", "patch", "--bumped-version", "--use-branch-tags"],
+            capture=True,
         )
+        .strip()
+        .removeprefix("v")
+    )
     if re.fullmatch(STABLE, planned) is None or branch != f"release/v{planned}":
         raise policy.ToolError(f"candidate branch must be release/v{planned}")
-    if tags:
-        major, minor, patch = map(int, tags[0][1:].split("."))
-        if planned != f"{major}.{minor}.{patch + 1}":
-            raise policy.ToolError("git-cliff did not produce the required patch increment")
     version.run(directory, "sync", value=planned)
     policy_path = directory / "stkr.toml"
     text = policy_path.read_text()

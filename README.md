@@ -132,6 +132,7 @@ the checkout:
 ```sh
 mise run check
 mise run build
+mise run build:tests
 mise run package --profile dev
 ```
 
@@ -147,7 +148,7 @@ Flashing has two supported entry paths, one board at a time:
   `RPI-RP2` BOOTSEL volume.
 - A blank board: hold BOOTSEL while plugging in USB.
 
-Flash an existing image with `mise run dev:cli -- flash target/package/firmware/helios-mesh-node-gateway.uf2` (or the Rotator/Sidecar image). This requires physical access to the selected board. The
+Flash an existing Linux package image with `mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-gateway.uf2` (or the Rotator/Sidecar image). This requires physical access to the selected board. The
 underlying `helios-mesh flash` command discovers the
 mounted BOOTSEL volume on all three operating systems and refuses to write
 unless exactly one volume is present. Alternatively,
@@ -169,10 +170,11 @@ mise run prepare
 mise run build
 mise run check
 mise run build
+mise run build:tests
 mise run package --profile dev
-mise run dev:cli -- flash target/package/firmware/helios-mesh-node-rotator.uf2
-mise run dev:cli -- flash target/package/firmware/helios-mesh-node-gateway.uf2
-mise run dev:cli -- flash target/package/firmware/helios-mesh-node-sidecar.uf2
+mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-rotator.uf2
+mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-gateway.uf2
+mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-sidecar.uf2
 
 mise run dev:cli -- describe
 mise run dev:cli -- status
@@ -274,7 +276,7 @@ The Python package is built as an ABI3 wheel for each native host. After a
 local build, install its wheel with:
 
 ```sh
-uv pip install target/wheels/*.whl
+uv pip install target/build/dev/linux-x86_64/python/*.whl
 ```
 
 The release workflow supports PyPI publication from protected stable tags.
@@ -365,10 +367,16 @@ Add `--bootloader` to enter the selected node's `RPI-RP2` USB bootloader.
 
 [mise](https://mise.jdx.dev) owns the toolchain and repository recipes.
 `mise run prepare` installs the locked tooling environment at the repository
-root `.venv`; `mise run build` builds host artifacts and wheels, and additionally
-cross-compiles RP2040 firmware on Linux. Packaging requires matching profile
-artifacts and preserves each platform's native wheel. Tests consume the build
-archive and installed wheel.
+root `.venv`; `mise run build` builds shipping host artifacts and wheels, and
+additionally cross-compiles RP2040 firmware on Linux. `mise run build:tests`
+then builds the shared test archive and fixtures. Packaging consumes only the
+matching Product Build and preserves each platform's native wheel. Tests consume
+the shared archive and install the matching wheel.
+
+Build outputs live under `target/build/<profile>/<target>/`; package outputs live
+under `target/package/<profile>/<target>/<language>/`. The examples above use
+`linux-x86_64`; Windows outputs use `windows-x86_64`. Profiles are `dev` and
+`release`. Reports live under `target/tests/<profile>/<target>/`.
 
 Development builds optimize dependencies while leaving workspace crates
 unoptimized. Release builds retain firmware symbols for hardware diagnostics.
@@ -376,10 +384,11 @@ unoptimized. Release builds retain firmware symbols for hardware diagnostics.
 | Command | Purpose |
 | --- | --- |
 | `mise run format` | Format maintained Rust, Python, and configuration |
-| `mise run check` | Check formatting, Rust features/firmware, lints, types, and workflow syntax |
-| `mise run build --profile dev` | Build host binaries, test archive, wheels, and Linux firmware |
+| `mise run check` | Check Hub conventions, formatting, Rust features/firmware, lints, types, and workflow syntax |
+| `mise run build --profile dev` | Build shipping host binaries, wheels, and Linux firmware |
+| `mise run build:tests --profile dev` | Build the shared test archive and fixtures |
 | `mise run test` | Run the declared unit, integration, acceptance, and binding lanes |
-| `mise run package --profile dev` | Assemble existing CLI, wheel, crate, and UF2 artifacts |
+| `mise run package --profile dev` | Assemble existing CLI, wheel, and UF2 artifacts |
 | `mise run ci` | Run the complete local candidate graph |
 | `mise run dev:cli -- --help` | Discover CLI commands |
 | `mise run dev:python` | Install the extension for interactive Python development |
@@ -393,8 +402,8 @@ and retain their declared parallel scheduling.
 GitHub is authoritative; GitLab receives a one-way mirror with CI disabled.
 The unified GitHub workflow requires native Linux and Windows host validation,
 with RP2040 cross-compilation on Linux. Pull requests run the complete candidate
-graph. Development pushes additionally package unsigned artifacts and run
-credential-free publication dry runs. Nightly coverage uses the trusted local
+graph, including unsigned development packages and credential-free publication
+dry runs, as do development pushes. Nightly coverage uses the trusted local
 runner. Physical RF and electrical behavior and macOS are not certified by CI.
 
 `dev` contains integrated development. Stabilize a release on

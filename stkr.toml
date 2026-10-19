@@ -47,7 +47,7 @@ step_timeout_seconds = 1200
 bindings = ["helios-mesh-python"]
 
 [conventions.testing]
-hosts = ["target/fixtures/bin/helios-mesh{exe}"]
+hosts = ["target/build/{profile}/{target}/bin/helios-mesh{exe}"]
 
 # === Templates === #
 
@@ -65,27 +65,27 @@ tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/native/helios-mesh"
+path = "target/package/{profile}/{target}/rust/helios-mesh"
 name = "{product}-{version}-{target}"
 
 [[release.assets]]
 target = "windows-x86_64"
-path = "target/package/native/helios-mesh.exe"
+path = "target/package/{profile}/{target}/rust/helios-mesh.exe"
 name = "{product}-{version}-{target}.exe"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/helios-mesh-node-gateway.uf2"
+path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-node-gateway.uf2"
 name = "{product}-{version}-{target}-gateway.uf2"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/helios-mesh-node-rotator.uf2"
+path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-node-rotator.uf2"
 name = "{product}-{version}-{target}-rotator.uf2"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/helios-mesh-node-sidecar.uf2"
+path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-node-sidecar.uf2"
 name = "{product}-{version}-{target}-sidecar.uf2"
 
 [version]
