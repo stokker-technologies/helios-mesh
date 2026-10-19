@@ -371,7 +371,9 @@ root `.venv`; `mise run build` builds shipping host artifacts and wheels, and
 additionally cross-compiles RP2040 firmware on Linux. `mise run build:tests`
 then builds the shared test archive and fixtures. Packaging consumes only the
 matching Product Build and preserves each platform's native wheel. Tests consume
-the shared archive and install the matching wheel.
+their language and layer prerequisites: Rust lanes use the shared archive,
+Python lanes install the matching wheel, and declared host consumers also
+require stamped fixtures.
 
 Build outputs live under `target/build/<profile>/<target>/`; package outputs live
 under `target/package/<profile>/<target>/<language>/`. The examples above use
