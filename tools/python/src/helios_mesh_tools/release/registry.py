@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/registry.py; sha256:6b7c6ef14222a6a2d16546ba472c0bb16221073dbdfd48d37a5f24cba72b1915
+# Rendered by stkr project update from templates/python/release/registry.py; sha256:179d7a26597c2fbd83be02e0fb0983babe150f4ebbded0c0ebda5a18a8328107
 # ***
 #
 # Helios Mesh
@@ -181,8 +181,16 @@ def request(
             url = f"{base}/projects/{urllib.parse.quote(str(project), safe='')}/{endpoint}"
     else:
         raise policy.ToolError("release.provider must be github or gitlab")
-    headers["Accept"] = "application/octet-stream" if binary else "application/json"
-    headers["Content-Type"] = "application/octet-stream" if binary else "application/json"
+    if provider == "github":
+        # Release assets return their bytes only for octet-stream; every other REST call, artifact archives
+        # included, accepts only the REST media type and answers 415 otherwise.
+        headers["Accept"] = (
+            "application/octet-stream" if binary and endpoint.startswith("releases/assets/") else "application/vnd.github+json"
+        )
+    else:
+        headers["Accept"] = "application/octet-stream" if binary else "application/json"
+    if data is not None:
+        headers["Content-Type"] = "application/octet-stream" if binary else "application/json"
     native = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.build_opener(ProviderRedirect()).open(native, timeout=60) as response:
