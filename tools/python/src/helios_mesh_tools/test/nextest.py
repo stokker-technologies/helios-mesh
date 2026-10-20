@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/nextest.py; sha256:49cff6d2d09d3a8f2baa67bc050a1533ec36b1c7a1957e0a4020ca02b44a6200
+# Rendered by stkr project update from templates/python/test/nextest.py; sha256:095c0bbd02af778917fa2f21907a42ac8347e5d269bdab06c719038177892944
 # ***
 #
 # Helios Mesh
@@ -106,19 +106,22 @@ def overrides(
     category: str | None,
     durations: dict[str, dict[str, dict]],
     coverage: bool,
-    binaries: Sequence[str],
+    binaries: dict[str, str],
 ) -> list[tuple[str, int]]:
     """Reviewed overrides first, then layer deadlines (all-layer runs) or measured stories."""
     categories = [category] if category else list(policy.CATEGORIES)
     factor = policy.COVERAGE_FACTOR if coverage else 1
     selected = [(entry.select, entry.timeout_seconds * factor) for name in categories for entry in rules.selected(name, "rust")]
     if category is None:
-        return selected + [(layer(name, binaries), rules.deadline(name, coverage)) for name in categories]
+        names = sorted(set(binaries.values()))
+        return selected + [(layer(name, names), rules.deadline(name, coverage)) for name in categories]
     if coverage:
         return selected
 
     lane = rules.deadline(category)
     for suite, stories in sorted(durations.items()):
+        if suite not in binaries:
+            continue
         for story, record in sorted(stories.items()):
             deadline = rules.story(category, record.get("seconds"))
             if deadline < lane and PLAIN.match(suite) and PLAIN.match(story):

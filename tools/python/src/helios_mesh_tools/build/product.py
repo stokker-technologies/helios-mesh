@@ -17,13 +17,12 @@ import os
 import platform
 import shutil
 import subprocess
-import sys
-import tomllib
 from pathlib import Path
 
 # Third Party Imports
 # Local Imports
-from ..test import archive
+from .. import temporary
+from . import paths
 
 # Type Checking Imports
 
@@ -43,23 +42,50 @@ TARGET = "thumbv6m-none-eabi"
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", choices=("dev", "release", "bench"), default="dev")
+    parser.add_argument("--profile", choices=("dev", "release"), default="dev")
     parser.add_argument("--hardware-unknown", action="store_true")
     options = parser.parse_args()
     profile = options.profile
     if options.hardware_unknown and profile != "dev":
         parser.error("hardware diagnostics use the development profile")
 
-    archive.build(ROOT, profile, ("--exclude", "helios-mesh-python", "--features", "helios-mesh/testing"))
-    stamp = json.loads((ROOT / archive.FIXTURES).read_text())
-    files = list(stamp["files"])
-    wheels = ROOT / "target/wheels"
-    wheels.mkdir(parents=True, exist_ok=True)
-    for old in wheels.glob("*.whl"):
-        old.unlink()
+    destination = paths.output(ROOT, "build", profile)
+    messages = destination / "product/compiler.json"
+    messages.parent.mkdir(parents=True, exist_ok=True)
     command = [
-        sys.executable,
-        "-m",
+        "cargo",
+        "build",
+        "--locked",
+        "--profile",
+        profile,
+        "--package",
+        "helios-mesh-cli",
+        "--message-format=json-render-diagnostics",
+    ]
+    with messages.open("w", encoding="utf-8") as output:
+        subprocess.run(command, cwd=ROOT, stdout=output, check=True)
+    executable = "helios-mesh.exe" if os.name == "nt" else "helios-mesh"
+    with temporary.directory() as staging:
+        binary = None
+        for line in messages.read_text(encoding="utf-8").splitlines():
+            event = json.loads(line)
+            if event.get("reason") == "compiler-artifact" and event.get("target", {}).get("name") == "helios-mesh":
+                binary = event.get("executable") or binary
+        if binary is None:
+            raise ValueError("Product Build did not produce the native CLI")
+        shutil.copy2(binary, staging / executable)
+        paths.replace(ROOT, staging, destination / "bin", origin=staging)
+    compiler = subprocess.check_output(["rustc", "-vV"], cwd=ROOT, text=True)
+    triple = os.environ.get("CARGO_BUILD_TARGET") or next(
+        line.removeprefix("host: ") for line in compiler.splitlines() if line.startswith("host: ")
+    )
+    (destination / "product/target.txt").write_text(triple + "\n", encoding="utf-8")
+
+    wheels = destination / "python"
+    if wheels.exists():
+        shutil.rmtree(wheels)
+    wheels.mkdir(parents=True)
+    command = [
         "maturin",
         "build",
         "--locked",
@@ -71,12 +97,8 @@ def main() -> None:
         str(wheels),
     ]
     subprocess.run(command, cwd=ROOT, check=True)
-    archive.install_wheels(ROOT)
-    version = tomllib.loads((ROOT / "Cargo.toml").read_text())["workspace"]["package"]["version"]
-    smoke = f"import helios_mesh; from importlib.metadata import version; assert version('helios-mesh') == {version!r}; assert helios_mesh.NodeType.SIDECAR.identifier == 'hnm.sidecar'"
-    subprocess.run([sys.executable, "-c", smoke], cwd=ROOT, check=True)
 
-    if platform.system() == "Linux" and profile != "bench":
+    if platform.system() == "Linux":
         command = [
             "cargo",
             "build",
@@ -93,21 +115,12 @@ def main() -> None:
         if options.hardware_unknown:
             command[-1] = "firmware,hardware-unknown"
         subprocess.run(command, cwd=ROOT, check=True)
-    directory = "debug" if profile == "dev" else profile
-    executable = "helios-mesh.exe" if os.name == "nt" else "helios-mesh"
-    host = f"target/fixtures/bin/{executable}"
-    if host not in files:
-        raise archive.policy.TestError("nextest did not produce the native CLI fixture")
-    files.extend(path.relative_to(ROOT).as_posix() for path in wheels.glob("*.whl"))
-    if platform.system() == "Linux" and profile != "bench":
-        firmware = ROOT / "target/fixtures/firmware"
-        firmware.mkdir(parents=True, exist_ok=True)
-        for node in ("gateway", "rotator", "sidecar"):
-            source = ROOT / "target" / TARGET / directory / f"helios-mesh-node-{node}"
-            destination = firmware / source.name
-            shutil.copy2(source, destination)
-            files.append(destination.relative_to(ROOT).as_posix())
-    archive.stamp(ROOT, profile, files)
+        directory = "debug" if profile == "dev" else profile
+        with temporary.directory() as staging:
+            for node in ("gateway", "rotator", "sidecar"):
+                source = ROOT / "target" / TARGET / directory / f"helios-mesh-node-{node}"
+                shutil.copy2(source, staging / source.name)
+            paths.replace(ROOT, staging, destination / "firmware", origin=staging)
 
 
 # === Private Functions === #

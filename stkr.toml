@@ -47,7 +47,21 @@ step_timeout_seconds = 1200
 bindings = ["helios-mesh-python"]
 
 [conventions.testing]
-hosts = ["target/fixtures/bin/helios-mesh{exe}"]
+
+[[conventions.testing.lanes]]
+category = "acceptance"
+language = "rust"
+hosts = ["target/build/{profile}/{target}/bin/helios-mesh{exe}"]
+
+[[conventions.testing.lanes]]
+category = "integration"
+language = "python"
+products = ["python"]
+
+[[conventions.testing.lanes]]
+category = "acceptance"
+language = "python"
+products = ["python"]
 
 # === Templates === #
 
@@ -65,17 +79,17 @@ tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/native/helios-mesh"
+path = "target/package/{profile}/{target}/rust/helios-mesh"
 name = "{product}-{version}-{target}"
 
 [[release.assets]]
 target = "windows-x86_64"
-path = "target/package/native/helios-mesh.exe"
+path = "target/package/{profile}/{target}/rust/helios-mesh.exe"
 name = "{product}-{version}-{target}.exe"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/firmware/helios-mesh-firmware-feather-rp2040.zip"
+path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-firmware-feather-rp2040.zip"
 name = "{product}-{version}-{target}-firmware-feather-rp2040.zip"
 
 [version]

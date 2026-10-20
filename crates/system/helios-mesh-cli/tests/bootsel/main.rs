@@ -16,7 +16,7 @@
 /* === Imports === */
 
 // Standard Library Imports
-use std::{fs, path::PathBuf};
+use std::fs;
 
 // Third Party Imports
 
@@ -42,9 +42,7 @@ use helios_mesh_cli::bootsel::{bootsel_volumes_in, write_uf2};
 /* === Private Functions === */
 
 fn workspace() -> tempfile::TempDir {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../target/tmp");
-    fs::create_dir_all(&root).unwrap();
-    tempfile::tempdir_in(root).unwrap()
+    tempfile::tempdir().unwrap()
 }
 
 /* === Tests === */

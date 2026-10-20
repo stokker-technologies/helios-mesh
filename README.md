@@ -192,17 +192,17 @@ mise run build --profile dev
 mise run package --profile dev
 ```
 
-`target/package/firmware/helios-mesh-firmware-feather-rp2040.zip` contains all
+`target/package/dev/linux-x86_64/rust/firmware/helios-mesh-firmware-feather-rp2040.zip` contains all
 three UF2 images, their matching ELF files in `debug/`, flashing instructions,
 and the Apache-2.0 license.
-Individual UF2s also remain in `target/package/firmware/` for local use. Packaging
+Individual UF2s also remain in `target/package/dev/linux-x86_64/rust/firmware/` for local use. Packaging
 consumes the existing build; it does not compile firmware again.
 
 For a blank board, hold BOOTSEL while connecting USB. Copy the role's UF2 to
 its mounted `RPI-RP2` volume, or use the CLI with exactly one such volume present:
 
 ```sh
-mise run dev:cli -- flash target/package/firmware/helios-mesh-node-sidecar.uf2
+mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-sidecar.uf2
 ```
 
 Flash one physical board at a time. An already-running, compatible node can
@@ -244,13 +244,18 @@ After [Quick Start](#quick-start), choose a repository task:
 
 | Command | Purpose |
 | --- | --- |
-| `mise run check` | Check formatting, features, firmware compilation, lints, types, and workflow syntax |
-| `mise run build --profile dev` | Build host binaries, test archive, wheels, and Linux firmware |
+| `mise run check` | Check Hub conventions, formatting, features, firmware compilation, lints, types, and workflow syntax |
+| `mise run build --profile dev` | Build shipping host binaries, wheels, and Linux firmware |
+| `mise run build:tests --profile dev` | Build the shared test archive and fixtures |
 | `mise run test` | Run unit, integration, acceptance, and binding verification lanes |
-| `mise run package --profile dev` | Assemble existing CLI, wheel, crate, and firmware artifacts |
+| `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
 | `mise run ci` | Run the complete local candidate graph |
 
-Tests consume the matching build archive and installed native wheel. The root
+Build outputs live under `target/build/<profile>/<target>/`, package outputs under
+`target/package/<profile>/<target>/<language>/`, and reports under
+`target/tests/<profile>/<target>/`; the examples use `linux-x86_64`, and Windows
+uses `windows-x86_64`. Tests consume the matching test archive from
+`mise run build:tests` and the installed native wheel. The root
 `.venv` is shared by local tasks, which run sequentially; native CI jobs use
 isolated workspaces. Required public CI uses repository-native tooling.
 

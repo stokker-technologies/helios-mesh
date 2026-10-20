@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/report.py; sha256:d3453f6a5e2906485c4da140ce0b8f7efbd999085ba75cd877ee970223c83bfb
+# Rendered by stkr project update from templates/python/test/report.py; sha256:c71c66e4a91769c6f203c085add88a820bf71c9324b25f5b2d4b8419de6753f1
 # ***
 #
 # Helios Mesh
@@ -27,6 +27,7 @@ from xml.etree import ElementTree
 
 # Local Imports
 from . import policy
+from ..build import paths
 
 # Type Checking Imports
 
@@ -92,6 +93,19 @@ class Bench:
 
 
 # === Public Functions === #
+
+
+def location(directory: Path, profile: str, key: str) -> Path:
+    parts = key.split("-")
+    if parts[-1] not in policy.LANGUAGES:
+        raise policy.TestError("unknown report language")
+    if parts[0] == "coverage" and len(parts) in (2, 3):
+        if len(parts) == 3 and parts[1] not in policy.CATEGORIES:
+            raise policy.TestError("unknown coverage layer")
+        return paths.output(directory, "tests", profile).joinpath("coverage", parts[-1], *parts[1:-1])
+    if len(parts) != 2 or parts[0] not in policy.CATEGORIES:
+        raise policy.TestError("unknown report layer")
+    return paths.output(directory, "tests", profile) / key
 
 
 def cases(text: str, category: str, language: str, package: str) -> list[Case]:
