@@ -3,6 +3,7 @@
 [package]
 name = "helios-mesh-board-feather-rp2040"
 version.workspace = true
+description = "Board support for the Adafruit Feather RP2040 RFM95 used by Helios Mesh firmware."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

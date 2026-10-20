@@ -89,18 +89,8 @@ name = "{product}-{version}-{target}.exe"
 
 [[release.assets]]
 target = "linux-x86_64"
-path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-node-gateway.uf2"
-name = "{product}-{version}-{target}-gateway.uf2"
-
-[[release.assets]]
-target = "linux-x86_64"
-path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-node-rotator.uf2"
-name = "{product}-{version}-{target}-rotator.uf2"
-
-[[release.assets]]
-target = "linux-x86_64"
-path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-node-sidecar.uf2"
-name = "{product}-{version}-{target}-sidecar.uf2"
+path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-firmware-feather-rp2040.zip"
+name = "{product}-{version}-{target}-firmware-feather-rp2040.zip"
 
 [version]
 value = "0.1.0"

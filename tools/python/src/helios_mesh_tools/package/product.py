@@ -16,7 +16,9 @@ import os
 import platform
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 # Third Party Imports
 
@@ -58,9 +60,39 @@ def main() -> None:
         if platform.system() == "Linux":
             firmware = staging / "firmware"
             firmware.mkdir()
+            entries: dict[str, bytes] = {}
+            entries["LICENSE-APACHE"] = (ROOT / "LICENSE-APACHE").read_bytes()
             for node in ("gateway", "rotator", "sidecar"):
                 source = product / "firmware" / f"helios-mesh-node-{node}"
-                subprocess.run(["elf2uf2-rs", str(source), str(firmware / f"helios-mesh-node-{node}.uf2")], cwd=ROOT, check=True)
+                image = firmware / f"helios-mesh-node-{node}.uf2"
+                subprocess.run(["elf2uf2-rs", str(source), str(image)], cwd=ROOT, check=True)
+                entries[image.name] = image.read_bytes()
+                entries[f"debug/{source.name}.elf"] = source.read_bytes()
+            entries["README.txt"] = (
+                "Helios Mesh Firmware - Feather RP2040\n\n"
+                f"Version: {tomllib.loads((ROOT / 'Cargo.toml').read_text())['workspace']['package']['version']}\n"
+                "Wire Protocol: 14\n"
+                f"Build Profile: {options.profile}\n"
+                "Standard Hardware: Feather RP2040 with RFM95 radio and the declared FeatherWing.\n"
+                "Gateway: TFT FeatherWing V2. Rotator: Motor FeatherWing. Sidecar: OLED FeatherWing.\n\n"
+                "Development hardware-unknown builds are USB-only diagnostics using the same filenames.\n"
+                "Confirm your build options before selecting an image.\n\n"
+                "Extract this archive, then select the UF2 matching the board's attached hardware.\n"
+                "Hold BOOTSEL while connecting USB, then copy that UF2 to the RPI-RP2 volume.\n"
+                "Flash one board at a time. The debug directory holds the matching ELF images.\n"
+                "The firmware runs on RP2040; the Linux label identifies its build host.\n\n"
+                "Use host software and firmware from the same revision and wire protocol version.\n"
+                "Attach suitable antennas before powering radio firmware. Read the board safety guide:\n"
+                "https://github.com/stokker-technologies/helios-mesh/blob/dev/"
+                "crates/firmware/helios-mesh-board-feather-rp2040/README.md\n"
+            ).encode()
+            with ZipFile(firmware / "helios-mesh-firmware-feather-rp2040.zip", "w") as packaged:
+                for name, content in sorted(entries.items()):
+                    info = ZipInfo(name)
+                    info.create_system = 3
+                    info.external_attr = 0o100644 << 16
+                    info.compress_type = ZIP_DEFLATED
+                    packaged.writestr(info, content)
         paths.replace(ROOT, staging, destination, origin=staging)
 
 
