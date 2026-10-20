@@ -61,7 +61,7 @@ def main() -> None:
             firmware = staging / "firmware"
             firmware.mkdir()
             entries: dict[str, bytes] = {}
-            entries["LICENSE-APACHE"] = (ROOT / "LICENSE-APACHE").read_bytes()
+            entries["LICENSE"] = (ROOT / "LICENSE").read_bytes()
             for node in ("gateway", "rotator", "sidecar"):
                 source = product / "firmware" / f"helios-mesh-node-{node}"
                 image = firmware / f"helios-mesh-node-{node}.uf2"

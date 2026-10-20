@@ -7,7 +7,7 @@ name = "helios-mesh"
 description = "Typed Python bindings for Helios Mesh."
 requires-python = ">=3.10"
 license = "Apache-2.0"
-license-files = ["LICENSE-APACHE"]
+license-files = ["LICENSE"]
 dynamic = ["version"]
 dependencies = []
 

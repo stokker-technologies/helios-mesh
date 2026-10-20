@@ -279,4 +279,4 @@ firmware flashing require an explicit decision and suitable physical setup.
 
 ## License
 
-Helios Mesh is licensed under [Apache-2.0](LICENSE-APACHE).
+Helios Mesh is licensed under [Apache-2.0](LICENSE).
