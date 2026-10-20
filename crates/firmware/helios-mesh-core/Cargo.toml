@@ -3,6 +3,7 @@
 [package]
 name = "helios-mesh-core"
 version.workspace = true
+description = "Node chassis shared by every Helios Mesh firmware image."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -3,6 +3,7 @@
 [package]
 name = "helios-mesh"
 version.workspace = true
+description = "Rust facade for discovering and controlling Helios Mesh LoRa nodes from hosts and firmware."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
