@@ -76,6 +76,28 @@ tag = "v0.1.0"
 notes = "CHANGELOG.md"
 targets = ["linux-x86_64", "windows-x86_64"]
 tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python", "acceptance-python"]
+# The prepare runner starts with an empty Cargo home, so the workspace lock refresh reads the index online.
+lock_commands = [
+  [
+    "cargo",
+    "update",
+    "--workspace",
+  ],
+  [
+    "uv",
+    "lock",
+    "--offline",
+    "--project",
+    "tools/python",
+  ],
+  [
+    "uv",
+    "lock",
+    "--offline",
+    "--project",
+    "crates/system/helios-mesh-python",
+  ],
+]
 
 [[release.assets]]
 target = "linux-x86_64"
