@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-10-20
+
+
+### Changed
+
+- Evaluate tag gates despite skipped profile twins
+
+
+### Fixed
+
+- Keep release mechanics out of the changelog
+
 ## [0.1.0] - 2026-10-20
 
 
