@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-10-20
+
+
+### Changed
+
+- Adopt the decoupled graph, caches and rehearsal
+
 ## [0.1.2] - 2026-10-20
 
 
