@@ -68,7 +68,7 @@ products = ["python"]
 # === Release === #
 
 [release]
-tag = "v0.1.1"
+tag = "v0.1.2"
 provider = "github"
 repository = "stokker-technologies/helios-mesh"
 product = "helios-mesh"
@@ -116,7 +116,7 @@ path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-firmware-fea
 name = "{product}-{version}-{target}-firmware-feather-rp2040.zip"
 
 [version]
-value = "0.1.1"
+value = "0.1.2"
 files = ["Cargo.toml"]
 
 # === Documentation === #
