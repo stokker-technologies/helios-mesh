@@ -281,18 +281,24 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.releas
 
 [tasks."release:publish"]
 description = "Publish A Tagged Release"
-run = [{ task = "release:publish:rust" }, { task = "release:publish:python" }, { task = "release:publish:assets" }]
+run = [
+  { task = "release:publish:assets" },
+  { task = "release:publish:rust" },
+  { task = "release:publish:python" },
+  { task = "release:publish:finalize" },
+]
 
 [tasks."release:publish:assets"]
-description = "Publish Signed Release Assets"
-run = [
-  "uv run --locked --project tools/python python -m helios_mesh_tools.release.run publish",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.release.run finalize",
-]
+description = "Draft The Release With Its Signed Assets"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run publish"
 
 [tasks."release:publish:dry"]
 description = "Dry-Run Every Publication"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.publish --rust --python crates/system/helios-mesh-python"
+
+[tasks."release:publish:finalize"]
+description = "Publish The Drafted Release"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run finalize"
 
 [tasks."release:publish:python"]
 description = "Publish Python Packages"
@@ -300,7 +306,7 @@ run = "uv publish --trusted-publishing always target/package/release/*/python/*"
 
 [tasks."release:publish:rust"]
 description = "Publish Rust Crates"
-run = "cargo publish --workspace"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run crates"
 
 [tasks."release:stage"]
 description = "Stage Native Release Assets"
