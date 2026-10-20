@@ -20,6 +20,8 @@ trim = true
 conventional_commits = true
 filter_unconventional = true
 commit_parsers = [
+  # Release mechanics (prepare commits and release-branch merges) are not product changes.
+  { message = '^chore\(release\)', skip = true },
   { message = "^feat", group = "added" },
   { message = "^fix", group = "fixed" },
   { message = "^docs", group = "changed" },
