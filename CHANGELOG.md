@@ -13,6 +13,7 @@ All notable changes to this project will be documented in this file.
 - Clarify the Helios Mesh introduction
 - Refresh Hub Conventions And CI Checks (#2)
 - Adopt the Hub release wiring and OpenSpec conventions (#4)
+- Bootstrap crates.io publication with the registry token (#7)
 
 
 ### Fixed
