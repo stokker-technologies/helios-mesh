@@ -21,6 +21,7 @@ from pathlib import Path
 
 # Local Imports
 from . import archive
+from ..build import paths
 
 # Type Checking Imports
 
@@ -43,12 +44,11 @@ def main() -> None:
     parser.add_argument("--profile", choices=("dev", "release"), default="dev")
     options = parser.parse_args()
 
-    wheels = sorted((ROOT / "target/wheels").glob("*.whl"))
+    output = paths.output(ROOT, "build", options.profile)
+    wheels = sorted((output / "python").glob("*.whl"))
     if not wheels:
         raise archive.policy.TestError("missing native wheels; run the build task first")
-    required = [path.relative_to(ROOT).as_posix() for path in wheels]
-    archive.fixtures(ROOT, options.profile, required)
-    archive.install_wheels(ROOT)
+    archive.install_wheels(ROOT, options.profile)
 
     subprocess.run([sys.executable, "-m", "mypy.stubtest", "--ignore-disjoint-bases", "helios_mesh"], cwd=ROOT, check=True)
 

@@ -3,6 +3,7 @@
 [package]
 name = "helios-mesh-protocol"
 version.workspace = true
+description = "Versioned wire protocol shared by Helios Mesh firmware and host software."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

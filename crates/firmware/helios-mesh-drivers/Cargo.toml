@@ -3,6 +3,7 @@
 [package]
 name = "helios-mesh-drivers"
 version.workspace = true
+description = "Driver objects behind embedded-hal traits for Helios Mesh firmware."
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
