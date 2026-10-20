@@ -185,7 +185,7 @@ Linux Build produces matching-profile ELF fixtures under
 recompiling. The archive contains:
 
 ```text
-LICENSE-APACHE
+LICENSE
 README.txt
 helios-mesh-node-gateway.uf2
 helios-mesh-node-rotator.uf2
