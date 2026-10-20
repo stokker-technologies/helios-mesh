@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/run.py; sha256:5637ee9ef7a83d7198393b62e509ca35d8d8489451bf16fb068019cb1b1fd8e7
+# Rendered by stkr project update from templates/python/test/run.py; sha256:828a6884fb3cfa89cc7909548054d3103b5b5297cdb86d9ceb638607338800ce
 # ***
 #
 # Helios Mesh
@@ -315,7 +315,7 @@ def _preflight(
     hosts = rules.hosts_for(category, language)
     if profile == "bench":
         hosts = rules.hosts if category in (None, "system") else ()
-    if language == "rust" or hosts:
+    if (language == "rust" and (category != "unit" or profile == "bench")) or hosts:
         output = paths.output(directory, "build", profile).relative_to(directory)
         roots = [(output / part).as_posix() for part in ("tests", "fixtures")] if language == "rust" else []
         archive.fixtures(directory, profile, hosts, roots=roots)
