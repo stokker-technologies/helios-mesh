@@ -1,4 +1,11 @@
-## ADDED Requirements
+# Authoring Specification
+
+## Purpose
+
+Define feature-aware Rust imports and a worktree-local Python tooling workspace
+without changing existing public paths or distribution ownership.
+
+## Requirements
 
 ### Requirement: Feature-Aware Prelude
 
