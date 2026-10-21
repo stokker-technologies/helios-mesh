@@ -11,4 +11,4 @@
 
 ## 3. Validation
 
-- [ ] 3.1 Full Linux lanes and the Windows VM graph green on the combined tree; README claims verified.
+- [ ] 3.1 Full Linux lanes and the Windows VM graph green on the combined tree; README claims verified. Linux checks, both development builds, all four declared lanes and generated bindings pass. Windows cannot reach execution: Hub `crates/stkr/src/ci/simulate/mod.rs:246` skips the `validated` job without publishing empty declared outputs, and `expression.rs:287` rejects `needs.validated.outputs.validated`. Hub must supply empty outputs for skipped jobs (preserving errors for unsupported contexts), cover the rendered PR gate, and reinstall the simulator before this task can pass.
