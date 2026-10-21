@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/registry.py; sha256:c94aae58e695872484239c39250c44ad5d3a5a1471c61162feca69a5a2addb99
+# Rendered by stkr project update from templates/python/release/registry.py; sha256:d0d5acf192098aa8d8386d7ba4461913ce11d9f1d637a76355e809d54c552def
 # ***
 #
 # Helios Mesh
@@ -157,9 +157,10 @@ def crate_published(name: str, version: str | None = None) -> bool:
 
 def python(directory: Path, settings: dict, *, rehearse: bool) -> None:
     """Upload The Release Python Packages: PyPI For GitHub Products, The Project Registry On GitLab."""
-    selected = sorted(str(path.relative_to(directory)) for path in directory.glob("target/package/release/*/python/*") if path.is_file())
+    profile = policy.profile()
+    selected = sorted(str(path.relative_to(directory)) for path in directory.glob(f"target/package/{profile}/*/python/*") if path.is_file())
     if not selected:
-        raise policy.ToolError("release:publish:python has no release Python packages")
+        raise policy.ToolError(f"release:publish:python has no {profile} Python packages")
     if rehearse:
         # Build and check only: uv validates every file without credentials or upload.
         policy.execute(directory, ["uv", "publish", "--dry-run", "--trusted-publishing", "never", *selected])

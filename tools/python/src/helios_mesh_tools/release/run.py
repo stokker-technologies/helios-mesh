@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/run.py; sha256:2fe92252cfc2359cc730ce96dcded4317a66b0ee74b22b9554dda320c012cdc7
+# Rendered by stkr project update from templates/python/release/run.py; sha256:d52e71a6e4422b63803ab0a8ee95b80e31eb9c272235791ff306a5913941e858
 # ***
 #
 # Helios Mesh
@@ -90,8 +90,9 @@ def native_target(settings: dict) -> str:
     return selected
 
 
-def assets(directory: Path, settings: dict, selected: str, tag: str, profile: str = "release") -> list[dict]:
+def assets(directory: Path, settings: dict, selected: str, tag: str, profile: str | None = None) -> list[dict]:
     """The Declared Release Downloads Of One Target, From Its Existing Package Of The Profile."""
+    profile = policy.profile() if profile is None else profile
     result = []
     declared = settings.get("assets", []) + packages.packaged(directory, profile, selected)
     for definition in declared:
@@ -110,8 +111,9 @@ def assets(directory: Path, settings: dict, selected: str, tag: str, profile: st
     return result
 
 
-def stage(directory: Path, settings: dict, tag: str, targets: list[str], profile: str = "release") -> list[dict]:
+def stage(directory: Path, settings: dict, tag: str, targets: list[str], profile: str | None = None) -> list[dict]:
     """Copy Each Target's Release Downloads Into Its target/release-assets/<target>/ And Their SHA256SUMS Into any/."""
+    profile = policy.profile() if profile is None else profile
     root = _root(directory)
     # Only the staged targets and the shared checksums are replaced; another target's staging stays untouched.
     for owned in [*targets, SHARED]:
@@ -245,13 +247,11 @@ def review(directory: Path, settings: dict) -> None:
 
 
 def dry(directory: Path, settings: dict) -> None:
-    """Stage The Development Packages Like A Release And Run The Native Downloads From Them, Offline."""
+    """Stage The Active Profile's Packages Like A Release And Run The Native Downloads From Them, Offline."""
     tag = release_tag(directory)
     version.run(directory, "check")
     # Release reviews package the release profile; every other run packages dev.
-    profile = os.environ.get("RELEASE_PROFILE", "dev") or "dev"
-    if profile not in ("dev", "release"):
-        raise policy.ToolError("RELEASE_PROFILE must be dev or release")
+    profile = policy.profile("dev")
     root = _root(directory)
     targets = list(settings.get("targets", []))
     present = [selected for selected in targets if (directory / "target/package" / profile / selected).is_dir()]
@@ -293,8 +293,7 @@ def publish(directory: Path, settings: dict) -> None:
     if not targets:
         raise policy.ToolError("release.targets must declare the required OS/architecture targets")
     root = _root(directory)
-    # GitLab rehearses the development packages of its release review; every other publication stages release ones.
-    profile = (os.environ.get("RELEASE_PROFILE") or "release") if rehearse else "release"
+    profile = policy.profile()
     files = stage(directory, settings, tag, targets, profile=profile)
     name = registry.rehearsal_name(sha) if rehearse else tag
     state = {"sha": sha, "tag": tag, "name": name, "files": {}}
