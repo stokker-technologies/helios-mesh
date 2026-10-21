@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/publish.py; sha256:ae156621368499faa2b6fb6377953429d4a92f5c2271e9d0024702b635838ae2
+# Rendered by stkr project update from templates/python/test/publish.py; sha256:390a08c48a0f8228a925346567b284dd67db5f1d831ca66981b000e0c4daae69
 # ***
 #
 # Helios Mesh
@@ -19,10 +19,9 @@ import subprocess
 from pathlib import Path
 
 # Third Party Imports
-
 # Local Imports
-from . import policy
 from .. import temporary
+from . import policy
 
 # Type Checking Imports
 

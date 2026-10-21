@@ -1,0 +1,133 @@
+# Rendered by stkr project update from templates/ci/.github/workflows/nightly.yml; sha256:212f0c3988e54e91f0a63fc0467a06441768f9ab4ef75c2df13f9c09546677ef
+name: Nightly
+"on":
+  schedule:
+  - cron: 0 2 * * *
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: nightly-${{ github.run_id }}
+  cancel-in-progress: false
+jobs:
+  build_linux:
+    name: Build
+    uses: ./.github/workflows/managed-build-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"build_product\":30,\"build_tests\":30}"
+      platform: linux
+    secrets: inherit
+  build_windows:
+    name: Build
+    uses: ./.github/workflows/managed-build-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"build_product\":30,\"build_tests\":30}"
+      platform: windows
+    secrets: inherit
+  check:
+    name: Check
+    uses: ./.github/workflows/managed-check.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"check_python\":10,\"source\":10}"
+    secrets: inherit
+  check_linux:
+    name: Check
+    uses: ./.github/workflows/managed-check-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"check_rust\":30}"
+      platform: linux
+    secrets: inherit
+  check_windows:
+    name: Check
+    uses: ./.github/workflows/managed-check-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"check_rust\":30}"
+      platform: windows
+    secrets: inherit
+  package:
+    name: Package
+    uses: ./.github/workflows/managed-package.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"package_python\":30}"
+    secrets: inherit
+    needs:
+    - build_linux
+    - build_windows
+    - check
+    - check_linux
+    - check_windows
+    - validate
+    - validate_linux
+    - validate_windows
+  package_linux:
+    name: Package
+    uses: ./.github/workflows/managed-package-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"package_rust\":30}"
+      platform: linux
+    secrets: inherit
+    needs:
+    - build_linux
+    - check
+    - check_linux
+    - validate
+    - validate_linux
+  package_windows:
+    name: Package
+    uses: ./.github/workflows/managed-package-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"package_rust\":30}"
+      platform: windows
+    secrets: inherit
+    needs:
+    - build_windows
+    - check
+    - check_windows
+    - validate
+    - validate_windows
+  validate:
+    name: Validate
+    uses: ./.github/workflows/managed-validate.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"validate_generated\":10,\"validate_test_acceptance_python\":10,\"validate_test_integration_python\":10}"
+    secrets: inherit
+    needs:
+    - build_linux
+  validate_nightly:
+    name: Validate
+    uses: ./.github/workflows/managed-validate-nightly.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"validate_coverage\":180}"
+    secrets: inherit
+    needs:
+    - build_linux
+  validate_linux:
+    name: Validate
+    uses: ./.github/workflows/managed-validate-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"validate_test_acceptance_rust\":10,\"validate_test_integration_rust\":10,\"validate_test_unit_rust\":10}"
+      platform: linux
+    secrets: inherit
+    needs:
+    - build_linux
+  validate_windows:
+    name: Validate
+    uses: ./.github/workflows/managed-validate-native.yml
+    with:
+      runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
+      budgets: "{\"validate_test_acceptance_rust\":10,\"validate_test_integration_rust\":10,\"validate_test_unit_rust\":10}"
+      platform: windows
+    secrets: inherit
+    needs:
+    - build_windows

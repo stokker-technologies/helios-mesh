@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/docs/__init__.py; sha256:1949bf496bc7823411093c7dd2c97d94e4178f2716cc201828472f1bddc1a291
+# Rendered by stkr project update from templates/python/stkr/__init__.py; sha256:915cecffa9596f0889dbbcc07837c1340a65bef04715cdccc70b1146c5db62d7
 # ***
 #
 # Helios Mesh
@@ -7,7 +7,7 @@
 #
 # ***
 
-"""Hub-Rendered Documentation Tooling: Site, Artifacts And Registry"""
+"""Run The Hub CLI When This Machine Has It"""
 
 # === Imports === #
 

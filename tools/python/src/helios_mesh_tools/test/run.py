@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/run.py; sha256:828a6884fb3cfa89cc7909548054d3103b5b5297cdb86d9ceb638607338800ce
+# Rendered by stkr project update from templates/python/test/run.py; sha256:4224b7198e76a212aec52e19a9908841d1a84f1ec3845232bc10271c045529e9
 # ***
 #
 # Helios Mesh
@@ -26,11 +26,10 @@ from contextlib import contextmanager
 from pathlib import Path
 
 # Third Party Imports
-
 # Local Imports
-from . import archive, nextest, policy, pytest, report, vitest
 from .. import temporary
 from ..build import paths
+from . import archive, nextest, policy, pytest, report, vitest
 
 # Type Checking Imports
 
@@ -61,7 +60,7 @@ def test(
     """Run One Lane And Retain Its Native Report; Nonzero When Any Story Failed."""
     rules = policy.load(directory)
     key = f"{category}-{language}"
-    _preflight(directory, rules, category, language, profile)
+    _preflight(directory, category, language, profile)
     if language == "python":
         archive.install_wheels(directory, profile)
     recorded = report.load(report.location(directory, profile, key) / "durations.json")
@@ -120,7 +119,7 @@ def coverage(
     """Instrumented lane over one layer, or every layer when no category is given."""
     rules = policy.load(directory)
     key = f"coverage-{category}-{language}" if category else f"coverage-{language}"
-    _preflight(directory, rules, category, language, profile)
+    _preflight(directory, category, language, profile)
     with _scratch(directory, key, profile) as scratch:
         categories = [category] if category else list(policy.CATEGORIES)
         deadline = max(rules.deadline(name, coverage=True) for name in categories)
@@ -188,7 +187,7 @@ def bench(
     """Measure one benchmark layer and compare it with the `dev` baseline."""
     rules = policy.load(directory)
     measure = category in ("integration", "system")
-    _preflight(directory, rules, category, language, "bench")
+    _preflight(directory, category, language, "bench")
     identity = {
         "platform": [
             sys.platform,
@@ -306,23 +305,14 @@ def main(arguments: Sequence[str] | None = None) -> int:
 
 def _preflight(
     directory: Path,
-    rules: policy.Policy,
     category: str | None,
     language: str,
     profile: str,
 ) -> None:
-    """Refuse a stale fixture stamp or absent host artifacts before any test runs."""
-    hosts = rules.hosts_for(category, language)
-    if profile == "bench":
-        hosts = rules.hosts if category in (None, "system") else ()
-    if (language == "rust" and (category != "unit" or profile == "bench")) or hosts:
+    """Refuse a stale fixture stamp before any Rust test runs."""
+    if language == "rust" and (category != "unit" or profile == "bench"):
         output = paths.output(directory, "build", profile).relative_to(directory)
-        roots = [(output / part).as_posix() for part in ("tests", "fixtures")] if language == "rust" else []
-        archive.fixtures(directory, profile, hosts, roots=roots)
-    if profile != "bench" and "python" in rules.products_for(category, language):
-        wheels = [paths.output(directory, "build", profile, target) / "python" for target in (paths.target(), "any")]
-        if not any(list(root.glob("*.whl")) for root in wheels):
-            raise policy.TestError("missing declared Python Product wheels")
+        archive.fixtures(directory, profile, roots=[(output / part).as_posix() for part in ("tests", "fixtures")])
 
 
 @contextmanager
@@ -455,15 +445,15 @@ def _bench_rust(
         message = json.loads(line) if line.startswith("{") else {}
         target = message.get("target", {})
         name = target.get("name", "")
-        if message.get("reason") == "compiler-artifact" and "bench" in target.get("kind", []) and message.get("executable"):
-            if name == category or name.startswith(category + "-"):
-                targets.append(
-                    (
-                        name,
-                        str(directory / message["executable"]),
-                        (directory / message["manifest_path"]).parent,
-                    )
+        artifact = message.get("reason") == "compiler-artifact" and "bench" in target.get("kind", []) and message.get("executable")
+        if artifact and (name == category or name.startswith(category + "-")):
+            targets.append(
+                (
+                    name,
+                    str(directory / message["executable"]),
+                    (directory / message["manifest_path"]).parent,
                 )
+            )
 
     home = directory / CRITERION
     baselines = _criterion_baselines(home, identity)
