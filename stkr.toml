@@ -101,7 +101,7 @@ path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-firmware-fea
 name = "{product}-{version}-{target}-firmware-feather-rp2040.zip"
 
 [version]
-value = "0.1.3"
+value = "0.1.4"
 files = ["Cargo.toml"]
 
 # === Documentation === #
