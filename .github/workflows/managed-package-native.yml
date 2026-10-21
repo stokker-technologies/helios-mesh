@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:f4bc11056389ea3db7819f7d79483426e7f0a781b09f8cedbe67ce0c0134d79f
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:70aa925153d102052d9ed43d1a2e2da7e9c03be8bb20ed4b1674b34223783dd0
 name: Package
 "on":
   workflow_call:
@@ -29,7 +29,9 @@ jobs:
     env:
       RUSTC_WRAPPER: sccache
       SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      SCCACHE_GHA_RW_MODE: >-
+        ${{ github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && 'READ_WRITE' || 'READ_ONLY' }}
       SCCACHE_GHA_VERSION: ${{ inputs.platform }}
       MISE_ENABLE_TOOLS: >-
         node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
@@ -44,15 +46,23 @@ jobs:
         path: |-
           .cache/cargo/registry/
           .cache/cargo/git/
-        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-${{ runner.arch }}-cargo-
+        key: >-
+          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
+          github.head_ref || github.ref_name }}
+        restore-keys: |-
+          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
+          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
     - name: Cache / Uv
       id: uv
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
-        restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
+        key: >-
+          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
+          github.head_ref || github.ref_name }}
+        restore-keys: |-
+          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
+          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
@@ -63,11 +73,17 @@ jobs:
       if: runner.os != 'Windows'
       shell: bash
       run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+    - name: Cache / Tools
       id: tools
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: ${{ env.MISE_DATA_DIR }}
-        key: ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}
+        key: >-
+          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
+          github.head_ref || github.ref_name }}
+        restore-keys: |-
+          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
+          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
     - run: >-
         if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
         --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
@@ -124,14 +140,16 @@ jobs:
         include-hidden-files: true
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       if: >-
-        (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') &&
+        success() && (github.event_name == 'pull_request' || (github.event_name ==
+        'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'))) &&
         steps.uv.outputs.cache-hit != 'true'
       with:
         path: .cache/uv/
         key: ${{ steps.uv.outputs.cache-primary-key }}
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       if: >-
-        (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') &&
+        success() && (github.event_name == 'pull_request' || (github.event_name ==
+        'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'))) &&
         steps.tools.outputs.cache-hit != 'true'
       with:
         path: ${{ env.MISE_DATA_DIR }}

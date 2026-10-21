@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/registry.py; sha256:d0d5acf192098aa8d8386d7ba4461913ce11d9f1d637a76355e809d54c552def
+# Rendered by stkr project update from templates/python/release/registry.py; sha256:46dc01d7006ff05795c080899160201027362de78c93a45842197b8970dbdd3d
 # ***
 #
 # Helios Mesh
@@ -226,10 +226,11 @@ def request(
             # Tagging and everything a rehearsal creates and deletes again need the release token.
             rehearsal = method == "POST" and endpoint == "releases" and json.loads(data or b"{}").get("tag_name", "").startswith(REHEARSAL)
             cleanup = method == "DELETE" and (
-                endpoint.startswith(("releases/" + REHEARSAL, "repository/tags/" + REHEARSAL))
+                endpoint.startswith(("releases/" + REHEARSAL, "repository/tags/" + REHEARSAL, "repository/branches/release%2Fv"))
                 or re.fullmatch(r"packages/[0-9]+", endpoint) is not None
             )
-            tagging = method == "POST" and endpoint == "repository/tags" or rehearsal or cleanup
+            merging = method == "PUT" and re.fullmatch(r"merge_requests/[0-9]+/merge", endpoint) is not None
+            tagging = method == "POST" and endpoint in {"repository/tags", "repository/commits"} or rehearsal or cleanup or merging
             if (
                 method != "GET"
                 and not tagging
@@ -265,7 +266,10 @@ def request(
     except urllib.error.HTTPError as error:
         if error.code == 404 and method == "GET":
             return None
-        raise policy.ToolError(f"release provider {method} failed: HTTP {error.code}") from error
+        message = error.read().decode("utf-8", errors="replace")
+        if token:
+            message = message.replace(token, "***")
+        raise policy.ToolError(f"release provider {method} failed: HTTP {error.code}: {message}") from error
 
 
 def document(settings: dict, endpoint: str, method: str = "GET", body: dict | None = None) -> Any:
@@ -286,6 +290,66 @@ def pages(settings: dict, endpoint: str, key: str | None = None) -> list:
         if len(values) < 100:
             return result
         page += 1
+
+
+def arm_auto_merge(settings: dict, branch: str, title: str, *, sleep=time.sleep) -> None:
+    """Arm Native Squash Auto-Merge After Opening The Release Review, Waiting Briefly For GitLab's Pipeline."""
+    if settings["provider"] == "github":
+        repository = settings.get("repository", os.environ.get("GITHUB_REPOSITORY", ""))
+        head = urllib.parse.quote(repository.split("/")[0] + ":" + branch, safe="")
+        reviews = pages(settings, f"pulls?state=open&base=dev&head={head}")
+    else:
+        source = urllib.parse.quote(branch, safe="")
+        reviews = pages(settings, f"merge_requests?state=opened&target_branch=dev&source_branch={source}")
+    if len(reviews) != 1:
+        raise policy.ToolError(f"expected one open release review for {branch}; auto-merge was not armed")
+    review = reviews[0]
+    if settings["provider"] == "github":
+        payload = {
+            "query": (
+                "mutation($input: EnablePullRequestAutoMergeInput!) { enablePullRequestAutoMerge(input: $input) "
+                "{ pullRequest { autoMergeRequest { mergeMethod commitHeadline } } } }"
+            ),
+            "variables": {"input": {"pullRequestId": review["node_id"], "mergeMethod": "SQUASH", "commitHeadline": title}},
+        }
+        response = json.loads(request(settings, "graphql", "POST", json.dumps(payload).encode(), graphql=True) or b"{}")
+        if response.get("errors"):
+            raise policy.ToolError("enablePullRequestAutoMerge failed: " + json.dumps(response["errors"]))
+        result = ((response.get("data") or {}).get("enablePullRequestAutoMerge") or {}).get("pullRequest") or {}
+        if result.get("autoMergeRequest") != {"mergeMethod": "SQUASH", "commitHeadline": title}:
+            raise policy.ToolError(f"GitHub did not confirm squash auto-merge for {branch}")
+        return
+
+    endpoint = f"merge_requests/{review['iid']}"
+    for attempt in range(12):
+        current = document(settings, endpoint) or {}
+        if current.get("head_pipeline"):
+            try:
+                result = (
+                    document(
+                        settings,
+                        endpoint + "/merge",
+                        "PUT",
+                        {
+                            "merge_when_pipeline_succeeds": True,
+                            "squash": True,
+                            "squash_commit_message": title,
+                            "should_remove_source_branch": True,
+                        },
+                    )
+                    or {}
+                )
+            except policy.ToolError as error:
+                # GitLab can still be computing mergeability after creating the head pipeline.
+                if not isinstance(error.__cause__, urllib.error.HTTPError) or error.__cause__.code != 405:
+                    raise
+            else:
+                if result.get("merge_when_pipeline_succeeds") or result.get("state") == "merged":
+                    return
+                raise policy.ToolError(f"GitLab did not confirm auto-merge for {branch}")
+        if attempt < 11:
+            sleep(5)
+    raise policy.ToolError(f"GitLab release review for {branch} was not ready for auto-merge after 12 attempts; the review remains open")
 
 
 def verify_duplicate_policy(settings: dict) -> None:

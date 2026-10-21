@@ -64,7 +64,6 @@ heapless = { workspace = true }
 # Concurrency
 
 # Async
-embassy-sync = { workspace = true }
 embassy-time = { workspace = true }
 
 # Networking

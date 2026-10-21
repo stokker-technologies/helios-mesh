@@ -18,6 +18,7 @@ uv = "0.13.0"
 # Rust Toolchain
 "aqua:nextest-rs/nextest/cargo-nextest" = "0.9.148"
 "aqua:taiki-e/cargo-llvm-cov" = "0.9.1"
+"github:bnjbvr/cargo-machete" = "0.9.2"
 sccache = "0.18.0"
 
 # Formatting And Linting
@@ -121,6 +122,7 @@ description = "Check Rust"
 run = [
   { task = "format:rust --check" },
   { task = "lint:rust" },
+  "cargo-machete --skip-target-dir",
   "cargo check --locked --workspace --exclude helios-mesh-nodes --all-targets --all-features",
   "cargo check --locked --workspace --exclude helios-mesh-nodes --all-targets --no-default-features",
   "cargo check --locked --package helios-mesh --all-targets --all-features",

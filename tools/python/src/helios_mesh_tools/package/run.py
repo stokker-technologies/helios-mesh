@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/package/run.py; sha256:6665787eac859b2a7a268ef43d471648368b4e4b4ca05238268c8fe6e5109958
+# Rendered by stkr project update from templates/python/package/run.py; sha256:77b59320bf1033f4324beb99f0dd396d6a0ae4fdd46c1f7da512f5ee0e3c4f7b
 # ***
 #
 # Helios Mesh
@@ -14,6 +14,7 @@
 # Standard Library Imports
 import argparse
 import hashlib
+import os
 import re
 import shutil
 import subprocess
@@ -182,7 +183,9 @@ def installed(directory: Path, settings: dict, root: Path, target: str) -> None:
             with temporary.directory() as install:
                 if installer == "mise":
                     tool = f"{provider}:{repository}[asset_pattern={item['output']},bin={item['binary']}]@{version}"
-                    subprocess.run(["mise", "install-into", tool, str(install)], cwd=install, check=True)
+                    environment = os.environ.copy()
+                    environment.pop("MISE_ENABLE_TOOLS", None)
+                    subprocess.run(["mise", "install-into", tool, str(install)], cwd=install, env=environment, check=True)
                     matches = list(install.rglob(item["binary"]))
                 else:
                     command = [

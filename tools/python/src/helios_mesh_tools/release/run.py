@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/run.py; sha256:d52e71a6e4422b63803ab0a8ee95b80e31eb9c272235791ff306a5913941e858
+# Rendered by stkr project update from templates/python/release/run.py; sha256:917b7ad0d576c6a10d42911595f7d9c5d477b7f755a2764643908367ed4a0c1c
 # ***
 #
 # Helios Mesh
@@ -12,6 +12,7 @@
 # === Imports === #
 
 # Standard Library Imports
+import base64
 import hashlib
 import json
 import os
@@ -202,22 +203,14 @@ def review(directory: Path, settings: dict) -> None:
     tag = release_tag(directory)
     version.run(directory, "check")
     branch = registry.RELEASE_BRANCH + tag
-    remote = _push_remote(settings, token)
-    if _run(directory, ["git", "ls-remote", "--heads", remote, "refs/heads/" + branch], token).strip():
+    if settings["provider"] == "github":
+        os.environ["GH_TOKEN"] = token
+    endpoint = "git/ref/heads/" if settings["provider"] == "github" else "repository/branches/"
+    if registry.document(settings, endpoint + _quote(branch)):
         raise policy.ToolError(f"{branch} already exists; merge or close its review before preparing again")
     title = f"chore(release): prepare {tag}"
-    identity = [
-        "-c",
-        "user.name=" + os.environ.get("GITHUB_ACTOR", os.environ.get("GITLAB_USER_NAME", "Release")),
-        "-c",
-        "user.email=" + os.environ.get("GITLAB_USER_EMAIL", "release@users.noreply.github.com"),
-    ]
-    policy.execute(directory, ["git", "switch", "--create", branch])
     policy.execute(directory, ["git", "add", "--all"])
-    # A first release at the established version may change no carrier; its review still records the release.
-    policy.execute(directory, ["git", *identity, "commit", "--quiet", "--allow-empty", "--message", title])
-    # A push and a review made with the release token start the review's CI; the native job token's would not.
-    _run(directory, ["git", "push", remote, f"HEAD:refs/heads/{branch}"], token)
+    _commit_review(directory, settings, branch, title)
     body = policy.inside(directory, "target/release-notes.md")
     body.parent.mkdir(parents=True, exist_ok=True)
     body.write_text(notes(directory, tag, tagged=False), encoding="utf-8")
@@ -244,6 +237,7 @@ def review(directory: Path, settings: dict) -> None:
         environment = {**os.environ, "GITLAB_TOKEN": token}
     if subprocess.run(command, cwd=directory, env=environment, check=False).returncode:
         raise policy.ToolError(f"opening the release review failed; {branch} is pushed and can be reviewed by hand")
+    registry.arm_auto_merge(settings, branch, title)
 
 
 def dry(directory: Path, settings: dict) -> None:
@@ -545,6 +539,66 @@ def run(directory: Path, verb: str) -> None:
 
 
 # === Private Functions === #
+
+
+def _commit_review(directory: Path, settings: dict, branch: str, title: str) -> None:
+    """Create The Preparation Commit Through The Provider API, Signed By The Provider."""
+    head = _revision(directory)
+    changed = policy.execute(directory, ["git", "diff", "--cached", "--name-status", "--no-renames", "-z", "HEAD"], capture=True)
+    entries = changed.rstrip("\0").split("\0") if changed else []
+    additions, deletions, actions = [], [], []
+    for status, name in zip(entries[::2], entries[1::2], strict=True):
+        if status == "D":
+            deletions.append({"path": name})
+            actions.append({"action": "delete", "file_path": name})
+            continue
+        path = policy.inside(directory, name)
+        if status not in {"A", "M"} or path.is_symlink() or not path.is_file():
+            raise policy.ToolError(f"unsupported release file change: {status} {name}")
+        content = base64.b64encode(path.read_bytes()).decode("ascii")
+        additions.append({"path": name, "contents": content})
+        actions.append({"action": "create" if status == "A" else "update", "file_path": name, "content": content, "encoding": "base64"})
+    if settings["provider"] == "github":
+        registry.document(settings, "git/refs", "POST", {"ref": "refs/heads/" + branch, "sha": head})
+        payload = {
+            "query": "mutation($input: CreateCommitOnBranchInput!) { createCommitOnBranch(input: $input) { commit { oid signature { isValid } } } }",
+            "variables": {
+                "input": {
+                    "branch": {
+                        "repositoryNameWithOwner": settings.get("repository", os.environ.get("GITHUB_REPOSITORY")),
+                        "branchName": branch,
+                    },
+                    "expectedHeadOid": head,
+                    "message": {"headline": title},
+                    "fileChanges": {"additions": additions, "deletions": deletions},
+                }
+            },
+        }
+        response = json.loads(registry.request(settings, "graphql", "POST", json.dumps(payload).encode(), graphql=True) or b"{}")
+        if response.get("errors"):
+            raise policy.ToolError("createCommitOnBranch failed: " + json.dumps(response["errors"]))
+        commit = response.get("data", {}).get("createCommitOnBranch", {}).get("commit", {})
+        verified = (commit.get("signature") or {}).get("isValid")
+    else:
+        # start_sha creates the new branch and its commit together; never force an existing branch.
+        commit = registry.document(
+            settings,
+            "repository/commits",
+            "POST",
+            {
+                "branch": branch,
+                "start_sha": head,
+                "commit_message": title,
+                "actions": actions,
+                "allow_empty": True,
+            },
+        )
+        signature = registry.document(settings, "repository/commits/" + _quote(commit["id"]) + "/signature")
+        verified = signature and signature.get("verification_status") in {"verified", "verified_system"}
+        if not verified:
+            registry.request(settings, "repository/branches/" + _quote(branch), "DELETE")
+    if not verified:
+        raise policy.ToolError("preparation API commit is not verified; GitLab requires web-based commit signing enabled")
 
 
 def _bytes(root: Path, item: dict) -> bytes:

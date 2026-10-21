@@ -23,3 +23,11 @@ The Python distribution remains excluded and independently locked. No wire or ve
 Source editing precedes Linux check, Product/Tests builds and declared test lanes, followed by
 the Windows PR simulation with stkr 0.1.6. Publication waits for both platforms to pass;
 the authorized destination is one draft PR into `dev`.
+
+The Windows simulator requires stkr 0.1.6's single-label runner schema;
+existing Windows and nightly label values are preserved as strings.
+Its generated release archive runner uses the required `release-tests` profile,
+inheriting release optimization/debug settings with LTO and incremental compilation
+disabled and 16 codegen units. Development build and test commands are unchanged.
+The upgraded Rust gate includes pinned cargo-machete. Its finding removes the unused
+direct embassy-sync dependency from the nodes crate; shared consumers retain theirs.

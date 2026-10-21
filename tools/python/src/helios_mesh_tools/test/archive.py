@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/archive.py; sha256:c5f55bc7dbd0c7f680af7eae3b380c8cddb783fb004b88a250c711a09ca70174
+# Rendered by stkr project update from templates/python/test/archive.py; sha256:efd64102916d2b7c481c498f0f7409081ef13a5ea84b79e2a992af73b020e2de
 # ***
 #
 # Helios Mesh
@@ -71,7 +71,7 @@ def build(directory: Path, profile: str, extra: Sequence[str] = ()) -> Path:
         "--workspace",
         "--tests",
         "--cargo-profile",
-        profile,
+        "release-tests" if profile == "release" else profile,
         "--cargo-message-format",
         "json",
         "--archive-file",

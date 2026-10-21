@@ -30,8 +30,8 @@ linux = [
 ]
 
 [ci.runners]
-windows = ["windows-latest"]
-nightly = ["stokker-local-linux-x64"]
+windows = "windows-latest"
+nightly = "stokker-local-linux-x64"
 
 # === Agents === #
 
