@@ -109,12 +109,11 @@ run = [{ task = "format:python --check" }, { task = "lint:python" }]
 
 [tasks."check:repository"]
 description = "Check Repository Configuration And Conventions"
-run = [{ task = "format:toml --check" }, "actionlint", """
-{% if env.CI | default(value='') != 'true' %}
-stkr project check
-{% endif %}
-actionlint
-"""]
+run = [
+  { task = "format:toml --check" },
+  "uv run --locked --project tools/python python -m helios_mesh_tools.stkr --optional project check",
+  "actionlint",
+]
 
 [tasks."check:rust"]
 description = "Check Rust"
@@ -191,13 +190,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.r
 description = "Test Integration Layer"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-depends = ["test:integration:rust --profile {{usage.profile}}", "test:integration:python --profile {{usage.profile}}"]
-
-[tasks."test:integration:python"]
-description = "Test Integration Python"
-env.CARGO_INCREMENTAL = "0"
-usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language python --project crates/system/helios-mesh-python"
+depends = ["test:integration:rust --profile {{usage.profile}}"]
 
 [tasks."test:integration:rust"]
 description = "Test Integration Rust"
@@ -260,20 +253,8 @@ run = ["uv run --locked --project tools/python python -m helios_mesh_tools.packa
 
 [tasks.ci]
 description = "Run The CI Flow Locally"
-usage = 'flag "--profile <profile>" default="dev"'
-run = [
-  { task = "format:toml --check" },
-  { task = "format:rust --check" },
-  { task = "format:python --check" },
-  { task = "build --profile {{usage.profile}}" },
-  { task = "build:tests --profile {{usage.profile}}" },
-  { task = "check" },
-  { task = "lint" },
-  { task = "test --profile {{usage.profile}}" },
-  { task = "package --profile {{usage.profile}}" },
-  { task = "release:publish:dry" },
-  { task = "release:rehearse:candidate" },
-]
+usage = 'flag "--event <event>" default="pr"'
+run = "stkr ci simulate --event {{usage.event}}"
 
 [tasks."ci:nightly"]
 description = "Run The Nightly Coverage And Bench Flow"
@@ -281,22 +262,13 @@ run = [{ task = "build" }, { task = "build:tests" }, { task = "test:coverage" }]
 
 # === Release === #
 
-[tasks.release]
-description = "Prepare And Validate A Release"
-run = [{ task = "release:prepare" }, { task = "ci" }]
-
 [tasks."release:prepare"]
 description = "Prepare The Release Branch"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run prepare"
 
 [tasks."release:publish"]
 description = "Publish A Tagged Release"
-run = [
-  { task = "release:publish:assets" },
-  { task = "release:publish:rust" },
-  { task = "release:publish:python" },
-  { task = "release:publish:finalize" },
-]
+run = [{ task = "release:publish:assets" }, { task = "release:publish:python" }, { task = "release:publish:finalize" }]
 
 [tasks."release:publish:assets"]
 description = "Draft The Release With Its Signed Assets"
@@ -304,7 +276,12 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.releas
 
 [tasks."release:publish:dry"]
 description = "Dry-Run Every Publication"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.publish --rust --python crates/system/helios-mesh-python"
+run = [
+  "uv run --locked --project tools/python python -m helios_mesh_tools.release.version check",
+  "uv run --locked --project tools/python python -m helios_mesh_tools.release.run dry",
+  "uv run --locked --project tools/python python -m helios_mesh_tools.release.run crates-dry",
+  "uv run --locked --project tools/python python -m helios_mesh_tools.test.publish --python crates/system/helios-mesh-python",
+]
 
 [tasks."release:publish:finalize"]
 description = "Publish The Drafted Release"
@@ -312,7 +289,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.releas
 
 [tasks."release:publish:python"]
 description = "Publish Python Packages"
-run = "uv publish --trusted-publishing always target/package/release/*/python/*"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run python"
 
 [tasks."release:publish:rust"]
 description = "Publish Rust Crates"
@@ -322,19 +299,23 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.releas
 description = "Rehearse The Publication Chain On A Disposable Draft"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run rehearse"
 
-[tasks."release:rehearse:candidate"]
-description = "Rehearse Candidate Publication"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run rehearse-candidate"
-
 [tasks."release:stage"]
 description = "Stage Native Release Assets"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run stage"
+
+[tasks."release:tag"]
+description = "Tag The Rehearsed Release And Fast-Forward Main"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run tag"
+
+[tasks."release:verify"]
+description = "Verify Published Release Assets"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run verify"
 
 # === Housekeeping === #
 
 [tasks.housekeeping]
 description = "Clean Owned Build Outputs And State"
-run = "stkr project housekeeping"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.stkr project housekeeping"
 
 [tasks."housekeeping:stats"]
 description = "Count Source Lines"

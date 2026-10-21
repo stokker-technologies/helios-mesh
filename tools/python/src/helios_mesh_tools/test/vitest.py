@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/vitest.py; sha256:7d801fa895e33fd71875a286978e75add1e952684bbc4f8a21ba221523f4f36e
+# Rendered by stkr project update from templates/python/test/vitest.py; sha256:79744c0cdb643dda8459335e3100e36eb82074de2a85af7bf56f009efa55b973
 # ***
 #
 # Helios Mesh
@@ -23,7 +23,6 @@ from collections.abc import Sequence
 from pathlib import Path
 
 # Third Party Imports
-
 # Local Imports
 from . import policy
 

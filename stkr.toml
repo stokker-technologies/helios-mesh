@@ -46,36 +46,17 @@ step_timeout_seconds = 1200
 # The PyO3 Adapter Emits An rlib For Rust Checks And Has No Independent Rust Error API.
 bindings = ["helios-mesh-python"]
 
-[conventions.testing]
-
-[[conventions.testing.lanes]]
-category = "acceptance"
-language = "rust"
-hosts = ["target/build/{profile}/{target}/bin/helios-mesh{exe}"]
-
-[[conventions.testing.lanes]]
-category = "integration"
-language = "python"
-products = ["python"]
-
-[[conventions.testing.lanes]]
-category = "acceptance"
-language = "python"
-products = ["python"]
-
 # === Templates === #
 
 # === Release === #
 
 [release]
-tag = "v0.1.3"
 provider = "github"
 repository = "stokker-technologies/helios-mesh"
 product = "helios-mesh"
 package = "helios-mesh-cli"
-notes = "CHANGELOG.md"
 targets = ["linux-x86_64", "windows-x86_64"]
-tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python", "acceptance-python"]
+tests = ["unit-rust", "integration-rust", "acceptance-rust", "acceptance-python"]
 crates_bootstrap_secret = "CARGO_REGISTRY_TOKEN"
 # The prepare runner starts with an empty Cargo home, so the workspace lock refresh reads the index online.
 lock_commands = [

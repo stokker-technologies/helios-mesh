@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/report.py; sha256:c71c66e4a91769c6f203c085add88a820bf71c9324b25f5b2d4b8419de6753f1
+# Rendered by stkr project update from templates/python/test/report.py; sha256:031e9188371562d648f259db6d7fc0386bebd4f047c738164820cdc1b7619168
 # ***
 #
 # Helios Mesh
@@ -24,10 +24,9 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 # Third Party Imports
-
 # Local Imports
-from . import policy
 from ..build import paths
+from . import policy
 
 # Type Checking Imports
 

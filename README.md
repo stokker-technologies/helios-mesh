@@ -140,7 +140,7 @@ asyncio.run(main())
 
 The [host contracts](crates/system/helios-mesh/README.md#python-host-api)
 describe result handling and gateway connections. The
-[Python integration stories](crates/system/helios-mesh-python/tests/integration/)
+[Python acceptance stories](crates/system/helios-mesh-python/tests/acceptance/)
 exercise native exports, discovery errors, and asynchronous behavior without
 physical devices. This pulse example requires the matching board and firmware.
 
@@ -249,7 +249,7 @@ After [Quick Start](#quick-start), choose a repository task:
 | `mise run build:tests --profile dev` | Build the shared test archive and fixtures |
 | `mise run test` | Run unit, integration, acceptance, and binding verification lanes |
 | `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
-| `mise run ci` | Run the complete local candidate graph |
+| `mise run ci --event pr` | Simulate the rendered pull-request graph locally |
 
 Build outputs live under `target/build/<profile>/<target>/`, package outputs under
 `target/package/<profile>/<target>/<language>/`, and reports under
@@ -259,12 +259,14 @@ uses `windows-x86_64`. Tests consume the matching test archive from
 `.venv` is shared by local tasks, which run sequentially; native CI jobs use
 isolated workspaces. Required public CI uses repository-native tooling.
 
-Task changes target `dev`. Stabilize a release on `release/v<version>`, merge
-into `main` preserving ancestry, then incorporate that history into `dev`.
-Separately authorized protected stable tags select release-profile packaging
-and publication. They attach the firmware ZIP alongside host downloads,
-`SHA256SUMS`, and `release.json`; the Linux label on the firmware download names
-its build host, while its contents target RP2040.
+Task changes target `dev`. The manual `Release / Prepare` job opens
+`release/v<version>` into `dev`. After the required checks and release rehearsal,
+the review squash-merges into `dev`; `Release / Tag` creates the stable tag,
+publishes crates, and fast-forwards `main` to that commit. The tag workflow
+publishes and verifies the native packages. Release notes come from Conventional
+Commits at tag time. Downloads include the firmware ZIP, host binaries, wheels,
+and `SHA256SUMS`; the Linux label on the firmware download names its build host,
+while its contents target RP2040.
 
 ## Contributing
 
@@ -273,8 +275,9 @@ Bug reports, focused fixes, hardware observations, and examples are welcome.
 to discuss a change. Include the revision, host platform, node role, attached
 hardware, and relevant diagnostics when reporting a device problem.
 
-Run `mise run check` and the complete local `mise run ci` graph before ready
-review. Linux and Windows native checks are both required. Hardware tests and
+Run `mise run check` before ready review; provider CI runs the complete graph.
+Use `mise run ci --event pr` for local simulation of the committed candidate.
+Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
 
 ## License
