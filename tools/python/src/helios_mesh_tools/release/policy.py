@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/policy.py; sha256:7f2c0f62f3d9dd152792674e586bfeda60c36bcbbe14d6112e93d609f5a7a4fc
+# Rendered by stkr project update from templates/python/release/policy.py; sha256:741bc1eefdc03d97a3a2f142c2ddb3be0f2c20d8e7a1f409fb1e32eff4ff2d8d
 # ***
 #
 # Helios Mesh
@@ -14,6 +14,7 @@
 # Standard Library Imports
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tomllib
@@ -60,6 +61,14 @@ def policy(directory: Path, name: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ToolError(f"[{name}] must be a table")
     return value
+
+
+def profile(default: str = "release") -> str:
+    """The Package Profile Passed By The Rendered Job Or A Local Invocation."""
+    selected = os.environ.get("RELEASE_PROFILE") or default
+    if selected not in ("dev", "release"):
+        raise ToolError("RELEASE_PROFILE must be dev or release")
+    return selected
 
 
 def inside(directory: Path, relative: str) -> Path:

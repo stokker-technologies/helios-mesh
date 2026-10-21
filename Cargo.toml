@@ -127,6 +127,12 @@ debug = 2
 lto = true
 codegen-units = 1
 
+[profile.release-tests]
+inherits = "release"
+lto = false
+codegen-units = 16
+incremental = false
+
 [profile.dev]
 debug = 1
 

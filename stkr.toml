@@ -30,8 +30,8 @@ linux = [
 ]
 
 [ci.runners]
-windows = ["windows-latest"]
-nightly = ["stokker-local-linux-x64"]
+windows = "windows-latest"
+nightly = "stokker-local-linux-x64"
 
 # === Agents === #
 
@@ -45,6 +45,10 @@ step_timeout_seconds = 1200
 [conventions.rust]
 # The PyO3 Adapter Emits An rlib For Rust Checks And Has No Independent Rust Error API.
 bindings = ["helios-mesh-python"]
+
+[barrels]
+# The Public Prelude Intentionally Collects Imports For Library Consumers.
+exclude = ["crates/system/helios-mesh/src/prelude.rs"]
 
 # === Templates === #
 

@@ -20,8 +20,8 @@
 // Third Party Imports
 
 // Local Imports
+use helios_mesh::prelude::*;
 use helios_mesh::{
-    Error,
     motion::{Description, Kind},
     testing,
 };

@@ -13,6 +13,8 @@
 
 /* === Modules === */
 
+pub mod prelude;
+
 #[cfg(all(feature = "host", any(test, feature = "testing")))]
 pub mod testing;
 
