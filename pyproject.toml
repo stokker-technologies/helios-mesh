@@ -1,0 +1,11 @@
+# ***
+#
+# Helios Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+[tool.uv.workspace]
+members = ["tools/python"]
+exclude = ["crates/system/helios-mesh-python"]

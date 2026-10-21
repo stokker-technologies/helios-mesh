@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-validate.yml; sha256:d174631a49fab5434941deb9e3af1bcbb74ed6a5267d0cc8498b25daa809705a
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-validate.yml; sha256:777f8927ce1c9421bc568ec34202660417b98cc945e378c3d289ba09464ed483
 name: Validate
 "on":
   workflow_call:
@@ -29,7 +29,7 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: linux
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -48,7 +48,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
@@ -123,7 +123,7 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: linux
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -142,7 +142,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'

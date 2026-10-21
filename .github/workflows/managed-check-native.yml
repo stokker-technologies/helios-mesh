@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-native.yml; sha256:e1760bd82fa4d438697852417d30946c035788bd1bdf2fc64848a4fafe51b745
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-native.yml; sha256:815f903eb67b08f1d0fad2abb5993d54c30de2ca9c8b4924f3ffdafbcc0ac155
 name: Check
 "on":
   workflow_call:
@@ -44,7 +44,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
@@ -109,4 +109,4 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: ${{ inputs.platform }}
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,sccache,aqua:rhysd/actionlint,taplo,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo,cargo:elf2uf2-rs

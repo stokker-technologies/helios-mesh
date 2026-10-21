@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-validate-nightly.yml; sha256:d9df6ae2146407978d1ea8ffedabf3dd9c9714049fe49611d2cee5670d6a3b3f
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-validate-nightly.yml; sha256:70b6f89176805421c4df39ffeda292eaa4b65c7d350ed9b923b8ad4ba4d5f18a
 name: Validate
 "on":
   workflow_call:
@@ -29,7 +29,7 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: linux
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -48,7 +48,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'

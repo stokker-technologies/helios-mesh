@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:4b1b9f07a328fd705995e3086d2a22ffc6f68688f7cc8ddf4635f1ddac34968f
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:f4bc11056389ea3db7819f7d79483426e7f0a781b09f8cedbe67ce0c0134d79f
 name: Package
 "on":
   workflow_call:
@@ -32,7 +32,7 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: ${{ inputs.platform }}
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -51,7 +51,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'

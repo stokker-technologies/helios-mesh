@@ -6,7 +6,7 @@
 
 ## 2. Python Workspace
 
-- [ ] 2.1 Move the uv workspace to the repository root (`tools/python` member, distribution excluded), relocate the lock, remove the `UV_PROJECT_ENVIRONMENT` redirect from `mise.toml`, and prove `mise run check` and the Python lanes from a sibling worktree.
+- [x] 2.1 Move the uv workspace to the repository root (`tools/python` member, distribution excluded), relocate the lock, remove the `UV_PROJECT_ENVIRONMENT` redirect from `mise.toml`, and update rendered cache keys. Proof: `mise run check` and the 41-test Python acceptance lane pass from this sibling worktree using its root environment; declared Python unit/integration lanes are absent.
 - [x] 2.2 Reconcile the rendered `pytest.py` with the Hub template through `stkr project update` (hand edits are drift); raise the Python line length to 140 where the Hub allows it. Proof: restored HEAD then regenerated without conflicts; the template uses `sys.executable`, strips the redirect, and `check:python` passes at width 140.
 
 ## 3. Validation

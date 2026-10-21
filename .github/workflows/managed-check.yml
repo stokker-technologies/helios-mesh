@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check.yml; sha256:b1cb7b9833ee79c76e6d54d90c5a4a47cec6b38496a322dad960ce65e0eb15fc
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-check.yml; sha256:198ff63ee5cef2644b5d0df55815502c055910b2bcd3c1e4eacd683112e51eeb
 name: Check
 "on":
   workflow_call:
@@ -41,7 +41,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
@@ -95,7 +95,7 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: linux
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,sccache,aqua:rhysd/actionlint,taplo,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo,git-cliff,cargo:elf2uf2-rs
   check_python:
     name: Python
     runs-on: ${{ fromJSON(inputs.runners).linux.small }}
@@ -118,7 +118,7 @@ jobs:
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
         path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
+        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}
         restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
@@ -172,4 +172,4 @@ jobs:
       SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
       SCCACHE_GHA_VERSION: linux
       MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs

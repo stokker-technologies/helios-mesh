@@ -8,6 +8,7 @@ lockfile = true
 
 [tools]
 # Languages And Runtimes
+node = "26.11.1"
 python = "3.15.0"
 rust = { version = "1.99.0", components = "clippy,rustfmt,llvm-tools-preview", profile = "minimal", targets = "thumbv6m-none-eabi" }
 
@@ -21,6 +22,7 @@ sccache = "0.18.0"
 
 # Formatting And Linting
 "aqua:rhysd/actionlint" = "1.7.12"
+"npm:@fission-ai/openspec" = "1.14.3"
 taplo = "0.10.0"
 
 # Release And Signing
@@ -37,7 +39,6 @@ glab = "1.123.0"
 # === Environment === #
 
 [env]
-UV_PROJECT_ENVIRONMENT = "{{config_root}}/.venv"
 
 # === Variables === #
 
@@ -122,6 +123,8 @@ run = [
   { task = "lint:rust" },
   "cargo check --locked --workspace --exclude helios-mesh-nodes --all-targets --all-features",
   "cargo check --locked --workspace --exclude helios-mesh-nodes --all-targets --no-default-features",
+  "cargo check --locked --package helios-mesh --all-targets --all-features",
+  "cargo check --locked --package helios-mesh --all-targets --no-default-features",
   "cargo check --locked --package helios-mesh-nodes --lib --all-features",
   "cargo check --locked --package helios-mesh-nodes --lib --no-default-features",
   "cargo check --locked --package helios-mesh-nodes --bins --target thumbv6m-none-eabi --all-features",
