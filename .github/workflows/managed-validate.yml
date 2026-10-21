@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-validate.yml; sha256:8451581c961d0c6ea54b0b17772b2a478bf12cde66ef5a6d96090d0ffedb423e
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-validate.yml; sha256:d174631a49fab5434941deb9e3af1bcbb74ed6a5267d0cc8498b25daa809705a
 name: Validate
 "on":
   workflow_call:
@@ -94,97 +94,6 @@ jobs:
       with:
         name: junit-generated-${{ env.PROFILE }}-linux
         path: target/tests/${{ env.PROFILE }}/*/generated-*/
-        if-no-files-found: ignore
-        retention-days: 7
-        include-hidden-files: true
-    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      if: >-
-        (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') &&
-        steps.uv.outputs.cache-hit != 'true'
-      with:
-        path: .cache/uv/
-        key: ${{ steps.uv.outputs.cache-primary-key }}
-    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      if: >-
-        (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main') &&
-        steps.tools.outputs.cache-hit != 'true'
-      with:
-        path: ${{ env.MISE_DATA_DIR }}
-        key: ${{ steps.tools.outputs.cache-primary-key }}
-    - run: sccache --show-stats
-      if: always()
-  validate_test_integration_python:
-    name: Integration / Python
-    runs-on: ${{ fromJSON(inputs.runners).linux.small }}
-    timeout-minutes: ${{ fromJSON(inputs.budgets).validate_test_integration_python }}
-    env:
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_RW_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
-      SCCACHE_GHA_VERSION: linux
-      MISE_ENABLE_TOOLS: >-
-        python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
-    steps:
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        fetch-depth: 0
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}
-        restore-keys: ${{ runner.os }}-${{ runner.arch }}-cargo-
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('tools/python/uv.lock') }}
-        restore-keys: ${{ runner.os }}-${{ runner.arch }}-uv-
-    - name: Resolve Mise Directory
-      if: runner.os == 'Windows'
-      shell: pwsh
-      run: |-
-        $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
-        "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-    - name: Resolve Mise Directory
-      if: runner.os != 'Windows'
-      shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      id: tools
-      with:
-        path: ${{ env.MISE_DATA_DIR }}
-        key: ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
-    - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
-      env:
-        RUSTC_WRAPPER: ""
-      with:
-        install: true
-        cache: false
-        mise_dir: ${{ env.MISE_DATA_DIR }}
-    - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
-      with:
-        version: v0.18.0
-    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-      with:
-        name: build-tests-${{ env.PROFILE }}-linux
-    - name: Extract Build
-      shell: bash
-      run: tar --zstd -xf "build-tests-${{ env.PROFILE }}-linux.tar.zst"
-    - run: mise run test:integration:python --profile ${{ env.PROFILE }}
-    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-      if: always()
-      with:
-        name: junit-test_integration_python-${{ env.PROFILE }}-linux
-        path: target/tests/${{ env.PROFILE }}/*/integration-python/
         if-no-files-found: ignore
         retention-days: 7
         include-hidden-files: true

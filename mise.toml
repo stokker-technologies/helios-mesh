@@ -190,13 +190,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.r
 description = "Test Integration Layer"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-depends = ["test:integration:rust --profile {{usage.profile}}", "test:integration:python --profile {{usage.profile}}"]
-
-[tasks."test:integration:python"]
-description = "Test Integration Python"
-env.CARGO_INCREMENTAL = "0"
-usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language python --project crates/system/helios-mesh-python"
+depends = ["test:integration:rust --profile {{usage.profile}}"]
 
 [tasks."test:integration:rust"]
 description = "Test Integration Rust"

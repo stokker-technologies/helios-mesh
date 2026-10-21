@@ -140,7 +140,7 @@ asyncio.run(main())
 
 The [host contracts](crates/system/helios-mesh/README.md#python-host-api)
 describe result handling and gateway connections. The
-[Python integration stories](crates/system/helios-mesh-python/tests/integration/)
+[Python acceptance stories](crates/system/helios-mesh-python/tests/acceptance/)
 exercise native exports, discovery errors, and asynchronous behavior without
 physical devices. This pulse example requires the matching board and firmware.
 

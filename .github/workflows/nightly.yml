@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/nightly.yml; sha256:212f0c3988e54e91f0a63fc0467a06441768f9ab4ef75c2df13f9c09546677ef
+# Rendered by stkr project update from templates/ci/.github/workflows/nightly.yml; sha256:7870eea959f19faa0038f6d26d56faa43b39d07bedd2d386032d1cc6a16d69ec
 name: Nightly
 "on":
   schedule:
@@ -98,7 +98,7 @@ jobs:
     uses: ./.github/workflows/managed-validate.yml
     with:
       runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
-      budgets: "{\"validate_generated\":10,\"validate_test_acceptance_python\":10,\"validate_test_integration_python\":10}"
+      budgets: "{\"validate_generated\":10,\"validate_test_acceptance_python\":10}"
     secrets: inherit
     needs:
     - build_linux

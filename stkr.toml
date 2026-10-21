@@ -56,7 +56,7 @@ repository = "stokker-technologies/helios-mesh"
 product = "helios-mesh"
 package = "helios-mesh-cli"
 targets = ["linux-x86_64", "windows-x86_64"]
-tests = ["unit-rust", "integration-rust", "acceptance-rust", "integration-python", "acceptance-python"]
+tests = ["unit-rust", "integration-rust", "acceptance-rust", "acceptance-python"]
 crates_bootstrap_secret = "CARGO_REGISTRY_TOKEN"
 # The prepare runner starts with an empty Cargo home, so the workspace lock refresh reads the index online.
 lock_commands = [

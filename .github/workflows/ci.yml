@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:c467128b4661256a2f3d31ba4aef1515fba586630399bf8338e215e0052958b0
+# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:67471e864e06554007e8bdbd2b5e7da2cc6220d649316bac0d1d8d962236c9be
 name: CI
 "on":
   push:
@@ -112,7 +112,7 @@ jobs:
     uses: ./.github/workflows/managed-validate.yml
     with:
       runners: "{\"linux\":{\"small\":[\"ubuntu-latest\"],\"large\":[\"ubuntu-latest\"]},\"windows\":{\"small\":[\"windows-latest\"],\"large\":[\"windows-latest\"]},\"nightly\":{\"small\":[\"stokker-local-linux-x64\"],\"coverage\":[\"ubuntu-latest\"]}}"
-      budgets: "{\"validate_generated\":10,\"validate_test_acceptance_python\":10,\"validate_test_integration_python\":10}"
+      budgets: "{\"validate_generated\":10,\"validate_test_acceptance_python\":10}"
     secrets: inherit
     needs:
     - build_linux
