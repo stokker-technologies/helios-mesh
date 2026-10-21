@@ -11,4 +11,4 @@
 
 ## 3. Validation
 
-- [ ] 3.1 Full Linux lanes and the Windows VM graph green on the combined tree; README claims verified. Linux checks, both development builds, all four declared lanes and generated bindings pass. Windows cannot reach execution: Hub `crates/stkr/src/ci/simulate/mod.rs:246` skips the `validated` job without publishing empty declared outputs, and `expression.rs:287` rejects `needs.validated.outputs.validated`. Hub must supply empty outputs for skipped jobs (preserving errors for unsupported contexts), cover the rendered PR gate, and reinstall the simulator before this task can pass.
+- [x] 3.1 Full Linux lanes and the Windows VM graph green on the combined tree; README claims verified. Proof: Linux check, development Product/Tests builds, Rust unit 215/215, integration 56/56, acceptance 3/3, Python acceptance 41/41, and generated bindings for 7 modules passed. The stkr 0.1.7 Windows PR graph passed both builds, Rust check, unit 215/215, integration 56/56, acceptance 3/3 and Rust packaging; 31 jobs passed, none failed, 52 were event-gated and 13 Linux jobs were unselected. README imports and root-workspace claims match these verified paths.
