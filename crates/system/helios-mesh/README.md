@@ -54,8 +54,13 @@ and firmware routing decides support. An unmatched request returns `Unsupported`
 
 ## Rust Host API
 
+Use `helios_mesh::prelude::*` for shared protocol types and macros, host discovery
+and typed handles, and firmware authoring types when their features are enabled.
+Board and wing types additionally require an ARM target and the `firmware` feature.
+The same items remain available through their existing crate paths.
+
 ```rust
-use helios_mesh::{AuxGpioId, ConnectedNode, NodeType};
+use helios_mesh::prelude::*;
 use std::time::Duration;
 
 let devices = helios_mesh::discover_type(NodeType::Sidecar).await?;
@@ -79,7 +84,7 @@ accept a `DeviceSelector` for direct selection.
 Gateway returns the same typed enum for mesh nodes:
 
 ```rust
-use helios_mesh::{ConnectedNode, DeviceSelector, GatewayNode, NodeType};
+use helios_mesh::prelude::*;
 
 let gateway = GatewayNode::connect(DeviceSelector::Only).await?;
 let summary = gateway.scan_one(Some(NodeType::Rotator)).await?;

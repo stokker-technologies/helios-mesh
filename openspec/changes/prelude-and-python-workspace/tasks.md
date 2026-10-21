@@ -2,7 +2,7 @@
 
 ## 1. Prelude
 
-- [ ] 1.1 Add `helios_mesh::prelude` with feature-gated re-exports and migrate README, crate README, examples and tests to it; keep existing paths; cover with a compile test per feature set.
+- [x] 1.1 Add `helios_mesh::prelude` with feature-gated re-exports and migrate README, crate README examples and transport tests to it; keep existing paths. Proof: feature-gated identity tests compile in `check:rust`, including facade-only all-feature and no-default-feature checks.
 
 ## 2. Python Workspace
 

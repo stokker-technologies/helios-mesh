@@ -149,7 +149,7 @@ physical devices. This pulse example requires the matching board and firmware.
 Inside an async application using the `helios-mesh` crate:
 
 ```rust
-use helios_mesh::{AuxGpioId, ConnectedNode, NodeType};
+use helios_mesh::prelude::*;
 use std::time::Duration;
 
 let devices = helios_mesh::discover_type(NodeType::Sidecar).await?;
@@ -257,7 +257,9 @@ Build outputs live under `target/build/<profile>/<target>/`, package outputs und
 uses `windows-x86_64`. Tests consume the matching test archive from
 `mise run build:tests` and the installed native wheel. The root
 `.venv` is shared by local tasks, which run sequentially; native CI jobs use
-isolated workspaces. Required public CI uses repository-native tooling.
+isolated workspaces. The root uv workspace includes `tools/python` and owns
+`uv.lock`; the Python distribution keeps its independent manifest and lockfile.
+Required public CI uses repository-native tooling.
 
 Task changes target `dev`. The manual `Release / Prepare` job opens
 `release/v<version>` into `dev`. After the required checks and release rehearsal,
