@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/registry.py; sha256:46dc01d7006ff05795c080899160201027362de78c93a45842197b8970dbdd3d
+# Rendered by stkr project update from templates/python/release/registry.py; sha256:c3efa34a60ac853dcd06386363b7f3a3b92009ab733983a6f23df256bf678eb8
 # ***
 #
 # Helios Mesh
@@ -133,7 +133,17 @@ def publishable(directory: Path) -> dict:
     """Publishable Workspace Members By Name."""
     metadata = json.loads(policy.execute(directory, ["cargo", "metadata", "--format-version", "1", "--no-deps", "--locked"], capture=True))
     members = set(metadata["workspace_members"])
-    return {package["name"]: package for package in metadata["packages"] if package["id"] in members and package.get("publish") != []}
+    packages = {package["name"]: package for package in metadata["packages"] if package["id"] in members and package.get("publish") != []}
+    for name, package in packages.items():
+        role = _interface_role(package)
+        if role:
+            manifest = Path(package.get("manifest_path", "Cargo.toml"))
+            manifest = manifest.relative_to(directory) if manifest.is_relative_to(directory) else manifest
+            raise policy.ToolError(
+                f"{manifest.as_posix()}: {name} is a {role} crate; CLI, GUI and Cargo subcommand crates ship as release executables and installers, "
+                "never to crates.io; declare publish = false"
+            )
+    return packages
 
 
 def crate_published(name: str, version: str | None = None) -> bool:
@@ -396,7 +406,7 @@ def require_tag(directory: Path, tag: str) -> None:
         sha = os.environ.get("GITHUB_SHA")
     else:
         allowed = (
-            os.environ.get("CI_PIPELINE_SOURCE") == "push"
+            os.environ.get("STKR_PIPELINE_SOURCE", os.environ.get("CI_PIPELINE_SOURCE")) == "push"
             and os.environ.get("CI_COMMIT_TAG") == tag
             and os.environ.get("CI_COMMIT_REF_PROTECTED") == "true"
         )
@@ -552,9 +562,22 @@ def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
     pipeline = merged_review.get("head_pipeline") if isinstance(merged_review, dict) else None
     if not isinstance(pipeline, dict) or pipeline.get("sha") != head or not isinstance(pipeline.get("id"), int):
         raise policy.ToolError(f"release MR !{review['number']} has no pipeline for its head {head}")
-    jobs = [
-        job for job in pages(settings, f"pipelines/{pipeline['id']}/jobs?include_retried=false") if job.get("name") == GITLAB_REHEARSAL_JOB
-    ]
+    pipeline_jobs = pages(settings, f"pipelines/{pipeline['id']}/jobs?include_retried=false")
+    if any(job.get("name") == "Plan / Impact" for job in pipeline_jobs):
+        bridges = [bridge for bridge in pages(settings, f"pipelines/{pipeline['id']}/bridges") if bridge.get("name") == "CI / Required"]
+        if len(bridges) != 1 or bridges[0].get("status") != "success":
+            raise policy.ToolError("release review child gate is not green")
+        child = bridges[0].get("downstream_pipeline")
+        if (
+            not isinstance(child, dict)
+            or child.get("sha") != head
+            or child.get("status") != "success"
+            or not isinstance(child.get("id"), int)
+        ):
+            raise policy.ToolError("release review child pipeline is not green for its head")
+        pipeline = child
+        pipeline_jobs = pages(settings, f"pipelines/{pipeline['id']}/jobs?include_retried=false")
+    jobs = [job for job in pipeline_jobs if job.get("name") == GITLAB_REHEARSAL_JOB]
     if not jobs or any(job.get("status") != "success" for job in jobs):
         raise policy.ToolError(f"release MR !{review['number']} pipeline {pipeline['id']} has no successful {GITLAB_REHEARSAL_JOB} job")
     _same_tree(directory, head, sha)
@@ -598,6 +621,21 @@ def workflow_filename(reference: str) -> str:
     return match.group(1) if match else "(unknown)"
 
 
+def delete_branch(settings: dict, branch: str) -> bool:
+    """Delete A Remote Branch If It Still Exists, Since Native Source-Branch Removal Usually Got There First."""
+    if settings["provider"] == "github":
+        name = urllib.parse.quote(branch, safe="/")
+        if document(settings, "git/ref/heads/" + name) is None:
+            return False
+        request(settings, "git/refs/heads/" + name, "DELETE")
+    else:
+        endpoint = "repository/branches/" + urllib.parse.quote(branch, safe="")
+        if document(settings, endpoint) is None:
+            return False
+        request(settings, endpoint, "DELETE")
+    return True
+
+
 def create_tag(settings: dict, tag: str, sha: str) -> None:
     """Create The Lightweight Release Tag Through The Provider With The Release Token."""
     if settings["provider"] == "github":
@@ -622,6 +660,16 @@ def remote_tag(settings: dict, tag: str) -> str | None:
 
 
 # === Private Functions === #
+
+
+def _interface_role(package: dict) -> str | None:
+    """CLI For A `-cli` Crate, Cargo Subcommand For `cargo-<name>`, GUI For A `-gui` Crate Or A Tauri Desktop Shell."""
+    if package["name"].endswith("-cli"):
+        return "CLI"
+    if package["name"].startswith("cargo-"):
+        return "Cargo subcommand"
+    tauri = any(item.get("name") == "tauri" and item.get("kind") is None for item in package.get("dependencies", []))
+    return "GUI" if package["name"].endswith("-gui") or tauri else None
 
 
 def _same_tree(directory: Path, head: str, merged: str) -> None:

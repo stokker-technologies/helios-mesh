@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/run.py; sha256:4224b7198e76a212aec52e19a9908841d1a84f1ec3845232bc10271c045529e9
+# Rendered by stkr project update from templates/python/test/run.py; sha256:3ed9a91b99c0bb9d3ea8401f837d0bd03dd6511756e393b841d5e3e120dcd79e
 # ***
 #
 # Helios Mesh
@@ -438,7 +438,7 @@ def _bench_rust(
 ) -> tuple[list[report.Bench], int]:
     messages = paths.output(directory, "build", "bench") / "bench/compiler.json"
     if not messages.is_file():
-        raise policy.TestError("missing benchmark compiler metadata; run build:bench first")
+        raise policy.TestError("missing benchmark compiler metadata; run build:rust:bench first")
     archive.fixtures(directory, "bench", [messages.relative_to(directory).as_posix()])
     targets = []
     for line in messages.read_text(encoding="utf-8").splitlines():

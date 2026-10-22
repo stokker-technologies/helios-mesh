@@ -76,6 +76,7 @@ run = "cargo fmt --all{% if usage.check %} --check{% endif %}"
 description = "Format TOML"
 usage = 'flag "--check"'
 run = "git ls-files -z -- '*.toml' | xargs -0 taplo fmt --option column_width=140{% if usage.check %} --check{% endif %}"
+run_windows = "powershell -NoProfile -Command \"$files = @(git ls-files -- '*.toml'); if ($files.Count -gt 0) { & taplo fmt --option column_width=140{% if usage.check %} --check{% endif %} -- @files; exit $LASTEXITCODE }\""
 
 # === Lint === #
 
@@ -109,6 +110,12 @@ run = [{ task = "check:repository" }, { task = "check:rust" }, { task = "check:p
 description = "Check Python"
 run = [{ task = "format:python --check" }, { task = "lint:python" }]
 
+[tasks."check:python:generated"]
+description = "Verify Native Python Exports Against Stubs"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.bindings --profile {{usage.profile}}"
+env = { CARGO_INCREMENTAL = "0" }
+
 [tasks."check:repository"]
 description = "Check Repository Configuration And Conventions"
 run = [
@@ -141,7 +148,7 @@ env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"; flag "--hardware-unknown"'
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.product --profile {{usage.profile}} {% if usage.hardware_unknown %}--hardware-unknown{% endif %}"
 
-[tasks."build:tests"]
+[tasks."build:rust:tests"]
 description = "Build The Shared Test Archive And Fixtures"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
@@ -160,78 +167,61 @@ run = "uv run --locked --project tools/python maturin develop --manifest-path cr
 # === Test === #
 
 [tasks.test]
-description = "Test Every Layer"
+description = "Test Every Language"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-depends = [
-  "test:unit --profile {{usage.profile}}",
-  "test:integration --profile {{usage.profile}}",
-  "test:acceptance --profile {{usage.profile}}",
-  "test:generated --profile {{usage.profile}}",
-]
+depends = ["test:python --profile {{usage.profile}}", "test:rust --profile {{usage.profile}}"]
 
-[tasks."test:coverage"]
-description = "Measure Coverage Over Instrumented Lanes"
-env.CARGO_INCREMENTAL = "0"
+[tasks."test:python"]
+description = "Test Python"
 usage = 'flag "--profile <profile>" default="dev"'
-run = [
-  "uv run --locked --project tools/python python -m helios_mesh_tools.test.run coverage --language rust --profile {{usage.profile}}",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.test.run coverage --language python --profile {{usage.profile}}",
-]
+depends = ["test:python:acceptance --profile {{usage.profile}}"]
 
-[tasks."test:unit"]
-description = "Test Unit Layer"
-env.CARGO_INCREMENTAL = "0"
-usage = 'flag "--profile <profile>" default="dev"'
-depends = ["test:unit:rust --profile {{usage.profile}}"]
-
-[tasks."test:unit:rust"]
-description = "Test Unit Rust"
-env.CARGO_INCREMENTAL = "0"
-usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category unit --language rust"
-
-[tasks."test:integration"]
-description = "Test Integration Layer"
-env.CARGO_INCREMENTAL = "0"
-usage = 'flag "--profile <profile>" default="dev"'
-depends = ["test:integration:rust --profile {{usage.profile}}"]
-
-[tasks."test:integration:rust"]
-description = "Test Integration Rust"
-env.CARGO_INCREMENTAL = "0"
-usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language rust"
-
-[tasks."test:acceptance"]
-description = "Test Installed Product Behavior"
-usage = 'flag "--profile <profile>" default="dev"'
-depends = ["test:acceptance:rust --profile {{usage.profile}}", "test:acceptance:python --profile {{usage.profile}}"]
-env = { CARGO_INCREMENTAL = "0" }
-
-[tasks."test:acceptance:python"]
+[tasks."test:python:acceptance"]
 description = "Test Installed Python Distribution"
 usage = 'flag "--profile <profile>" default="dev"'
 run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language python --project crates/system/helios-mesh-python"
 env = { CARGO_INCREMENTAL = "0" }
 
-[tasks."test:acceptance:rust"]
+[tasks."test:python:coverage"]
+description = "Measure Python Coverage Over Instrumented Lanes"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run coverage --language python --profile {{usage.profile}}"
+
+[tasks."test:rust"]
+description = "Test Rust"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+depends = [
+  "test:rust:acceptance --profile {{usage.profile}}",
+  "test:rust:integration --profile {{usage.profile}}",
+  "test:rust:unit --profile {{usage.profile}}",
+]
+
+[tasks."test:rust:acceptance"]
 description = "Test CLI Acceptance"
+env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language rust"
+
+[tasks."test:rust:coverage"]
+description = "Measure Rust Coverage Over Instrumented Lanes"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run coverage --language rust --profile {{usage.profile}}"
+
+[tasks."test:rust:unit"]
+description = "Test Unit Rust"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category unit --language rust"
 env = { CARGO_INCREMENTAL = "0" }
 
-[tasks."test:generated"]
-description = "Verify Generated Bindings"
+[tasks."test:rust:integration"]
+description = "Test Integration Rust"
+env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-depends = ["test:generated:python --profile {{usage.profile}}"]
-env = { CARGO_INCREMENTAL = "0" }
-
-[tasks."test:generated:python"]
-description = "Verify Native Python Exports Against Stubs"
-usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.bindings --profile {{usage.profile}}"
-env = { CARGO_INCREMENTAL = "0" }
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language rust"
 
 # === Bench === #
 
@@ -255,15 +245,6 @@ usage = 'flag "--profile <profile>" default="dev"'
 run = ["uv run --locked --project tools/python python -m helios_mesh_tools.package.product --language rust --profile {{usage.profile}}"]
 
 # === CI === #
-
-[tasks.ci]
-description = "Run The CI Flow Locally"
-usage = 'flag "--event <event>" default="pr"'
-run = "stkr ci simulate --event {{usage.event}}"
-
-[tasks."ci:nightly"]
-description = "Run The Nightly Coverage And Bench Flow"
-run = [{ task = "build" }, { task = "build:tests" }, { task = "test:coverage" }]
 
 # === Release === #
 

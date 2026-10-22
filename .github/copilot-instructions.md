@@ -1,11 +1,11 @@
-<!-- Rendered by stkr project update from .agents/GUIDANCE.md; sha256:1b6e98a782ce5ed9ac9bfe2e59e5696116b052a045781ed8ac4b9b1abbc3772b -->
+<!-- Rendered by stkr project update from .agents/GUIDANCE.md; sha256:7bd275a534d76e8ae7a2bf0f345099f9695ebeee62cdd9e2cad5a7a69176b53b -->
 
 # Repository Instructions
 
 Helios Mesh is a Stokker Technologies Rust and RP2040 firmware project.
 
 - Apply `stkr-conventions`, `stkr-mise`, and the applicable Rust, CLI, Python,
-  PyO3, testing, CI, and publishing skills. Use repository mise tasks.
+  PyO3, test, CI, and publishing skills. Use repository mise tasks.
 - Preserve the host contracts in `crates/system/helios-mesh/README.md` and the hardware,
   wiring, and firmware contracts in `crates/firmware/helios-mesh-board-feather-rp2040/README.md`.
 - Preserve wire version 14 and its encoding. Protocol changes require an explicit
@@ -21,5 +21,6 @@ Helios Mesh is a Stokker Technologies Rust and RP2040 firmware project.
   electrical behavior, or macOS.
 - Keep private specifications, machine state, and temporary diagnostics in their
   allowed ignored locations. `.agents/` is canonical source, never private state.
-- Use Conventional Commits and run `mise run check` plus local deterministic
-  checks before each authorized push. SOURCE COMPLETE precedes full validation.
+- Use Conventional Commits. After SOURCE COMPLETE, run the complete applicable
+  local check, build, generated check, test, package and dry-release graph before
+  an authorized push. Native provider CI proves every required platform before merge.

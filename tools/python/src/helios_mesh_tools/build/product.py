@@ -22,7 +22,7 @@ from pathlib import Path
 # Third Party Imports
 # Local Imports
 from .. import temporary
-from . import paths
+from . import paths, run
 
 # Type Checking Imports
 
@@ -75,11 +75,7 @@ def main() -> None:
             raise ValueError("Product Build did not produce the native CLI")
         shutil.copy2(binary, staging / executable)
         paths.replace(ROOT, staging, destination / "bin", origin=staging)
-    compiler = subprocess.check_output(["rustc", "-vV"], cwd=ROOT, text=True)
-    triple = os.environ.get("CARGO_BUILD_TARGET") or next(
-        line.removeprefix("host: ") for line in compiler.splitlines() if line.startswith("host: ")
-    )
-    (destination / "product/target.txt").write_text(triple + "\n", encoding="utf-8")
+    run.record_target(ROOT, messages, profile)
 
     wheels = destination / "python"
     if wheels.exists():
