@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/run.py; sha256:917b7ad0d576c6a10d42911595f7d9c5d477b7f755a2764643908367ed4a0c1c
+# Rendered by stkr project update from templates/python/release/run.py; sha256:a751d7369b57275212e140be28d19ea1b21aeea1f52e79dcfca1e60464f5cd07
 # ***
 #
 # Helios Mesh
@@ -418,7 +418,7 @@ def crates(directory: Path, settings: dict) -> None:
 
 
 def tag(directory: Path, settings: dict) -> None:
-    """On The Dev Push Of A Merged Release Review: Tag It, Publish Crates, Fast-Forward main."""
+    """On The Dev Push Of A Merged Release Review: Tag It, Publish Crates, Fast-Forward main, Delete Its Branch."""
     sha = _revision(directory)
     github = settings["provider"] == "github"
     pushed = (
@@ -426,7 +426,7 @@ def tag(directory: Path, settings: dict) -> None:
         and os.environ.get("GITHUB_REF") == "refs/heads/dev"
         and os.environ.get("GITHUB_SHA") == sha
         if github
-        else os.environ.get("CI_PIPELINE_SOURCE") == "push"
+        else os.environ.get("STKR_PIPELINE_SOURCE", os.environ.get("CI_PIPELINE_SOURCE")) == "push"
         and os.environ.get("CI_COMMIT_BRANCH") == "dev"
         and os.environ.get("CI_COMMIT_SHA") == sha
     )
@@ -463,6 +463,9 @@ def tag(directory: Path, settings: dict) -> None:
     # main is the last released commit: a fast-forward to the tag, never a merge or a force.
     _run(directory, ["git", "push", remote, f"{sha}:refs/heads/main"], token)
     print(f"{name}: tagged at {sha}; main fast-forwarded")
+    branch = registry.RELEASE_BRANCH + name
+    if registry.delete_branch(settings, branch):
+        print(f"{branch}: deleted after its squash")
 
 
 def rehearse(directory: Path, settings: dict) -> None:

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-release.yml; sha256:7709a2acfd293fc013206bdb82c813233e9dbb6bc628cdfce8fe64523d8df6ba
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-release.yml; sha256:db7c346896705854553e0968dc938982b16fa346a9be7962a5ba33aeccbcc9de
 name: Release
 "on":
   workflow_call:
@@ -61,55 +61,66 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -117,9 +128,17 @@ jobs:
         install: true
         cache: false
         mise_dir: ${{ env.MISE_DATA_DIR }}
-    - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
+    - name: Compiler Cache Storage
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
       with:
-        version: v0.18.0
+        script: |-
+          for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+            const value = process.env[key];
+            if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
+          }
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         pattern: package-${{ startsWith(github.head_ref, 'release/v') && 'release' || 'dev' }}-*
@@ -130,17 +149,42 @@ jobs:
     - name: Extract Packages
       shell: bash
       run: for archive in target/ci/*.tar; do tar -xf "$archive"; done
-    - run: mise run release:publish:dry
+    - run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.sccache
       env:
         RELEASE_PROFILE: ${{ startsWith(github.head_ref, 'release/v') && 'release' || 'dev' }}
-    - run: sccache --show-stats
-      if: always()
+        STKR_SCCACHE_SCRIPT: mise run release:publish:dry
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
-      MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_RW_MODE: READ_ONLY
-      SCCACHE_GHA_VERSION: linux
+      MISE_ENABLE_TOOLS: cargo:elf2uf2-rs,gh,git-cliff,glab,node,python,rust,sccache,uv
+      STKR_SCCACHE_BACKEND: gha
+      STKR_SCCACHE_MODE: >-
+        ${{ github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && 'READ_WRITE' || 'READ_ONLY' }}
     if: >-
       ${{ inputs.ready && (github.event_name == 'pull_request' || github.event_name
       == 'push' && github.ref == 'refs/heads/dev') }}
@@ -156,55 +200,66 @@ jobs:
       with:
         fetch-depth: 0
         persist-credentials: false
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -223,6 +278,30 @@ jobs:
     - run: >-
         mise exec -- uv run --locked --project tools/python python -m
         helios_mesh_tools.release.run review
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
       RELEASE_BUMP: ${{ inputs.bump }}
@@ -243,55 +322,66 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -299,9 +389,6 @@ jobs:
         install: true
         cache: false
         mise_dir: ${{ env.MISE_DATA_DIR }}
-    - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
-      with:
-        version: v0.18.0
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         pattern: package-release-*
@@ -320,14 +407,32 @@ jobs:
       run: >-
         mise exec -- uv run --locked --project tools/python python -m
         helios_mesh_tools.release.run discard
-    - run: sccache --show-stats
-      if: always()
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_RW_MODE: READ_ONLY
-      SCCACHE_GHA_VERSION: linux
     if: >-
       ${{ inputs.ready && (github.event_name == 'pull_request' && github.base_ref ==
       'dev' && startsWith(github.head_ref, 'release/v')) }}
@@ -346,55 +451,66 @@ jobs:
       with:
         fetch-depth: 0
         persist-credentials: false
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -402,9 +518,6 @@ jobs:
         install: true
         cache: false
         mise_dir: ${{ env.MISE_DATA_DIR }}
-    - uses: mozilla-actions/sccache-action@fc920bf0ec8de6ee65d409111f7ec508035751ba
-      with:
-        version: v0.18.0
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         pattern: package-${{ inputs.review_profile }}-*
@@ -431,15 +544,33 @@ jobs:
         CARGO_REGISTRY_TOKEN: >-
           ${{ env.CARGO_REGISTRY_TOKEN != '' && env.CARGO_REGISTRY_TOKEN ||
           steps.crates.outputs.token }}
-    - run: sccache --show-stats
-      if: always()
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      RUSTC_WRAPPER: sccache
-      SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_RW_MODE: READ_ONLY
-      SCCACHE_GHA_VERSION: linux
     if: "${{ inputs.ready && (github.event_name == 'push' && github.ref == 'refs/heads/dev' && startsWith(github.event.head_commit.message, 'chore(release): prepare v')) }}"
     environment: release
     permissions:
@@ -457,55 +588,66 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -513,6 +655,17 @@ jobs:
         install: true
         cache: false
         mise_dir: ${{ env.MISE_DATA_DIR }}
+    - name: Compiler Cache Storage
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      with:
+        script: |-
+          for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+            const value = process.env[key];
+            if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
+          }
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
         pattern: package-release-*
@@ -527,15 +680,46 @@ jobs:
       run: >-
         mise exec -- uv run --locked --project tools/python python -m
         helios_mesh_tools.release.run identity
-    - run: mise run release:publish
+    - run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.sccache
       env:
         GH_TOKEN: ${{ github.token }}
+        STKR_SCCACHE_SCRIPT: mise run release:publish
     - name: Attest Release Downloads
       uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
       with:
         subject-checksums: target/release-assets/any/SHA256SUMS
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
-      MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
+      MISE_ENABLE_TOOLS: cargo:elf2uf2-rs,gh,git-cliff,glab,node,python,rust,sccache,uv
+      STKR_SCCACHE_BACKEND: gha
+      STKR_SCCACHE_MODE: >-
+        ${{ github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && 'READ_WRITE' || 'READ_ONLY' }}
     if: ${{ inputs.ready && (startsWith(github.ref, 'refs/tags/v')) }}
     environment: release
     permissions:
@@ -586,55 +770,66 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
-    - run: >-
-        if [ "$(id -u)" -eq 0 ]; then apt-get update && apt-get install --yes
-        --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get
-        install --yes --no-install-recommends libudev-dev pkg-config; fi
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -645,6 +840,30 @@ jobs:
     - run: mise run release:verify
       env:
         GH_TOKEN: ${{ github.token }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
     environment: release
@@ -661,51 +880,64 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
         fetch-depth: 0
-    - name: Cache / Cargo
-      id: cargo
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: |-
-          .cache/cargo/registry/
-          .cache/cargo/git/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('Cargo.lock') }}-main
-    - name: Cache / Uv
-      id: uv
-      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
-      with:
-        path: .cache/uv/
-        key: >-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-uv-${{ hashFiles('uv.lock') }}-main
     - name: Resolve Mise Directory
       if: runner.os == 'Windows'
       shell: pwsh
       run: |-
         $directory = Join-Path ([System.IO.Path]::GetTempPath()) 'stkr-mise'
         "MISE_DATA_DIR=$directory" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "STKR_RUNNER_IMAGE=$($env:ImageOS ?? 'windows')-$($env:ImageVersion ?? 'self')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
     - name: Resolve Mise Directory
       if: runner.os != 'Windows'
       shell: bash
-      run: printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
-    - name: Cache / Tools
-      id: tools
+      run: |-
+        printf 'MISE_DATA_DIR=%s/stkr-mise\n' "${TMPDIR:-/tmp}" >> "$GITHUB_ENV"
+        printf 'STKR_RUNNER_IMAGE=%s-%s\n' "${ImageOS:-$(. /etc/os-release 2>/dev/null; echo "${ID:-unknown}${VERSION_ID:-}")}" "${ImageVersion:-self}" >> "$GITHUB_ENV"
+    - name: Identify Installation Roots
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |-
+        foreach ($entry in @{ STKR_MISE_ROOT = $env:MISE_DATA_DIR; STKR_WORKSPACE_ROOT = $env:GITHUB_WORKSPACE }.GetEnumerator()) {
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes([System.IO.Path]::GetFullPath($entry.Value))
+          $digest = [Convert]::ToHexString([System.Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+          "$($entry.Key)=$digest" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        }
+    - name: Identify Installation Roots
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |-
+        for name in STKR_MISE_ROOT STKR_WORKSPACE_ROOT; do
+          if [ "$name" = STKR_MISE_ROOT ]; then root="$MISE_DATA_DIR"; else root="$GITHUB_WORKSPACE"; fi
+          if command -v sha256sum >/dev/null; then digest=$(printf '%s' "$root" | sha256sum); else digest=$(printf '%s' "$root" | shasum -a 256); fi
+          printf '%s=%s\n' "$name" "${digest%% *}" >> "$GITHUB_ENV"
+        done
+    - id: cargo_downloads
+      name: Cache / cargo-downloads
       uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       with:
-        path: ${{ env.MISE_DATA_DIR }}
         key: >-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-${{
-          github.head_ref || github.ref_name }}
-        restore-keys: |-
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-dev
-          ${{ runner.os }}-${{ runner.arch }}-mise-v2-${{ hashFiles('mise.lock') }}-main
+          stkr-v4-cargo-downloads-${{ runner.os }}-${{ runner.arch }}-${{
+          hashFiles('Cargo.lock') }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - id: mise
+      name: Cache / mise
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ env.STKR_RUNNER_IMAGE }}-${{ env.STKR_JOB_IMAGE }}-${{ env.STKR_MISE_ROOT
+          }}-${{ env.STKR_WORKSPACE_ROOT }}-${{ hashFiles('mise.lock') }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - id: uv
+      name: Cache / uv
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      with:
+        key: >-
+          stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
+          }}-${{ hashFiles('uv.lock', 'mise.lock') }}
+        path: .cache/uv/
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -716,6 +948,30 @@ jobs:
     - run: mise run release:verify
       env:
         GH_TOKEN: ${{ github.token }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.cargo_downloads.outputs.cache-hit !=
+        'true'
+      with:
+        key: ${{ steps.cargo_downloads.outputs.cache-primary-key }}
+        path: |-
+          .cache/cargo/registry/
+          .cache/cargo/git/
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.mise.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.mise.outputs.cache-primary-key }}
+        path: ${{ env.MISE_DATA_DIR }}
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      if: >-
+        success() && github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main') && steps.uv.outputs.cache-hit != 'true'
+      with:
+        key: ${{ steps.uv.outputs.cache-primary-key }}
+        path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: node,python,rust,uv,gh,git-cliff,glab,cargo:elf2uf2-rs
     environment: release

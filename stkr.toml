@@ -2,12 +2,14 @@
 # Native manifests own package metadata; mise owns executable recipes.
 # Defaults stay implicit. Commented sections do not declare configuration.
 
-# === Project === #
+# === === Project === === #
 
 [project]
 name = "Helios Mesh"
 visibility = "public"
 platforms = ["linux", "windows"]
+
+# === === Languages === === #
 
 [languages.rust]
 roots = ["crates"]
@@ -17,30 +19,131 @@ targets = ["thumbv6m-none-eabi"]
 roots = ["tools/python", "crates/system/helios-mesh-python"]
 generated = ["crates/system/helios-mesh-python"]
 
-# === Repository === #
-
-# === CI === #
+# === === CI === === #
 
 [ci]
 mirror = true
-
-[ci.setup]
-linux = [
-  "if [ \"$(id -u)\" -eq 0 ]; then apt-get update && apt-get install --yes --no-install-recommends libudev-dev pkg-config; else sudo apt-get update && sudo apt-get install --yes --no-install-recommends libudev-dev pkg-config; fi",
-]
 
 [ci.runners]
 windows = "windows-latest"
 nightly = "stokker-local-linux-x64"
 
-# === Agents === #
+# --- Stage / Check --- #
 
-# === Hooks === #
+[[ci.jobs]]
+id = "check:repository"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "check:python"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "check:rust"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "check:python:generated"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Build --- #
+
+[[ci.jobs]]
+id = "build"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "build:rust:tests"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Test --- #
+
+[[ci.jobs]]
+id = "test:rust:unit"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:rust:integration"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:rust:acceptance"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:rust:coverage"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:python:acceptance"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:python:coverage"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Package --- #
+
+[[ci.jobs]]
+id = "package:rust"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "package:python"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Release --- #
+
+[[ci.jobs]]
+id = "release:prepare"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:rehearse"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:tag"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:publish"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:publish:dry"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:verify"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# === === Hooks === === #
 
 [hooks]
 step_timeout_seconds = 1200
 
-# === Conventions === #
+# === === Conventions === === #
 
 [conventions.rust]
 # The PyO3 Adapter Emits An rlib For Rust Checks And Has No Independent Rust Error API.
@@ -50,9 +153,7 @@ bindings = ["helios-mesh-python"]
 # The Public Prelude Intentionally Collects Imports For Library Consumers.
 exclude = ["crates/system/helios-mesh/src/prelude.rs"]
 
-# === Templates === #
-
-# === Release === #
+# === === Release === === #
 
 [release]
 provider = "github"
@@ -104,11 +205,7 @@ name = "{product}-{version}-{target}-firmware-feather-rp2040.zip"
 value = "0.1.4"
 files = ["Cargo.toml"]
 
-# === Documentation === #
-
-# === Screenshots === #
-
-# === PyO3 === #
+# === === PyO3 === === #
 
 [[pyo3.modules]]
 name = "_native"

@@ -72,6 +72,8 @@ builds the RP2040 firmware. Start from source with the pinned toolchain and
 
 Linux builds need `pkg-config` and the libudev development headers. On Debian
 or Ubuntu, install them with `sudo apt-get install pkg-config libudev-dev`.
+CI installs the same prerequisites through `tools/ci/bootstrap-linux.sh` before
+mise installs the pinned firmware conversion tool.
 
 ```sh
 git clone https://github.com/stokker-technologies/helios-mesh.git
@@ -246,16 +248,16 @@ After [Quick Start](#quick-start), choose a repository task:
 | --- | --- |
 | `mise run check` | Check Hub conventions, formatting, features, firmware compilation, lints, types, and workflow syntax |
 | `mise run build --profile dev` | Build shipping host binaries, wheels, and Linux firmware |
-| `mise run build:tests --profile dev` | Build the shared test archive and fixtures |
-| `mise run test` | Run unit, integration, acceptance, and binding verification lanes |
+| `mise run build:rust:tests --profile dev` | Build the shared test archive and fixtures |
+| `mise run check:python:generated --profile dev` | Verify the built wheel against Python stubs |
+| `mise run test` | Run Rust unit, integration, acceptance, and Python acceptance lanes |
 | `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
-| `mise run ci --event pr` | Simulate the rendered pull-request graph locally |
 
 Build outputs live under `target/build/<profile>/<target>/`, package outputs under
 `target/package/<profile>/<target>/<language>/`, and reports under
 `target/tests/<profile>/<target>/`; the examples use `linux-x86_64`, and Windows
 uses `windows-x86_64`. Tests consume the matching test archive from
-`mise run build:tests` and the installed native wheel. The root
+`mise run build:rust:tests` and the installed native wheel. The root
 `.venv` is shared by local tasks, which run sequentially; native CI jobs use
 isolated workspaces. The root uv workspace includes `tools/python` and owns
 `uv.lock`; the Python distribution keeps its independent manifest and lockfile.
@@ -277,8 +279,19 @@ Bug reports, focused fixes, hardware observations, and examples are welcome.
 to discuss a change. Include the revision, host platform, node role, attached
 hardware, and relevant diagnostics when reporting a device problem.
 
-Run `mise run check` before ready review; provider CI runs the complete graph.
-Use `mise run ci --event pr` for local simulation of the committed candidate.
+After completing source changes, run the native candidate proof in order:
+
+```sh
+mise run check
+mise run build
+mise run build:rust:tests
+mise run check:python:generated
+mise run test
+mise run package
+mise run release:publish:dry
+```
+
+Provider CI runs the native graph on every configured platform.
 Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
 
