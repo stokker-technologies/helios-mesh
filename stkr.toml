@@ -28,6 +28,116 @@ mirror = true
 windows = "windows-latest"
 nightly = "stokker-local-linux-x64"
 
+# --- Stage / Check --- #
+
+[[ci.jobs]]
+id = "check:repository"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "check:python"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "check:rust"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "check:python:generated"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Build --- #
+
+[[ci.jobs]]
+id = "build"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "build:rust:tests"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Test --- #
+
+[[ci.jobs]]
+id = "test:rust:unit"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:rust:integration"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:rust:acceptance"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:rust:coverage"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:python:acceptance"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "test:python:coverage"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Package --- #
+
+[[ci.jobs]]
+id = "package:rust"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "package:python"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Release --- #
+
+[[ci.jobs]]
+id = "release:prepare"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:rehearse"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:tag"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:publish"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:publish:dry"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "release:verify"
+platform = "linux"
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
 # === === Hooks === === #
 
 [hooks]

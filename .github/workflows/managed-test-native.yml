@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:eb1a6b0882a0e245b8934bca1203d7c5168aa0ea412f4cc58f060475bf9245d3
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:6afd461f4d9f3f32fd3ca39b5c63456cf870e610a6294125d63ba869673a1f53
 name: Test
 "on":
   workflow_call:
@@ -91,6 +91,9 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
+      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -213,6 +216,9 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
+      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -335,6 +341,9 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
+      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""

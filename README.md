@@ -72,6 +72,8 @@ builds the RP2040 firmware. Start from source with the pinned toolchain and
 
 Linux builds need `pkg-config` and the libudev development headers. On Debian
 or Ubuntu, install them with `sudo apt-get install pkg-config libudev-dev`.
+CI installs the same prerequisites through `tools/ci/bootstrap-linux.sh` before
+mise installs the pinned firmware conversion tool.
 
 ```sh
 git clone https://github.com/stokker-technologies/helios-mesh.git

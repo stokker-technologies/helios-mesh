@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:d45a9faa7953e0d18cc3adc3076e0f95f08229471e8a2424027175a4d106c3bb
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:309595d83b662cd8f1a2b264a222db69f3c5c47e5bbedc711ba0a990f30d1849
 name: Package
 "on":
   workflow_call:
@@ -91,6 +91,9 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
+      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-generated.yml; sha256:9453ce382cc7cb26820bcaacd7e7863ee785a643b4c92e1721a0bec49b9ef484
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-generated.yml; sha256:7052bdab2585a5561375bf58f82f6f71f97f4b2dfa211d0c1f94133454ba399b
 name: Check
 "on":
   workflow_call:
@@ -88,6 +88,8 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
+    - name: Bootstrap
+      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
