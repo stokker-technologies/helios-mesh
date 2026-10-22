@@ -1,6 +1,9 @@
-# CI Migration
+# CI Migration Specification
 
-## ADDED Requirements
+## Purpose
+Define native CI task taxonomy, artifact ownership, required platform gates and verified delivery for Helios Mesh.
+
+## Requirements
 
 ### Requirement: Adopt The Agreed Hub Contract
 The product SHALL migrate its authored tasks and configuration and canonically generated tooling/workflows to the locked Hub CI contracts while preserving required native platform coverage, artifact dependencies and release behavior.
