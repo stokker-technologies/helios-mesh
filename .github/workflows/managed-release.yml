@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-release.yml; sha256:29e5fd7835d2122f87333d0998cb2b3d9a523b4987c03e168600fa1b1a7eaad0
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-release.yml; sha256:7c9548856032d6665cd66b5ce346c9c9e8422c0a3aa71c63c73af2a541058ad3
 name: Release
 "on":
   workflow_call:
@@ -133,6 +133,9 @@ jobs:
           for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
             const value = process.env[key];
             if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
           }
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
@@ -649,6 +652,9 @@ jobs:
           for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
             const value = process.env[key];
             if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
           }
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:

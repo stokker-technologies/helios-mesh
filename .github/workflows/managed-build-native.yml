@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-build-native.yml; sha256:c426d18971c59ed3329ac0f0272e75b6b4d61b5fd652ec70ca1090ed5dac4f6f
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-build-native.yml; sha256:904a244cf94197731ebbe5926cdd7f70b5b807545d4545b6e0c060b597232b8f
 name: Build
 "on":
   workflow_call:
@@ -102,6 +102,9 @@ jobs:
           for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
             const value = process.env[key];
             if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
           }
     - run: >-
         mise exec -- uv run --locked --project tools/python python -m
@@ -261,6 +264,9 @@ jobs:
           for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
             const value = process.env[key];
             if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
           }
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-native.yml; sha256:567b2d32af6bc6adb2cc1b469e428a6b61bff913025316e7ede1b4e59764839e
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-native.yml; sha256:1ece074823e5d898d3c0ab4eee3b7df7e13093112c812a542ee8f963e27f4999
 name: Check
 "on":
   workflow_call:
@@ -102,6 +102,9 @@ jobs:
           for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
             const value = process.env[key];
             if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
           }
     - run: >-
         mise exec -- uv run --locked --project tools/python python -m
