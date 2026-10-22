@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/policy.py; sha256:bbadcd65df858ff754992c2eb06a94fb77f89458bcde0524f1117301ccdcee02
+# Rendered by stkr project update from templates/python/release/policy.py; sha256:d5821c36c2c02f22f9e703c42bfe7fe0d2578dd59d033719ae5597ebfb42df43
 # ***
 #
 # Helios Mesh
@@ -92,7 +92,9 @@ def execute(directory: Path, arguments: Sequence[str], *, capture: bool = False)
         check=False,
         text=True,
         encoding="utf-8",
-        capture_output=capture,
+        stdin=sys.stdin,
+        stdout=subprocess.PIPE if capture else sys.stdout,
+        stderr=subprocess.PIPE if capture else sys.stderr,
     )
     if result.returncode:
         raise ToolError(f"{arguments[0]} failed with exit code {result.returncode}: {result.stderr or ''}")
