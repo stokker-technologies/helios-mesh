@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/policy.py; sha256:741bc1eefdc03d97a3a2f142c2ddb3be0f2c20d8e7a1f409fb1e32eff4ff2d8d
+# Rendered by stkr project update from templates/python/release/policy.py; sha256:bbadcd65df858ff754992c2eb06a94fb77f89458bcde0524f1117301ccdcee02
 # ***
 #
 # Helios Mesh
@@ -87,6 +87,7 @@ def command(value: object, name: str) -> list[str]:
 def execute(directory: Path, arguments: Sequence[str], *, capture: bool = False) -> str:
     result = subprocess.run(
         list(arguments),
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         cwd=directory,
         check=False,
         text=True,

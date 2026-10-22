@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/bootstrap.py; sha256:7979af97544599e83494cf4093905c018632a7347edc8be81fe3d885ca24ad63
+# Rendered by stkr project update from templates/python/release/bootstrap.py; sha256:12a604c9a8112fb625ecbf366da52195d2c3315c7ab2d20c80c15d96c1ed9ceb
 # ***
 #
 # Helios Mesh
@@ -157,6 +157,7 @@ def verify_stkr(directory: Path, executable: Path, version: str) -> None:
     try:
         result = subprocess.run(
             [str(executable), "--version"],
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             cwd=directory,
             text=True,
             capture_output=True,

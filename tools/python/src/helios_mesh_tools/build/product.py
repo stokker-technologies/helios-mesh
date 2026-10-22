@@ -17,6 +17,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 # Third Party Imports
@@ -63,7 +64,15 @@ def main() -> None:
         "--message-format=json-render-diagnostics",
     ]
     with messages.open("w", encoding="utf-8") as output:
-        subprocess.run(command, cwd=ROOT, stdout=output, check=True)
+        subprocess.run(
+            command,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            stdin=sys.stdin,
+            stderr=sys.stderr,
+            cwd=ROOT,
+            stdout=output,
+            check=True,
+        )
     executable = "helios-mesh.exe" if os.name == "nt" else "helios-mesh"
     with temporary.directory() as staging:
         binary = None
@@ -92,7 +101,15 @@ def main() -> None:
         "--out",
         str(wheels),
     ]
-    subprocess.run(command, cwd=ROOT, check=True)
+    subprocess.run(
+        command,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        stdin=sys.stdin,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        cwd=ROOT,
+        check=True,
+    )
 
     if platform.system() == "Linux":
         command = [
@@ -110,7 +127,15 @@ def main() -> None:
         ]
         if options.hardware_unknown:
             command[-1] = "firmware,hardware-unknown"
-        subprocess.run(command, cwd=ROOT, check=True)
+        subprocess.run(
+            command,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            stdin=sys.stdin,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            cwd=ROOT,
+            check=True,
+        )
         directory = "debug" if profile == "dev" else profile
         with temporary.directory() as staging:
             for node in ("gateway", "rotator", "sidecar"):

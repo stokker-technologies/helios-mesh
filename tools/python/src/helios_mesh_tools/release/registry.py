@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/registry.py; sha256:c3efa34a60ac853dcd06386363b7f3a3b92009ab733983a6f23df256bf678eb8
+# Rendered by stkr project update from templates/python/release/registry.py; sha256:45e91de685cc773ba8c7b093e1f567432022861ecce8794c1e7c11f11b14a004
 # ***
 #
 # Helios Mesh
@@ -79,6 +79,7 @@ def publish_crates(directory: Path, *, sleep=time.sleep, clock=time.monotonic) -
         while True:
             result = subprocess.run(
                 ["cargo", "publish", "--locked", "--package", name],
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 cwd=directory,
                 capture_output=True,
                 text=True,
@@ -683,6 +684,7 @@ def _same_tree(directory: Path, head: str, merged: str) -> None:
         try:
             output = subprocess.run(
                 command,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                 cwd=directory,
                 env={**os.environ, "GIT_TERMINAL_PROMPT": "0"},
                 capture_output=True,

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/stkr/__main__.py; sha256:fe49323604cf40174ace02d892a200a800ee06a68a717df299565323437bc1b5
+# Rendered by stkr project update from templates/python/stkr/__main__.py; sha256:6b71f4babeacf6ab18069b18c4d4f4ac4d312fa8cb7deb602d8827c7820bc2af
 # ***
 #
 # Helios Mesh
@@ -65,7 +65,13 @@ def main(arguments: Sequence[str] | None = None) -> int:
             return 0
         print(f"{UNAVAILABLE}; install it with stkr machine install", file=sys.stderr)
         return 127
-    return subprocess.call([executable, *arguments])
+    return subprocess.call(
+        [executable, *arguments],
+        stdin=sys.stdin,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
 
 
 # === Private Functions === #
