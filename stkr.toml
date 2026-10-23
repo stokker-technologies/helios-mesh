@@ -61,34 +61,9 @@ runner = "stokker-local-windows-x64"
 # --- Stage / Test --- #
 
 [[ci.jobs]]
-id = "test:rust:unit"
+id = "test:rust:coverage"
 platform = "linux"
 runner = "stokker-local-linux-x64"
-
-[[ci.jobs]]
-id = "test:rust:unit"
-platform = "windows"
-runner = "stokker-local-windows-x64"
-
-[[ci.jobs]]
-id = "test:rust:integration"
-platform = "linux"
-runner = "stokker-local-linux-x64"
-
-[[ci.jobs]]
-id = "test:rust:integration"
-platform = "windows"
-runner = "stokker-local-windows-x64"
-
-[[ci.jobs]]
-id = "test:rust:acceptance"
-platform = "linux"
-runner = "stokker-local-linux-x64"
-
-[[ci.jobs]]
-id = "test:rust:acceptance"
-platform = "windows"
-runner = "stokker-local-windows-x64"
 
 # --- Stage / Package --- #
 
@@ -96,6 +71,23 @@ runner = "stokker-local-windows-x64"
 id = "package:rust"
 platform = "linux"
 bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+# --- Stage / Release --- #
+
+[[ci.jobs]]
+id = "release:publish:dry"
+platform = "linux"
+runner = "stokker-local-linux-x64"
+
+[[ci.jobs]]
+id = "release:rehearse"
+platform = "linux"
+runner = "stokker-local-linux-x64"
+
+[[ci.jobs]]
+id = "release:tag"
+platform = "linux"
+runner = "stokker-local-linux-x64"
 
 # === === Hooks === === #
 

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:9fc81feead8e40c881a0aeaa8a6d737cdd7fe8eddf33469401b8d584d2dbbb1b
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:43353cca85bbdc797fe63a1b4c717fbb5a412b88ee3a9668b0e8587f38118ed9
 name: Test
 "on":
   workflow_call:
@@ -24,10 +24,7 @@ env:
 jobs:
   validate_test_rust_unit:
     name: Rust / Unit (${{ inputs.platform }})
-    runs-on: >-
-      ${{ inputs.platform == 'windows' && 'stokker-local-windows-x64' ||
-      (inputs.platform == 'linux' && 'stokker-local-linux-x64' ||
-      (fromJSON(inputs.runners)[inputs.platform].small)) }}
+    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_unit }}
     env:
       MISE_ENABLE_TOOLS: >-
@@ -174,10 +171,7 @@ jobs:
         path: .cache/uv/
   validate_test_rust_integration:
     name: Rust / Integration (${{ inputs.platform }})
-    runs-on: >-
-      ${{ inputs.platform == 'windows' && 'stokker-local-windows-x64' ||
-      (inputs.platform == 'linux' && 'stokker-local-linux-x64' ||
-      (fromJSON(inputs.runners)[inputs.platform].small)) }}
+    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_integration }}
     env:
       MISE_ENABLE_TOOLS: >-
@@ -324,10 +318,7 @@ jobs:
         path: .cache/uv/
   validate_test_rust_acceptance:
     name: Rust / Acceptance (${{ inputs.platform }})
-    runs-on: >-
-      ${{ inputs.platform == 'windows' && 'stokker-local-windows-x64' ||
-      (inputs.platform == 'linux' && 'stokker-local-linux-x64' ||
-      (fromJSON(inputs.runners)[inputs.platform].small)) }}
+    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_acceptance }}
     env:
       MISE_ENABLE_TOOLS: >-

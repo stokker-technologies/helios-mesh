@@ -298,9 +298,11 @@ Background validation keeps Windows child consoles hidden while preserving
 command output and exit status. Interactive product commands keep their normal
 console behavior.
 
-CI runner overrides live in `stkr.toml`: heavy Rust jobs use local Linux and
-Windows runners; lightweight checks and packaging use hosted defaults with the
-same tasks.
+CI runner overrides live in `stkr.toml`: Rust checks and build producers use
+local Linux and Windows runners. Rust coverage and Release Dry, Rehearsal and
+Tag also compile crates and use local Linux runners. Artifact-consuming tests
+and packaging, other checks, publication and final verification use native
+hosted runners with the same tasks.
 Ordinary CI jobs default to 120 minutes while individual test deadlines remain
 unchanged. Pull requests can write compatible caches within their native merge-ref
 scope. New PR and ordinary `dev` commits cancel superseded validation while
