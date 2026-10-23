@@ -248,9 +248,9 @@ After [Quick Start](#quick-start), choose a repository task:
 
 | Command | Purpose |
 | --- | --- |
-| `mise run check` | Check Hub conventions, formatting, features, firmware compilation, lints, types, and workflow syntax |
-| `mise run build --profile dev` | Build shipping host binaries, wheels, and Linux firmware |
-| `mise run build:rust:tests --profile dev` | Build the shared test archive and fixtures |
+| `mise run check` | Check Hub conventions, formatting, dependency hygiene, Python lints and types, and workflow syntax |
+| `mise run build --profile dev` | Build shipping binaries, wheels, and Linux firmware with matching Clippy |
+| `mise run build:rust:tests --profile dev` | Prove Rust feature and firmware configurations with Clippy, then build the shared test archive and fixtures |
 | `mise run check:python:generated --profile dev` | Verify the built wheel against Python stubs |
 | `mise run test` | Run Rust unit, integration, acceptance, and Python acceptance lanes |
 | `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
@@ -298,8 +298,12 @@ Background validation keeps Windows child consoles hidden while preserving
 command output and exit status. Interactive product commands keep their normal
 console behavior.
 
-CI runner overrides live in `stkr.toml`: Rust checks and build producers use
-local Linux and Windows runners. Rust coverage and Release Dry, Rehearsal and
+CI runner overrides live in `stkr.toml`: one shared native Build job per
+platform runs Product and, when selected tests need it, the Tests producer on
+local Linux and Windows runners. Each Rust compilation follows Clippy with
+matching packages, features, target and profile. Product and Tests keep separate
+artifacts; Test and Package consume them independently in parallel. Rust checks
+perform formatting and dependency hygiene on hosted runners. Rust coverage and Release Dry, Rehearsal and
 Tag also compile crates and use local Linux runners. Artifact-consuming tests
 and packaging, other checks, publication and final verification use native
 hosted runners with the same tasks.

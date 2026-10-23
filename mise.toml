@@ -81,7 +81,7 @@ run_windows = "powershell -NoProfile -Command \"$files = @(git ls-files -- '*.to
 
 [tasks.lint]
 description = "Lint Every Language"
-depends = ["lint:rust", "lint:python"]
+depends = ["lint:python"]
 
 [tasks."lint:python"]
 description = "Lint Python"
@@ -91,18 +91,10 @@ run = [
   'uv run --locked --project tools/python --group test basedpyright --project crates/system/helios-mesh-python/pyproject.toml',
 ]
 
-[tasks."lint:rust"]
-description = "Lint Rust"
-run = [
-  "cargo clippy --locked --workspace --exclude helios-mesh-nodes --all-targets --all-features -- -D warnings",
-  "cargo clippy --locked --package helios-mesh-nodes --lib --all-features -- -D warnings",
-  "cargo clippy --locked --package helios-mesh-nodes --bins --target thumbv6m-none-eabi --features firmware -- -D warnings",
-]
-
 # === Check === #
 
 [tasks.check]
-description = "Check Rust Feature Proofs And Conventions"
+description = "Check Formatting, Types And Conventions"
 run = [{ task = "check:repository" }, { task = "check:rust" }, { task = "check:python" }]
 
 [tasks."check:python"]
@@ -126,19 +118,7 @@ run = [
 
 [tasks."check:rust"]
 description = "Check Rust"
-run = [
-  { task = "format:rust --check" },
-  { task = "lint:rust" },
-  "cargo-machete --skip-target-dir",
-  "cargo check --locked --workspace --exclude helios-mesh-nodes --all-targets --all-features",
-  "cargo check --locked --workspace --exclude helios-mesh-nodes --all-targets --no-default-features",
-  "cargo check --locked --package helios-mesh --all-targets --all-features",
-  "cargo check --locked --package helios-mesh --all-targets --no-default-features",
-  "cargo check --locked --package helios-mesh-nodes --lib --all-features",
-  "cargo check --locked --package helios-mesh-nodes --lib --no-default-features",
-  "cargo check --locked --package helios-mesh-nodes --bins --target thumbv6m-none-eabi --all-features",
-  "cargo check --locked --package helios-mesh-nodes --bins --target thumbv6m-none-eabi --no-default-features --features firmware",
-]
+run = [{ task = "format:rust --check" }, "cargo-machete --skip-target-dir"]
 
 # === Build === #
 

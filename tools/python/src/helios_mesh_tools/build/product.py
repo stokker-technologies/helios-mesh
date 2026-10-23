@@ -18,12 +18,13 @@ import platform
 import shutil
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
 
 # Third Party Imports
 # Local Imports
 from .. import temporary
-from . import paths, run
+from . import cargo, paths, run
 
 # Type Checking Imports
 
@@ -50,25 +51,27 @@ def main() -> None:
     if options.hardware_unknown and profile != "dev":
         parser.error("hardware diagnostics use the development profile")
 
+    environment = dict(os.environ, CARGO_BUILD_WARNINGS="deny")
+
     destination = paths.output(ROOT, "build", profile)
     messages = destination / "product/compiler.json"
     messages.parent.mkdir(parents=True, exist_ok=True)
-    command = [
-        "cargo",
-        "build",
+    arguments = [
         "--locked",
         "--profile",
         profile,
         "--package",
         "helios-mesh-cli",
-        "--message-format=json-render-diagnostics",
     ]
+    cargo.clippy(ROOT, arguments, environment=environment)
+    command = ["cargo", "build", *arguments, "--message-format=json-render-diagnostics"]
     with messages.open("w", encoding="utf-8") as output:
         subprocess.run(
             command,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             stdin=sys.stdin,
             stderr=sys.stderr,
+            env=environment,
             cwd=ROOT,
             stdout=output,
             check=True,
@@ -101,20 +104,25 @@ def main() -> None:
         "--out",
         str(wheels),
     ]
+    with (ROOT / "crates/system/helios-mesh-python/pyproject.toml").open("rb") as source:
+        features = tomllib.load(source)["tool"]["maturin"]["features"]
+    arguments = ["--locked", "--profile", profile, "--manifest-path", "crates/system/helios-mesh-python/Cargo.toml", "--lib"]
+    if features:
+        arguments.extend(("--features", ",".join(features)))
+    cargo.clippy(ROOT, arguments, environment=environment)
     subprocess.run(
         command,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         stdin=sys.stdin,
         stdout=sys.stdout,
         stderr=sys.stderr,
+        env=environment,
         cwd=ROOT,
         check=True,
     )
 
     if platform.system() == "Linux":
-        command = [
-            "cargo",
-            "build",
+        arguments = [
             "--locked",
             "--profile",
             profile,
@@ -126,13 +134,16 @@ def main() -> None:
             "firmware",
         ]
         if options.hardware_unknown:
-            command[-1] = "firmware,hardware-unknown"
+            arguments[-1] = "firmware,hardware-unknown"
+        cargo.clippy(ROOT, arguments, environment=environment)
+        command = ["cargo", "build", *arguments]
         subprocess.run(
             command,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             stdin=sys.stdin,
             stdout=sys.stdout,
             stderr=sys.stderr,
+            env=environment,
             cwd=ROOT,
             check=True,
         )
@@ -145,6 +156,7 @@ def main() -> None:
 
 
 # === Private Functions === #
+
 
 # === Entry Point === #
 

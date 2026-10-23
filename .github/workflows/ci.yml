@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:2e5975a2d93e894a45a387bb7401fb703dd5e4e6662d345512d93c986be1ff20
+# Rendered by stkr project update from templates/ci/.github/workflows/ci.yml; sha256:3dc12e27bfd72ed6f248ee2fc586899024aac3c7d6f1b69f0d72185669d7a445
 name: CI
 "on":
   push:
@@ -26,7 +26,7 @@ jobs:
     uses: ./.github/workflows/managed-build-native.yml
     with:
       runners: "{\"linux\":{\"small\":\"ubuntu-latest\",\"large\":\"ubuntu-latest\"},\"windows\":{\"small\":\"windows-latest\",\"large\":\"windows-latest\"},\"nightly\":{\"small\":\"ubuntu-latest\",\"coverage\":\"ubuntu-latest\"}}"
-      timeouts: "{\"build_product\":120,\"build_tests\":120}"
+      timeouts: "{\"build_product\":120}"
       platform: linux
     secrets: inherit
     needs:
@@ -42,7 +42,7 @@ jobs:
     uses: ./.github/workflows/managed-build-native.yml
     with:
       runners: "{\"linux\":{\"small\":\"ubuntu-latest\",\"large\":\"ubuntu-latest\"},\"windows\":{\"small\":\"windows-latest\",\"large\":\"windows-latest\"},\"nightly\":{\"small\":\"ubuntu-latest\",\"coverage\":\"ubuntu-latest\"}}"
-      timeouts: "{\"build_product\":120,\"build_tests\":120}"
+      timeouts: "{\"build_product\":120}"
       platform: windows
     secrets: inherit
     needs:
@@ -130,9 +130,6 @@ jobs:
     - check_generated
     - check_linux
     - check_windows
-    - test
-    - test_linux
-    - test_windows
     - validated
     if: >-
       always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result,
@@ -153,8 +150,6 @@ jobs:
     - check
     - check_generated
     - check_linux
-    - test
-    - test_linux
     - validated
     if: >-
       always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result,
@@ -175,8 +170,6 @@ jobs:
     - check
     - check_generated
     - check_windows
-    - test
-    - test_windows
     - validated
     if: >-
       always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result,

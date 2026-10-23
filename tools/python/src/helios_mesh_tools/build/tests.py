@@ -20,7 +20,7 @@ from pathlib import Path
 
 # Local Imports
 from ..test import archive
-from . import paths
+from . import cargo, paths
 
 # Type Checking Imports
 
@@ -49,12 +49,30 @@ def main() -> None:
     if not host.is_file() or not wheels:
         raise ValueError("missing matching Product Build; run mise run build first")
 
+    _compatibility(options.profile)
     archive.build(ROOT, options.profile, ("--exclude", "helios-mesh-python", "--features", "helios-mesh/testing"))
     files = [host.relative_to(ROOT).as_posix(), *(wheel.relative_to(ROOT).as_posix() for wheel in wheels)]
     archive.stamp(ROOT, options.profile, files)
 
 
 # === Private Functions === #
+
+
+def _compatibility(profile: str) -> None:
+    compiler_profile = "release-tests" if profile == "release" else profile
+    configurations = [
+        ["--workspace", "--exclude", "helios-mesh-nodes", "--all-targets", "--all-features"],
+        ["--workspace", "--exclude", "helios-mesh-nodes", "--all-targets", "--no-default-features"],
+        ["--package", "helios-mesh", "--all-targets", "--all-features"],
+        ["--package", "helios-mesh", "--all-targets", "--no-default-features"],
+        ["--package", "helios-mesh-nodes", "--lib", "--all-features"],
+        ["--package", "helios-mesh-nodes", "--lib", "--no-default-features"],
+        ["--package", "helios-mesh-nodes", "--bins", "--target", "thumbv6m-none-eabi", "--all-features"],
+        ["--package", "helios-mesh-nodes", "--bins", "--target", "thumbv6m-none-eabi", "--no-default-features", "--features", "firmware"],
+    ]
+    for configuration in configurations:
+        cargo.clippy(ROOT, ["--locked", "--profile", compiler_profile, *configuration])
+
 
 # === Entry Point === #
 
