@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/nextest.py; sha256:2029f29afa8fbc3483c1b08a6a62ff1bb730deaab63a36742360b7e847b12273
+# Rendered by stkr project update from templates/python/test/nextest.py; sha256:ff7d12793ec4edaa583969c1d1dacd4a818ab8f62bc4b12e0156b1e3d33242a3
 # ***
 #
 # Helios Mesh
@@ -89,6 +89,7 @@ def config(
         "",
         f"[profile.{PROFILE}.junit]",
         'path = "junit.xml"',
+        'report-skipped = "ignored"',
     ]
     for expression, seconds in overrides:
         lines += [
