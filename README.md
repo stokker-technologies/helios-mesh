@@ -301,6 +301,10 @@ console behavior.
 CI runner overrides live in `stkr.toml`: heavy Rust jobs use local Linux and
 Windows runners; lightweight checks and packaging use hosted defaults with the
 same tasks.
+Ordinary CI jobs default to 120 minutes while individual test deadlines remain
+unchanged. Pull requests can write compatible caches within their native merge-ref
+scope. New PR and ordinary `dev` commits cancel superseded validation while
+release tagging and publication retain their required handoff.
 
 Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
