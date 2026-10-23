@@ -34,9 +34,6 @@ glab = "1.123.0"
 # Project Statistics
 "aqua:boyter/scc" = "4.1.0"
 
-# Product Tools
-"cargo:elf2uf2-rs" = "2.2.0"
-
 # === Environment === #
 
 [env]
@@ -241,6 +238,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.packag
 
 [tasks."package:rust"]
 description = "Package Rust"
+tools."cargo:elf2uf2-rs" = { version = "2.2.0", os = ["linux"] }
 usage = 'flag "--profile <profile>" default="dev"'
 run = ["uv run --locked --project tools/python python -m helios_mesh_tools.package.product --language rust --profile {{usage.profile}}"]
 

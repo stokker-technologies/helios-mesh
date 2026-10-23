@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:f4f752c8bafcc9e8d49afab0127e75b1a937f8f7c87494aa0ce950a6c2fcbea3
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:02fcfee1268b75b6531245f07c164a4266f65a8ab0d9607d549c80513a1cf7e3
 name: Test
 "on":
   workflow_call:
@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_unit }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,node,python,rust,uv
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -94,9 +94,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -159,7 +156,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_integration }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,node,python,rust,uv
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -222,9 +219,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -287,7 +281,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_acceptance }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,node,python,rust,uv
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -350,9 +344,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:309595d83b662cd8f1a2b264a222db69f3c5c47e5bbedc711ba0a990f30d1849
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:c56c7fe63bcd7fbc3d05393ca1dedfb3c81a3a732ce834ab727414b088f891f2
 name: Package
 "on":
   workflow_call:
@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).package_rust }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,cargo:elf2uf2-rs,git-cliff,node,python,rust,uv
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:

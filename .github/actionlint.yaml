@@ -1,11 +1,8 @@
-# ***
-#
-# Helios Mesh
-#
-# SPDX-License-Identifier: Apache-2.0
-#
-# ***
-
+# Rendered by stkr project update from templates/ci/.github/actionlint.yaml; sha256:6d3cb6eaf8a46eb3f8f2c958f6498faf4a9b41a3ace84586ed43966686145f92
 self-hosted-runner:
   labels:
-    - stokker-local-linux-x64
+  - macos-latest
+  - stokker-local-linux-x64
+  - stokker-local-windows-x64
+  - ubuntu-latest
+  - windows-latest

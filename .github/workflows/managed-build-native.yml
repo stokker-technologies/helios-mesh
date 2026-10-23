@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-build-native.yml; sha256:45a1315ebc896a0729a74186ca7170fdcc8dc98104f55f53b8853a56fd93f2de
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-build-native.yml; sha256:1f19856f56773c797757146ad801b581af5938afced2b0fb4cd9698e95999139
 name: Build
 "on":
   workflow_call:
@@ -91,9 +91,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -184,7 +181,7 @@ jobs:
         path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: >-
-        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,cargo:elf2uf2-rs,github:bnjbvr/cargo-machete,node,npm:@fission-ai/openspec,python,rust,sccache,taplo,uv
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,github:bnjbvr/cargo-machete,node,npm:@fission-ai/openspec,python,rust,sccache,taplo,uv
       STKR_SCCACHE_BACKEND: gha
       STKR_SCCACHE_MODE: >-
         ${{ github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
@@ -260,9 +257,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -366,7 +360,7 @@ jobs:
         path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: >-
-        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,cargo:elf2uf2-rs,github:bnjbvr/cargo-machete,node,npm:@fission-ai/openspec,python,rust,sccache,taplo,uv
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,github:bnjbvr/cargo-machete,node,npm:@fission-ai/openspec,python,rust,sccache,taplo,uv
       STKR_SCCACHE_BACKEND: gha
       STKR_SCCACHE_MODE: >-
         ${{ github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
