@@ -1,4 +1,9 @@
-## ADDED Requirements
+# Native CI Specification
+
+## Purpose
+Produce native shipping and optional test artifacts in one shared job per platform and profile, preserving compiler configuration and required platform proof.
+
+## Requirements
 
 ### Requirement: Shared Native Build
 
