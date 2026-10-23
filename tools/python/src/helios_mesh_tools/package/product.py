@@ -16,6 +16,7 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -65,7 +66,15 @@ def main() -> None:
             for node in ("gateway", "rotator", "sidecar"):
                 source = product / "firmware" / f"helios-mesh-node-{node}"
                 image = firmware / f"helios-mesh-node-{node}.uf2"
-                subprocess.run(["elf2uf2-rs", str(source), str(image)], cwd=ROOT, check=True)
+                subprocess.run(
+                    ["elf2uf2-rs", str(source), str(image)],
+                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                    stdin=sys.stdin,
+                    stdout=sys.stdout,
+                    stderr=sys.stderr,
+                    cwd=ROOT,
+                    check=True,
+                )
                 entries[image.name] = image.read_bytes()
                 entries[f"debug/{source.name}.elf"] = source.read_bytes()
             entries["README.txt"] = (

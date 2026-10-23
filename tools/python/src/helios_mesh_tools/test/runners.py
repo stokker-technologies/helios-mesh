@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/runners.py; sha256:828c7f3928d1cb544403cf3d20b8146bb2cd21cdc7ac772863b0d7b08a215d4c
+# Rendered by stkr project update from templates/python/test/runners.py; sha256:2cca2c871e8c193096e53b7482070d77e80f831aeef642d2eeab49030a28ef1a
 # ***
 #
 # Helios Mesh
@@ -70,7 +70,12 @@ def main() -> None:
 
 
 def _pages(endpoint: str) -> list[dict]:
-    return json.loads(subprocess.check_output(["gh", "api", "--hostname", "github.com", "--paginate", "--slurp", endpoint]))
+    return json.loads(
+        subprocess.check_output(
+            ["gh", "api", "--hostname", "github.com", "--paginate", "--slurp", endpoint],
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    )
 
 
 # === Entry Point === #

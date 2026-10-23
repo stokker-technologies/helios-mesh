@@ -70,10 +70,12 @@ Helios Mesh is pre-1.0. Linux and Windows have native CI coverage; Linux also
 builds the RP2040 firmware. Start from source with the pinned toolchain and
 [mise](https://mise.jdx.dev).
 
-Linux builds need `pkg-config` and the libudev development headers. On Debian
-or Ubuntu, install them with `sudo apt-get install pkg-config libudev-dev`.
-CI installs the same prerequisites through `tools/ci/bootstrap-linux.sh` before
-mise installs the pinned firmware conversion tool.
+Linux Rust packaging needs `pkg-config` and the libudev development headers.
+On Debian or Ubuntu, install them with
+`sudo apt-get install pkg-config libudev-dev`. CI installs these prerequisites
+only for Rust packaging through `tools/ci/bootstrap-linux.sh`. The
+`package:rust` task selects the pinned firmware converter on Linux, including
+when called through `package` or a local release rehearsal.
 
 ```sh
 git clone https://github.com/stokker-technologies/helios-mesh.git
@@ -292,6 +294,14 @@ mise run release:publish:dry
 ```
 
 Provider CI runs the native graph on every configured platform.
+Background validation keeps Windows child consoles hidden while preserving
+command output and exit status. Interactive product commands keep their normal
+console behavior.
+
+CI runner overrides live in `stkr.toml`: heavy Rust jobs use local Linux and
+Windows runners; lightweight checks and packaging use hosted defaults with the
+same tasks.
+
 Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
 

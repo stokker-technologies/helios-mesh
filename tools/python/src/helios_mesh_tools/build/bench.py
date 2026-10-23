@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/build/bench.py; sha256:cde30f57870e7b5279226c3340926e1046d94ad1fd1b1b1bbe3f008d19af9b78
+# Rendered by stkr project update from templates/python/build/bench.py; sha256:95050d013ce7e1491f90b3d98954e54f876624fcf490e8b35014afde8439aba9
 # ***
 #
 # Helios Mesh
@@ -59,7 +59,7 @@ def build(directory: Path, extra: Sequence[str] = ()) -> Path:
     with temporary.directory() as staging:
         raw = staging / "compiler.json"
         with raw.open("w", encoding="utf-8") as written:
-            subprocess.run(command, cwd=directory, stdout=written, check=True)
+            subprocess.run(command, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0), cwd=directory, stdout=written, check=True)
         for kind in ("bin", "bench"):
             (staging / kind).mkdir()
 

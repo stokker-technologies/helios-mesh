@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:6afd461f4d9f3f32fd3ca39b5c63456cf870e610a6294125d63ba869673a1f53
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-native.yml; sha256:07ba6de17ed3cd1f1618920374936b22e9205201f4f7dee81d76ecab2c1d39f6
 name: Test
 "on":
   workflow_call:
@@ -24,11 +24,14 @@ env:
 jobs:
   validate_test_rust_unit:
     name: Rust / Unit (${{ inputs.platform }})
-    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
+    runs-on: >-
+      ${{ inputs.platform == 'windows' && 'stokker-local-windows-x64' ||
+      (inputs.platform == 'linux' && 'stokker-local-linux-x64' ||
+      (fromJSON(inputs.runners)[inputs.platform].small)) }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_unit }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -91,9 +94,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -111,7 +111,26 @@ jobs:
     - name: Extract Build
       shell: pwsh
       run: |-
-        & "$env:ProgramFiles\Git\usr\bin\tar.exe" -xf "build-tests-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
+        $candidates = @(Get-Command tar.exe -CommandType Application -All -ErrorAction SilentlyContinue | ForEach-Object { $_.Source })
+        foreach ($git in @(Get-Command git.exe -CommandType Application -All -ErrorAction SilentlyContinue)) {
+          $root = Split-Path -Parent (Split-Path -Parent $git.Source)
+          $candidates += Join-Path $root 'usr/bin/tar.exe'
+        }
+        $tar = $null
+        foreach ($candidate in @($candidates | Select-Object -Unique)) {
+          if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+          try {
+            $version = & $candidate --version 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$version" -notmatch '^tar \(GNU tar\)') { continue }
+            $capabilities = & $candidate --help 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$capabilities" -notmatch '--force-local' -or "$capabilities" -notmatch '--use-compress-program') { continue }
+            $tar = $candidate
+            break
+          } catch { continue }
+        }
+        if (!$tar) { throw 'GNU tar with force-local and external-compressor support is required; repair native runner provisioning' }
+        $env:PATH = (Split-Path -Parent $tar) + [IO.Path]::PathSeparator + $env:PATH
+        & $tar -xf "build-tests-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: inputs.platform == 'windows'
     - run: mise run test:rust:unit --profile ${{ env.PROFILE }}
@@ -149,11 +168,14 @@ jobs:
         path: .cache/uv/
   validate_test_rust_integration:
     name: Rust / Integration (${{ inputs.platform }})
-    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
+    runs-on: >-
+      ${{ inputs.platform == 'windows' && 'stokker-local-windows-x64' ||
+      (inputs.platform == 'linux' && 'stokker-local-linux-x64' ||
+      (fromJSON(inputs.runners)[inputs.platform].small)) }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_integration }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -216,9 +238,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -236,7 +255,26 @@ jobs:
     - name: Extract Build
       shell: pwsh
       run: |-
-        & "$env:ProgramFiles\Git\usr\bin\tar.exe" -xf "build-tests-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
+        $candidates = @(Get-Command tar.exe -CommandType Application -All -ErrorAction SilentlyContinue | ForEach-Object { $_.Source })
+        foreach ($git in @(Get-Command git.exe -CommandType Application -All -ErrorAction SilentlyContinue)) {
+          $root = Split-Path -Parent (Split-Path -Parent $git.Source)
+          $candidates += Join-Path $root 'usr/bin/tar.exe'
+        }
+        $tar = $null
+        foreach ($candidate in @($candidates | Select-Object -Unique)) {
+          if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+          try {
+            $version = & $candidate --version 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$version" -notmatch '^tar \(GNU tar\)') { continue }
+            $capabilities = & $candidate --help 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$capabilities" -notmatch '--force-local' -or "$capabilities" -notmatch '--use-compress-program') { continue }
+            $tar = $candidate
+            break
+          } catch { continue }
+        }
+        if (!$tar) { throw 'GNU tar with force-local and external-compressor support is required; repair native runner provisioning' }
+        $env:PATH = (Split-Path -Parent $tar) + [IO.Path]::PathSeparator + $env:PATH
+        & $tar -xf "build-tests-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: inputs.platform == 'windows'
     - run: mise run test:rust:integration --profile ${{ env.PROFILE }}
@@ -274,11 +312,14 @@ jobs:
         path: .cache/uv/
   validate_test_rust_acceptance:
     name: Rust / Acceptance (${{ inputs.platform }})
-    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
+    runs-on: >-
+      ${{ inputs.platform == 'windows' && 'stokker-local-windows-x64' ||
+      (inputs.platform == 'linux' && 'stokker-local-linux-x64' ||
+      (fromJSON(inputs.runners)[inputs.platform].small)) }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_rust_acceptance }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -341,9 +382,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
-      if: inputs.platform == 'linux'
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -361,7 +399,26 @@ jobs:
     - name: Extract Build
       shell: pwsh
       run: |-
-        & "$env:ProgramFiles\Git\usr\bin\tar.exe" -xf "build-product-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
+        $candidates = @(Get-Command tar.exe -CommandType Application -All -ErrorAction SilentlyContinue | ForEach-Object { $_.Source })
+        foreach ($git in @(Get-Command git.exe -CommandType Application -All -ErrorAction SilentlyContinue)) {
+          $root = Split-Path -Parent (Split-Path -Parent $git.Source)
+          $candidates += Join-Path $root 'usr/bin/tar.exe'
+        }
+        $tar = $null
+        foreach ($candidate in @($candidates | Select-Object -Unique)) {
+          if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+          try {
+            $version = & $candidate --version 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$version" -notmatch '^tar \(GNU tar\)') { continue }
+            $capabilities = & $candidate --help 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$capabilities" -notmatch '--force-local' -or "$capabilities" -notmatch '--use-compress-program') { continue }
+            $tar = $candidate
+            break
+          } catch { continue }
+        }
+        if (!$tar) { throw 'GNU tar with force-local and external-compressor support is required; repair native runner provisioning' }
+        $env:PATH = (Split-Path -Parent $tar) + [IO.Path]::PathSeparator + $env:PATH
+        & $tar -xf "build-product-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: inputs.platform == 'windows'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -374,7 +431,26 @@ jobs:
     - name: Extract Build
       shell: pwsh
       run: |-
-        & "$env:ProgramFiles\Git\usr\bin\tar.exe" -xf "build-tests-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
+        $candidates = @(Get-Command tar.exe -CommandType Application -All -ErrorAction SilentlyContinue | ForEach-Object { $_.Source })
+        foreach ($git in @(Get-Command git.exe -CommandType Application -All -ErrorAction SilentlyContinue)) {
+          $root = Split-Path -Parent (Split-Path -Parent $git.Source)
+          $candidates += Join-Path $root 'usr/bin/tar.exe'
+        }
+        $tar = $null
+        foreach ($candidate in @($candidates | Select-Object -Unique)) {
+          if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+          try {
+            $version = & $candidate --version 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$version" -notmatch '^tar \(GNU tar\)') { continue }
+            $capabilities = & $candidate --help 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$capabilities" -notmatch '--force-local' -or "$capabilities" -notmatch '--use-compress-program') { continue }
+            $tar = $candidate
+            break
+          } catch { continue }
+        }
+        if (!$tar) { throw 'GNU tar with force-local and external-compressor support is required; repair native runner provisioning' }
+        $env:PATH = (Split-Path -Parent $tar) + [IO.Path]::PathSeparator + $env:PATH
+        & $tar -xf "build-tests-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: inputs.platform == 'windows'
     - run: mise run test:rust:acceptance --profile ${{ env.PROFILE }}

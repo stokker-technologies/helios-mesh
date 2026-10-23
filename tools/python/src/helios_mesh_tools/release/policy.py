@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/policy.py; sha256:741bc1eefdc03d97a3a2f142c2ddb3be0f2c20d8e7a1f409fb1e32eff4ff2d8d
+# Rendered by stkr project update from templates/python/release/policy.py; sha256:d5821c36c2c02f22f9e703c42bfe7fe0d2578dd59d033719ae5597ebfb42df43
 # ***
 #
 # Helios Mesh
@@ -87,11 +87,14 @@ def command(value: object, name: str) -> list[str]:
 def execute(directory: Path, arguments: Sequence[str], *, capture: bool = False) -> str:
     result = subprocess.run(
         list(arguments),
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         cwd=directory,
         check=False,
         text=True,
         encoding="utf-8",
-        capture_output=capture,
+        stdin=sys.stdin,
+        stdout=subprocess.PIPE if capture else sys.stdout,
+        stderr=subprocess.PIPE if capture else sys.stderr,
     )
     if result.returncode:
         raise ToolError(f"{arguments[0]} failed with exit code {result.returncode}: {result.stderr or ''}")

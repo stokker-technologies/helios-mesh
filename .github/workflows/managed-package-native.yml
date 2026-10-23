@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:309595d83b662cd8f1a2b264a222db69f3c5c47e5bbedc711ba0a990f30d1849
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-package-native.yml; sha256:6366c742c58e18501dcfe0f409fbd0ac04ebbd958212ab4f52eb8a936ee6daf0
 name: Package
 "on":
   workflow_call:
@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).package_rust }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,cargo:elf2uf2-rs
+        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,cargo:elf2uf2-rs,git-cliff,node,python,rust,uv
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -111,7 +111,26 @@ jobs:
     - name: Extract Build
       shell: pwsh
       run: |-
-        & "$env:ProgramFiles\Git\usr\bin\tar.exe" -xf "build-product-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
+        $candidates = @(Get-Command tar.exe -CommandType Application -All -ErrorAction SilentlyContinue | ForEach-Object { $_.Source })
+        foreach ($git in @(Get-Command git.exe -CommandType Application -All -ErrorAction SilentlyContinue)) {
+          $root = Split-Path -Parent (Split-Path -Parent $git.Source)
+          $candidates += Join-Path $root 'usr/bin/tar.exe'
+        }
+        $tar = $null
+        foreach ($candidate in @($candidates | Select-Object -Unique)) {
+          if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+          try {
+            $version = & $candidate --version 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$version" -notmatch '^tar \(GNU tar\)') { continue }
+            $capabilities = & $candidate --help 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$capabilities" -notmatch '--force-local' -or "$capabilities" -notmatch '--use-compress-program') { continue }
+            $tar = $candidate
+            break
+          } catch { continue }
+        }
+        if (!$tar) { throw 'GNU tar with force-local and external-compressor support is required; repair native runner provisioning' }
+        $env:PATH = (Split-Path -Parent $tar) + [IO.Path]::PathSeparator + $env:PATH
+        & $tar -xf "build-product-${{ env.PROFILE }}-${{ inputs.platform }}.tar.zst" --force-local --use-compress-program "zstd -d"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: inputs.platform == 'windows'
     - run: mise run package:rust --profile ${{ env.PROFILE }}
@@ -126,10 +145,29 @@ jobs:
     - name: Archive Package
       shell: pwsh
       run: |-
+        $candidates = @(Get-Command tar.exe -CommandType Application -All -ErrorAction SilentlyContinue | ForEach-Object { $_.Source })
+        foreach ($git in @(Get-Command git.exe -CommandType Application -All -ErrorAction SilentlyContinue)) {
+          $root = Split-Path -Parent (Split-Path -Parent $git.Source)
+          $candidates += Join-Path $root 'usr/bin/tar.exe'
+        }
+        $tar = $null
+        foreach ($candidate in @($candidates | Select-Object -Unique)) {
+          if (!(Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+          try {
+            $version = & $candidate --version 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$version" -notmatch '^tar \(GNU tar\)') { continue }
+            $capabilities = & $candidate --help 2>$null
+            if ($LASTEXITCODE -ne 0 -or "$capabilities" -notmatch '--force-local' -or "$capabilities" -notmatch '--use-compress-program') { continue }
+            $tar = $candidate
+            break
+          } catch { continue }
+        }
+        if (!$tar) { throw 'GNU tar with force-local and external-compressor support is required; repair native runner provisioning' }
+        $env:PATH = (Split-Path -Parent $tar) + [IO.Path]::PathSeparator + $env:PATH
         $native = Split-Path -Leaf (& mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.build.paths package --profile ${{ env.PROFILE }})
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         New-Item -ItemType Directory -Force target/ci | Out-Null
-        & "$env:ProgramFiles\Git\usr\bin\tar.exe" -cf "target/ci/package-${{ env.PROFILE }}-rust-${{ inputs.platform }}.tar" --force-local -- "target/package/${{ env.PROFILE }}/${native}/rust"
+        & $tar -cf "target/ci/package-${{ env.PROFILE }}-rust-${{ inputs.platform }}.tar" --force-local -- "target/package/${{ env.PROFILE }}/${native}/rust"
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       if: inputs.platform == 'windows'
     - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9

@@ -10,7 +10,7 @@ lockfile = true
 # Languages And Runtimes
 node = "26.11.1"
 python = "3.15.0"
-rust = { version = "1.99.0", components = "clippy,rustfmt,llvm-tools-preview", profile = "minimal", targets = "thumbv6m-none-eabi" }
+rust = { version = "1.99.0", components = "clippy,rustfmt,llvm-tools", profile = "minimal", targets = "thumbv6m-none-eabi" }
 
 # Package Managers
 uv = "0.13.0"
@@ -33,9 +33,6 @@ glab = "1.123.0"
 
 # Project Statistics
 "aqua:boyter/scc" = "4.1.0"
-
-# Product Tools
-"cargo:elf2uf2-rs" = "2.2.0"
 
 # === Environment === #
 
@@ -241,6 +238,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.packag
 
 [tasks."package:rust"]
 description = "Package Rust"
+tools."cargo:elf2uf2-rs" = { version = "2.2.0", os = ["linux"] }
 usage = 'flag "--profile <profile>" default="dev"'
 run = ["uv run --locked --project tools/python python -m helios_mesh_tools.package.product --language rust --profile {{usage.profile}}"]
 

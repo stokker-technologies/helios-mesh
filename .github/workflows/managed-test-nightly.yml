@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-nightly.yml; sha256:f08027eda698b3db0f7d3b049b3de1aca4cff441f83c5d4462d10574ad4fa257
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-nightly.yml; sha256:7f858d0c01d2337adba55e976eece68a6fcfd58c715e4069b016c9dcdfe1ada7
 name: Test
 "on":
   workflow_call:
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_coverage_python }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -88,8 +88,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""
@@ -149,7 +147,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_coverage_rust }}
     env:
       MISE_ENABLE_TOOLS: >-
-        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo,cargo:elf2uf2-rs
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
@@ -212,8 +210,6 @@ jobs:
           stkr-v4-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('mise.lock')
           }}-${{ hashFiles('uv.lock', 'mise.lock') }}
         path: .cache/uv/
-    - name: Bootstrap
-      run: bash tools/ci/bootstrap-linux.sh
     - uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8
       env:
         RUSTC_WRAPPER: ""

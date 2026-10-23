@@ -50,7 +50,15 @@ def main() -> None:
         raise archive.policy.TestError("missing native wheels; run the build task first")
     archive.install_wheels(ROOT, options.profile)
 
-    subprocess.run([sys.executable, "-m", "mypy.stubtest", "--ignore-disjoint-bases", "helios_mesh"], cwd=ROOT, check=True)
+    subprocess.run(
+        [sys.executable, "-m", "mypy.stubtest", "--ignore-disjoint-bases", "helios_mesh"],
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        stdin=sys.stdin,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        cwd=ROOT,
+        check=True,
+    )
 
 
 # === Private Functions === #

@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/run.py; sha256:3ed9a91b99c0bb9d3ea8401f837d0bd03dd6511756e393b841d5e3e120dcd79e
+# Rendered by stkr project update from templates/python/test/run.py; sha256:370bd47af38ed1fde38cdc3ac2461d6a461dedbabaaa106fb3fa225465c212a5
 # ***
 #
 # Helios Mesh
@@ -406,9 +406,25 @@ def _deadline(rules: policy.Policy, language: str, case: report.Case, recorded: 
     return rules.story(case.category, seconds)
 
 
+def _console() -> dict:
+    """Keep Native Console Signaling Available Without A Visible Window."""
+    if os.name != "nt":
+        return {}
+    startup = subprocess.STARTUPINFO()
+    startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startup.wShowWindow = subprocess.SW_HIDE
+    return {
+        "startupinfo": startup,
+        "creationflags": subprocess.CREATE_NEW_CONSOLE,
+        "stdin": sys.stdin,
+        "stdout": sys.stdout,
+        "stderr": sys.stderr,
+    }
+
+
 def _execute(command: Sequence[str], cwd: Path, environment: dict[str, str] | None) -> int:
     try:
-        return subprocess.run(list(command), cwd=cwd, env=environment, check=False).returncode
+        return subprocess.run(list(command), cwd=cwd, env=environment, check=False, **_console()).returncode
     except OSError as error:
         raise policy.TestError(f"{command[0]} is unavailable: {error}") from error
 
@@ -416,7 +432,7 @@ def _execute(command: Sequence[str], cwd: Path, environment: dict[str, str] | No
 def _measured(command: Sequence[str], cwd: Path, environment: dict[str, str]) -> tuple[int, int | None]:
     """Exit status and peak resident bytes of one process and the children it waited for."""
     try:
-        process = subprocess.Popen(list(command), cwd=cwd, env=environment)
+        process = subprocess.Popen(list(command), cwd=cwd, env=environment, **_console())
     except OSError as error:
         raise policy.TestError(f"{command[0]} is unavailable: {error}") from error
     if not hasattr(os, "wait4"):
