@@ -1,17 +1,20 @@
 # Compile Runner Routing Specification
 
 ## Purpose
-Reserve local native runners for crate-compiling jobs while hosted runners execute artifact consumers and other work.
+Run compilation producers and artifact consumers on GitHub-hosted runners.
 
 ## Requirements
 
-### Requirement: Route By Actual Crate Compilation
-CI SHALL reserve local runners for jobs that compile crates and route other jobs to platform-matching hosted runners.
+### Requirement: Hosted Compilation And Consumption
+
+CI SHALL use platform-matching GitHub-hosted runners for every job, including jobs that compile crates.
 
 #### Scenario: Compilation Producer
-- WHEN a job invokes crate compilation directly or through a nested task
-- THEN its configured local native runner remains selected.
+
+- **WHEN** a job invokes crate compilation directly or through a nested task
+- **THEN** it uses the required platform's GitHub-hosted runner with unchanged compiler selectors and gates
 
 #### Scenario: Artifact Consumer
-- WHEN a job only executes or packages existing artifacts without crate compilation
-- THEN it uses a hosted runner for the required native platform with unchanged bootstrap and gates.
+
+- **WHEN** a job executes or packages existing artifacts without crate compilation
+- **THEN** it uses the required platform's GitHub-hosted runner with unchanged bootstrap and gates
