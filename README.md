@@ -307,6 +307,9 @@ Ordinary CI jobs default to 120 minutes while individual test deadlines remain
 unchanged. Pull requests can write compatible caches within their native merge-ref
 scope. New PR and ordinary `dev` commits cancel superseded validation while
 release tagging and publication retain their required handoff.
+CI prepares native compiler and archive tools before restoring caches; runner
+slots use isolated mise stores. Lane artifacts retain native diagnostics beside
+JUnit reports, including on failure, for seven days.
 
 Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
