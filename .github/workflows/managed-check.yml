@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check.yml; sha256:fceefc9a959fa7a0a373b7c989c62517e90b32aadd30f805fab05da4f0e58b9e
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-check.yml; sha256:636048233966e56e65dbb26b5f9aa19c23230b1d1a951e07ded0c18308575f72
 name: Check
 "on":
   workflow_call:
@@ -119,7 +119,7 @@ jobs:
         path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: >-
-        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,aqua:taiki-e/cargo-llvm-cov,git-cliff,github:bnjbvr/cargo-machete,node,npm:@fission-ai/openspec,python,rust,sccache,taplo,uv
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,sccache,aqua:rhysd/actionlint,npm:@fission-ai/openspec,taplo,git-cliff
   check_python:
     name: Python
     runs-on: ${{ fromJSON(inputs.runners).linux.small }}
@@ -220,4 +220,4 @@ jobs:
         path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: >-
-        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,node,python,rust,uv
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff

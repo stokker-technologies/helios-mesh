@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test.yml; sha256:15e6a6fd86f02bdcac662054bc9e3dd86c845ae1bc8155e41fc50a919eb2472f
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test.yml; sha256:776264d0a2d39b33ced06cb789126a11d7b504539e6830703482ce56d369ccec
 name: Test
 "on":
   workflow_call:
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_test_python_acceptance }}
     env:
       MISE_ENABLE_TOOLS: >-
-        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,node,python,rust,uv
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:

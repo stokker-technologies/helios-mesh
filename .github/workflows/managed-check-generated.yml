@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-generated.yml; sha256:e96c8193886afddbab657f61fd22ef812a6a9c7b75b0df63e860ec4b9c5aa583
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-generated.yml; sha256:dc55f7065f155876e4145236e08c467123441eda58d3f482b9fda1aa214ac789
 name: Check
 "on":
   workflow_call:
@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: ${{ fromJSON(inputs.timeouts).check_generated_python }}
     env:
       MISE_ENABLE_TOOLS: >-
-        aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff,node,python,rust,uv
+        node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:rhysd/actionlint,git-cliff
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       with:
