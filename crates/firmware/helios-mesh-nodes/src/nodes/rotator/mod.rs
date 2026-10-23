@@ -448,18 +448,18 @@ mod tests {
         struct SetFlag;
         impl helios_mesh::Job for SetFlag {
             type Resources = bool;
-            async fn run(&mut self, resource: &mut bool, _: &mut helios_mesh::JobContext) -> Result<(), Error> {
+            fn run(&mut self, resource: &mut bool, _: &mut helios_mesh::JobContext) -> impl Future<Output = Result<(), Error>> {
                 *resource = true;
-                Ok(())
+                core::future::ready(Ok(()))
             }
         }
 
         struct SetCount;
         impl helios_mesh::Job for SetCount {
             type Resources = u32;
-            async fn run(&mut self, resource: &mut u32, _: &mut helios_mesh::JobContext) -> Result<(), Error> {
+            fn run(&mut self, resource: &mut u32, _: &mut helios_mesh::JobContext) -> impl Future<Output = Result<(), Error>> {
                 *resource = 1;
-                Ok(())
+                core::future::ready(Ok(()))
             }
         }
 
@@ -486,7 +486,7 @@ mod tests {
         assert_eq!(views[1].name(), "count");
         assert_eq!(views[1].id(), ChannelId(2));
         assert!(!views[1].is_available());
-        assert!(views.iter().all(|channel| channel.is_idle()));
+        assert!(views.iter().all(helios_mesh::ChannelRef::is_idle));
 
         let operation = flag.submit(SetFlag).unwrap();
         assert_eq!(views[0].queued(), 1);
