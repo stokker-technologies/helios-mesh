@@ -1,20 +1,15 @@
 # CI Routing Specification
 
 ## Purpose
-Define project-owned runner routing while preserving native tasks, required gates and hosted defaults.
+Define GitHub-hosted runner routing while preserving native tasks, required gates and platform coverage.
 
 ## Requirements
 
-### Requirement: Declarative Runner Selection
+### Requirement: Hosted Runner Selection
 
-CI SHALL select runner labels from the project and SHALL use identical tasks and required gates on hosted and local runners.
+Every GitHub CI job SHALL use the platform-matching GitHub-hosted runner default without local runner overrides or provider runner variables.
 
-#### Scenario: Heavy Native Work
+#### Scenario: Native Work
 
-- **WHEN** a platform-specific Rust build or test job is rendered with a local override
-- **THEN** it uses that platform's declared local runner label
-
-#### Scenario: Lightweight Hosted Check
-
-- **WHEN** a lightweight check has no local runner override
-- **THEN** it uses the hosted project default without consulting provider runner variables
+- **WHEN** a Linux or Windows job is rendered
+- **THEN** it uses the corresponding GitHub-hosted runner with unchanged tasks, bootstrap and required gates

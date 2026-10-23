@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-nightly.yml; sha256:8b95db9732834efac425d200475198b5d334925d2b83f0c4e9cf3be91b407387
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-nightly.yml; sha256:007eb033484d33ce5f388c05b1f4f7304cf1e59051035561759b3182f7e4acc9
 name: Test
 "on":
   workflow_call:
@@ -279,7 +279,7 @@ jobs:
     if: github.event_name == 'schedule'
   validate_coverage_rust:
     name: Rust / Coverage
-    runs-on: stokker-local-linux-x64
+    runs-on: ${{ fromJSON(inputs.runners).nightly.coverage }}
     timeout-minutes: ${{ fromJSON(inputs.timeouts).validate_coverage_rust }}
     env:
       MISE_ENABLE_TOOLS: >-
