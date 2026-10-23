@@ -296,6 +296,10 @@ Background validation keeps Windows child consoles hidden while preserving
 command output and exit status. Interactive product commands keep their normal
 console behavior.
 
+CI runner overrides live in `stkr.toml`: heavy Rust jobs use local Linux and
+Windows runners; lightweight checks and packaging use hosted defaults with the
+same tasks.
+
 Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
 
