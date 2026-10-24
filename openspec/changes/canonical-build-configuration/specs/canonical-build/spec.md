@@ -23,7 +23,7 @@ Noncanonical feature combinations and instrumented tests SHALL remain available 
 
 ### Requirement: Independent Parallel Producers
 
-Product and Tests Build jobs SHALL run independently in parallel with their own canonical feature sets. Tests SHALL NOT require Product outputs. Downstream lanes SHALL receive their required artifacts.
+Provider Product and Tests Build jobs SHALL run independently in parallel with their own canonical feature sets. Tests SHALL NOT require Product outputs. Downstream lanes SHALL receive their required artifacts.
 
 #### Scenario: Producer Timing
 
@@ -60,3 +60,13 @@ Every correctness-test hang guard SHALL be at least 30 seconds, including explic
 - **WHEN** a valid tar artifact contains trailing padding beyond its end-of-archive marker
 - **THEN** extraction drains the decompressor output before closing the pipe and requires its successful exit
 - **AND** a corrupt compressed stream still fails rather than ignoring its nonzero status
+
+### Requirement: Serial Local Simulation
+
+Local CI simulation SHALL execute one declared job at a time without imposing thread, CPU or memory limits. Repository simulations SHALL run serially. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
+
+#### Scenario: Local Graph Execution
+
+- **WHEN** local simulation validates a candidate
+- **THEN** each job finishes before the next begins, failed prerequisites block their consumers, and independent jobs still execute
+- **AND** the simulator applies no resource allocation flags, worker overrides or memory controls
