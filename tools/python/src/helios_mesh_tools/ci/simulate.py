@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/simulate.py; sha256:18568e6b5fd0f36f1a3e03c7c0378b6a727a3b9d753119ee60809f97d863bd50
+# Rendered by stkr project update from templates/python/ci/simulate.py; sha256:e2ad963e5bf8c7709ad2d1c513f52704436ae0b45fcb0959b1adec27dbc98cb4
 # ***
 #
 # Helios Mesh
@@ -376,6 +376,12 @@ def stage(root: Path, destination: Path) -> None:
     git = subprocess.run(["git", "-C", str(root), "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=False)
     if git.returncode == 0:
         subprocess.run(["git", "clone", "--quiet", "--no-checkout", "--no-hardlinks", "--local", str(root), str(destination)], check=True)
+        for key, default in (("core.autocrlf", "false"), ("core.eol", "native")):
+            setting = subprocess.run(["git", "-C", str(root), "config", "--get", key], capture_output=True, text=True, check=False)
+            if setting.returncode not in (0, 1):
+                raise SimulationError(f"could not read candidate Git setting: {key}")
+            value = setting.stdout.strip() if setting.returncode == 0 else default
+            subprocess.run(["git", "-C", str(destination), "config", "--local", key, value], check=True)
         index = subprocess.run(["git", "-C", str(root), "ls-files", "--stage", "-z"], capture_output=True, check=True).stdout
         subprocess.run(["git", "-C", str(destination), "read-tree", "--empty"], check=True)
         subprocess.run(["git", "-C", str(destination), "update-index", "-z", "--index-info"], input=index, check=True)
