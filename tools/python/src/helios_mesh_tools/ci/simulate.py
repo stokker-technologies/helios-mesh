@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/simulate.py; sha256:3bb8015768741b682df6c8a45ff6f8eb1af76aff66223a429c88ec297a770411
+# Rendered by stkr project update from templates/python/ci/simulate.py; sha256:18568e6b5fd0f36f1a3e03c7c0378b6a727a3b9d753119ee60809f97d863bd50
 # ***
 #
 # Helios Mesh
@@ -615,6 +615,7 @@ def run_job(job: dict, candidate: Path, output: Path, cache: Path, identity: str
                 local.mkdir(parents=True, exist_ok=True)
                 environment.update(
                     MISE_DATA_DIR=str(local / "mise"),
+                    MISE_CACHE_DIR=str(local / "mise-cache"),
                     MISE_DOWNLOADS_DIR=str(local / "mise-downloads"),
                     CARGO_HOME=str(local / "cargo"),
                     UV_CACHE_DIR=str(local / "uv"),
@@ -716,6 +717,7 @@ def docker(
     }
     child.update(
         MISE_DATA_DIR="/cache/mise",
+        MISE_CACHE_DIR="/cache/mise-cache",
         MISE_DOWNLOADS_DIR="/cache/downloads",
         CARGO_HOME="/cache/cargo",
         UV_CACHE_DIR="/cache/uv",
