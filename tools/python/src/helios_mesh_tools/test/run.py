@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/run.py; sha256:ced9789888958b75342b895786871dc337b2820b913c300a73b4dd85eeeb1df5
+# Rendered by stkr project update from templates/python/test/run.py; sha256:c04710fc24d001fdcf1e5aba4cbe7600d0136f592a80ea60b45c00f284649190
 # ***
 #
 # Helios Mesh
@@ -68,7 +68,7 @@ def test(
         deadline = rules.deadline(category)
 
         # Native Command
-        environment = None
+        environment = dict(os.environ)
         cwd = directory / project
         if language == "rust":
             path = archive.require(directory, profile)
@@ -90,6 +90,7 @@ def test(
             junit = scratch / "junit.xml"
             command = vitest.run(extra, junit, deadline)
 
+        environment["STKR_TEST_PROFILE"] = profile
         lane = _lane(
             directory,
             rules,
@@ -148,6 +149,7 @@ def coverage(
         else:
             raise policy.TestError("coverage is measured for rust and python")
 
+        environment["STKR_TEST_PROFILE"] = profile
         lane = _lane(
             directory,
             rules,
