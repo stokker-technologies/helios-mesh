@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/impact.py; sha256:553c69f7120dcd1beaad416e165ed992f251f6d9e49dbaf44a15968a548673df
+# Rendered by stkr project update from templates/python/ci/impact.py; sha256:e155a1fe7be6e3657ae5de054ad22187039d677102abb1a903e2961109a9956e
 # ***
 #
 # Helios Mesh
@@ -110,13 +110,6 @@ def main(plan: dict) -> None:
         for name in list(document):
             if isinstance(document[name], dict) and "stage" in document[name] and name not in selected:
                 del document[name]
-        for producer, consumers in plan.get("test_outputs", {}).items():
-            if producer in document:
-                enabled = bool(selected.intersection(consumers))
-                document[producer].setdefault("variables", {})["STKR_BUILD_TESTS"] = str(enabled).lower()
-                if not enabled:
-                    artifacts = document[producer].get("artifacts", {})
-                    artifacts["paths"] = [path for path in artifacts.get("paths", []) if not path.startswith("target/ci/build-tests-")]
         # Original Event Rules Remain Meaningful Inside The Native Child Pipeline.
         text = json.dumps(document).replace("CI_PIPELINE_SOURCE", "STKR_PIPELINE_SOURCE")
         destination = Path("target/ci/impact-child.yml")

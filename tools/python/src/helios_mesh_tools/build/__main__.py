@@ -12,7 +12,6 @@
 
 # Standard Library Imports
 import argparse
-import json
 import os
 import platform
 import shutil
@@ -24,7 +23,7 @@ from pathlib import Path
 # Third Party Imports
 # Local Imports
 from .. import temporary
-from . import cargo, paths, run
+from . import cargo, paths
 
 # Type Checking Imports
 
@@ -79,15 +78,14 @@ def main() -> None:
     executable = "helios-mesh.exe" if os.name == "nt" else "helios-mesh"
     with temporary.directory() as staging:
         binary = None
-        for line in messages.read_text(encoding="utf-8").splitlines():
-            event = json.loads(line)
-            if event.get("reason") == "compiler-artifact" and event.get("target", {}).get("name") == "helios-mesh":
+        for event in cargo.artifacts(ROOT, messages):
+            if event.get("target", {}).get("name") == "helios-mesh":
                 binary = event.get("executable") or binary
         if binary is None:
             raise ValueError("Product Build did not produce the native CLI")
         shutil.copy2(binary, staging / executable)
         paths.replace(ROOT, staging, destination / "bin", origin=staging)
-    run.record_target(ROOT, messages, profile)
+    cargo.record_target(ROOT, messages, profile)
 
     wheels = destination / "python"
     if wheels.exists():

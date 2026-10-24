@@ -104,7 +104,7 @@ run = [{ task = "format:python --check" }, { task = "lint:python" }]
 [tasks."check:python:generated"]
 description = "Verify Native Python Exports Against Stubs"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.bindings --profile {{usage.profile}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.check.python.generated --profile {{usage.profile}}"
 env = { CARGO_INCREMENTAL = "0" }
 
 [tasks."check:repository"]
@@ -126,13 +126,19 @@ run = [{ task = "format:rust --check" }, "cargo-machete --skip-target-dir"]
 description = "Build Native Products, Wheels And Linux Firmware"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"; flag "--hardware-unknown"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.product --profile {{usage.profile}} {% if usage.hardware_unknown %}--hardware-unknown{% endif %}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build --profile {{usage.profile}} {% if usage.hardware_unknown %}--hardware-unknown{% endif %}"
+
+[tasks."build:rust:compatibility"]
+description = "Check Noncanonical Rust Feature Combinations Locally"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.rust.compatibility --profile {{usage.profile}}"
 
 [tasks."build:rust:tests"]
 description = "Build The Shared Test Archive And Fixtures"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.tests --profile {{usage.profile}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.rust.tests --profile {{usage.profile}}"
 
 # === Dev === #
 
@@ -190,6 +196,12 @@ description = "Measure Rust Coverage Over Instrumented Lanes"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.run coverage --language rust --profile {{usage.profile}}"
+
+[tasks."test:rust:extended"]
+description = "Build And Test Instrumented Rust Transport Locally"
+env.CARGO_INCREMENTAL = "0"
+usage = 'flag "--profile <profile>" default="dev"'
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.test.rust.extended --profile {{usage.profile}}"
 
 [tasks."test:rust:unit"]
 description = "Test Unit Rust"

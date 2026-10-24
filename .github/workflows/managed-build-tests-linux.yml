@@ -1,5 +1,5 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-check-native.yml; sha256:181651bfd051b8080d33b020452d3eaebafd71154659a7be19d387344875eabf
-name: Check
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-build-tests-linux.yml; sha256:e07f4b38229795734cae21b7941992c8e194e183625d0eee05c80641aaa3bdf2
+name: Build
 "on":
   workflow_call:
     inputs:
@@ -7,9 +7,6 @@ name: Check
         type: string
         required: true
       timeouts:
-        type: string
-        required: true
-      platform:
         type: string
         required: true
 env:
@@ -23,10 +20,10 @@ env:
   npm_config_store_dir: ${{ github.workspace }}/.cache/pnpm
   UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
 jobs:
-  check_rust:
-    name: Rust (${{ inputs.platform }})
-    runs-on: ${{ fromJSON(inputs.runners)[inputs.platform].small }}
-    timeout-minutes: ${{ fromJSON(inputs.timeouts).check_rust }}
+  build_tests_linux:
+    name: Tests (linux)
+    runs-on: ${{ fromJSON(inputs.runners).linux.large }}
+    timeout-minutes: ${{ fromJSON(inputs.timeouts).build_tests_linux }}
     steps:
     - name: Configure Checkout Git
       if: runner.os == 'Windows'
@@ -225,7 +222,45 @@ jobs:
         install: true
         cache: false
         mise_dir: ${{ env.MISE_DATA_DIR }}
-    - run: mise run check:rust
+    - name: Compiler Cache Storage
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      with:
+        script: |-
+          for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+            const value = process.env[key];
+            if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
+          }
+    - name: Compiler Cache Storage
+      uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd
+      with:
+        script: |-
+          for (const key of ['ACTIONS_RUNTIME_TOKEN', 'ACTIONS_RESULTS_URL', 'ACTIONS_CACHE_URL']) {
+            const value = process.env[key];
+            if (value) { core.setSecret(value); core.exportVariable(key, value); }
+          }
+          if (process.env.ACTIONS_CACHE_SERVICE_V2) {
+            core.exportVariable('ACTIONS_CACHE_SERVICE_V2', process.env.ACTIONS_CACHE_SERVICE_V2);
+          }
+    - name: Tests Build
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.build --profile ${{ env.PROFILE }} --output tests --task build:rust:tests
+    - name: Archive tests
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.artifacts pack --archive target/ci/build-tests-${{ env.PROFILE
+        }}-linux.tar.zst --profile ${{ env.PROFILE }} --paths
+        5b227461726765742f6275696c642f7b70726f66696c657d2f7b7461726765747d2f7465737473222c227461726765742f6275696c642f7b70726f66696c657d2f7b7461726765747d2f6669787475726573225d
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      with:
+        name: build-tests-${{ env.PROFILE }}-linux
+        path: target/ci/build-tests-${{ env.PROFILE }}-linux.tar.zst
+        if-no-files-found: error
+        retention-days: 7
+        compression-level: 0
     - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
       if: >-
         success() && ((github.event_name == 'push' && (github.ref == 'refs/heads/dev'
@@ -258,4 +293,10 @@ jobs:
         path: .cache/uv/
     env:
       MISE_ENABLE_TOOLS: >-
-        go,node,python,rust,uv,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,npm:@fission-ai/openspec,taplo
+        aqua:koalaman/shellcheck,aqua:nextest-rs/nextest/cargo-nextest,github:bnjbvr/cargo-machete,go,go:github.com/rhysd/actionlint/cmd/actionlint,node,npm:@fission-ai/openspec,python,rust,sccache,taplo,uv
+      STKR_SCCACHE_BACKEND: gha
+      STKR_SCCACHE_MODE: >-
+        ${{ ((github.event_name == 'push' && (github.ref == 'refs/heads/dev' ||
+        github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))) ||
+        (github.event_name == 'pull_request' && startsWith(github.ref, 'refs/pull/') &&
+        endsWith(github.ref, '/merge'))) && 'READ_WRITE' || 'READ_ONLY' }}

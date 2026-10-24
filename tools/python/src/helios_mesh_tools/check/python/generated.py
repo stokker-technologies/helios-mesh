@@ -20,8 +20,8 @@ from pathlib import Path
 # Third Party Imports
 
 # Local Imports
-from . import archive
-from ..build import paths
+from ...test import archive
+from ...build import paths
 
 # Type Checking Imports
 
@@ -30,7 +30,7 @@ from ..build import paths
 
 # === Constants === #
 
-ROOT = Path(__file__).resolve().parents[5]
+ROOT = Path(__file__).resolve().parents[6]
 
 # === Types === #
 
