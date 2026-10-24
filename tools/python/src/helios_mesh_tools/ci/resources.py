@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/resources.py; sha256:cfd671797ba5fca01901b1eed43650b4d11855c8aca848205cec9f0fe3cd41e6
+# Rendered by stkr project update from templates/python/ci/resources.py; sha256:6e4a8f252b8ca3311a083f0f0aeaa5c94f8cac8506551841704bb6502c06d0a0
 # ***
 #
 # Helios Mesh
@@ -15,6 +15,7 @@ import ctypes
 import hashlib
 import os
 import subprocess
+import sys
 import tempfile
 import threading
 from pathlib import Path
@@ -43,6 +44,9 @@ class SimulationError(RuntimeError):
 
 class NativeLimit:
     def __init__(self, cpu: int | None, memory: int | None):
+        if sys.platform != "win32":
+            raise SimulationError("native process resource limits require Windows")
+
         class Basic(ctypes.Structure):
             _fields_ = [
                 ("process_time", ctypes.c_longlong),
@@ -94,6 +98,9 @@ class NativeLimit:
             raise SimulationError("cannot enforce the aggregate native CPU/RAM budget")
 
     def resize(self, cpu: float, memory: int) -> None:
+        if sys.platform != "win32":
+            raise SimulationError("native process resource limits require Windows")
+
         self.limits.job_memory = memory
         rate = self.rate_type(5, max(1, min(10000, int(cpu * 10000 / (os.cpu_count() or 1)))))
         if not self.kernel.SetInformationJobObject(
@@ -102,6 +109,9 @@ class NativeLimit:
             raise SimulationError("cannot redistribute the aggregate native budget")
 
     def attach(self, process, *, resume: bool = True) -> None:
+        if sys.platform != "win32":
+            raise SimulationError("native process resource limits require Windows")
+
         if not self.kernel.AssignProcessToJobObject(self.handle, int(process._handle)):
             process.kill()
             process.wait()
@@ -150,11 +160,17 @@ class NativeLimit:
             raise SimulationError("cannot resume the owned resource-bounded command")
 
     def close(self) -> None:
+        if sys.platform != "win32":
+            return
+
         if self.handle:
             self.kernel.CloseHandle(self.handle)
             self.handle = None
 
     def peak(self) -> int | None:
+        if sys.platform != "win32":
+            return None
+
         self.kernel.QueryInformationJobObject.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p]
         if self.handle and self.kernel.QueryInformationJobObject(
             self.handle, 9, ctypes.byref(self.limits), ctypes.sizeof(self.limits), None
