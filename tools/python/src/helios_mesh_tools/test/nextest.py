@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/nextest.py; sha256:ff7d12793ec4edaa583969c1d1dacd4a818ab8f62bc4b12e0156b1e3d33242a3
+# Rendered by stkr project update from templates/python/test/nextest.py; sha256:0504b2d2b95b5b7dbb8d8eea9a75eaa446010e01ef919dcc5971a74b7ade0038
 # ***
 #
 # Helios Mesh
@@ -177,7 +177,7 @@ def coverage(
         "--locked",
         "--workspace",
         "--cargo-profile",
-        profile,
+        "test",
         "--config-file",
         str(configuration),
         "--profile",
@@ -196,7 +196,7 @@ def report(profile: str, output: Path) -> list[str]:
         "llvm-cov",
         "report",
         "--profile",
-        profile,
+        "test",
         "--cobertura",
         "--ignore-filename-regex",
         "(/tests/|/benches/|/fixtures/)",

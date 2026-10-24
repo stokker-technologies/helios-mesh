@@ -6,13 +6,13 @@ Product and Tests now use separate parallel provider jobs, superseding single-jo
 
 ## Locked Contract
 
-All provider contexts execute only canonical shipping configurations. Mise owns features per platform/profile. Separate Product and Tests provider jobs run in parallel with independent canonical feature sets. Local sequential builds reuse the workspace Cargo directory where compatible. Tests does not depend on Product output. Clippy precedes each distinct compilation with matching settings. Installer tasks remain Product-only. Preserve the established release-tests LTO exception unless separately agreed.
+All provider contexts execute only canonical shipping configurations. Mise owns features per platform/profile. Separate Product and Tests provider jobs run in parallel with independent canonical feature sets. Local sequential builds reuse the workspace Cargo directory where compatible. Tests does not depend on Product output. Clippy precedes each distinct compilation with matching settings. Installer tasks remain Product-only. Use only built-in Cargo profiles: Product dev/release, Bench bench, and Tests plus their preceding Clippy unoptimized test regardless of graph profile. The former release-tests exception and all authored profile tables are removed.
 
 build:rust:compatibility is an explicit local compiler-matrix helper. test:rust:extended is the optional local behavioral suite and owns its required builds; neither is inferred into CI or ordinary local validation. Avoid multi-archive machinery. Preserve firmware shipping configurations; distinguish unsupported feature combinations from actual shipped targets before moving checks. No shipped SDK feature expansion to make tests fit.
 
 ## Ownership
 
-Existing Helios owner implements in the current migrate-hub-ci worktree. Previous migration merged; preserve any owned changes, create fix/canonical-build-configuration from current dev in this same worktree and rebind the specification. Coordinate with parent and Hub owner on managed output changes. Targeted proof until source closure; then full available local proof and protected PR into dev with both required native provider results. No release publication.
+Existing Helios owner implements in the current migrate-hub-ci worktree. The parallel-build migration merged; the explicit Default Cargo Profiles follow-up uses fix/default-cargo-profiles from merged dev in the same worktree and rebinds this applicable change. Coordinate with parent and Hub owner on managed output changes. Targeted proof until source closure; then full available local proof and protected PR into dev with both required native provider results. No release publication.
 
 ## Source And Coverage Inventory
 
@@ -34,3 +34,13 @@ On the same candidate, native platform and profile, Tests Build duration MUST be
 ## Declared Artifact Ownership
 
 stkr.toml declares Product bin/wheel/target metadata plus Linux firmware, independent Tests archive/stamp, and native package outputs. Rust unit/integration/acceptance consume only Tests (Nextest carries its CLI); Python acceptance/generated checks consume Product. Packages consume Product only. Coverage receives its required base inputs. Dry/Rehearsal/Publish aggregate package outputs across platforms. Verify consumes only remote published assets, checking their SHA-256 and signatures before native installation, so it has no local package input. Inputs express both waiting and transfer; no duplicate ordering-only depends edges are added. Consumers use cargo.archive, cargo.record_target and cargo.artifacts; legacy managed APIs are retired by canonical generation.
+
+## Default Compiler Profile Inventory
+
+Remove the five root Cargo profile tables: release, release-tests, dev, dev package wildcard and bench; no other manifest declares profiles. Preserve the empty canonical Profiles section heading. Product selectors and graph namespaces stay dev/release, and the shared Hub archive/coverage/bench helpers receive canonical profile mapping from the coordinated snapshot. Authored build/rust/compatibility and test/rust/extended use compiler test. Compatibility has no artifacts and drops its redundant graph-profile option; extended keeps the requested report namespace. No shipped features, test cases or dependencies change. The README and this active change supersede the former custom release-tests exception. All prior implementation items reopen until the mapping and generated helper/checker adoption close; provider timing needs evidence from the new candidate.
+
+## Landing Page And Prose Proof
+
+The root README keeps CLI, Python, Rust and firmware examples under their shipped interfaces; CONTRIBUTING owns setup, validation and contribution detail. Existing executable example blocks remain unchanged. Registry badges state unpublished and route to source setup until real registry owners exist. An approved logo is required; no product identity asset is invented.
+
+Explicit stkr.toml prose rules select check:repository for root README/CONTRIBUTING and audited docs Markdown, excluding examples, tutorials, templates and site code. LICENSE selects package:rust as well because package/product.py embeds it in the firmware ZIP. The canonical shared resolver unions known per-path selections, closes producer dependencies and uses full proof for unknown/protected changes. Provider protection reconciliation to the stable aggregate remains a delivery action, separate from credential-disabled rendering.

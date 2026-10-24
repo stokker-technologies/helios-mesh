@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-release.yml; sha256:47855c3d7ef728cd67edb360731affd1a9a440897bca35729194ddfe5a02bd40
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-release.yml; sha256:1adeb954d11d210b1a6388626c85881f8c7d0beb55aae3465cf9aca94767c035
 name: Release
 "on":
   workflow_call:
@@ -48,7 +48,7 @@ env:
   MISE_EXPERIMENTAL: "1"
   CARGO_INCREMENTAL: "0"
   CARGO_HOME: ${{ github.workspace }}/.cache/cargo
-  npm_config_store_dir: ${{ github.workspace }}/.cache/pnpm
+  pnpm_config_store_dir: ${{ github.workspace }}/.cache/pnpm
   UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
   RELEASE_BUILD_RUN_ID: ${{ inputs.review_run != '' && inputs.review_run || github.run_id }}
   RELEASE_BUILD_SHA: ${{ inputs.review_sha != '' && inputs.review_sha || github.sha }}
@@ -336,6 +336,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: gh,git-cliff,glab,go,node,python,rust,sccache,uv
       MISE_TASK_SKIP: package:python,package:rust
@@ -595,6 +602,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: go,node,python,rust,uv,gh,git-cliff,glab
       RELEASE_BUMP: ${{ inputs.bump }}
@@ -882,6 +896,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: go,node,python,rust,uv,gh,git-cliff,glab
       MISE_TASK_SKIP: package:python,package:rust
@@ -1141,6 +1162,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: go,node,python,rust,uv,gh,git-cliff,glab
       CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
@@ -1443,6 +1471,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: gh,git-cliff,glab,go,node,python,rust,sccache,uv
       MISE_TASK_SKIP: package:python,package:rust
@@ -1729,6 +1764,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: go,node,python,rust,uv,gh,git-cliff,glab
     environment: release
@@ -1972,6 +2014,13 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: go,node,python,rust,uv,gh,git-cliff,glab
     environment: release

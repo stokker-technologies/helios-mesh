@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/release/run.py; sha256:f37f5ccc857dc2de17549fc505f5008a0a4b5d15cce5f4b0f2fa44931bcef86f
+# Rendered by stkr project update from templates/python/release/run.py; sha256:a9d84d297e0b9f0eae8b80d14187d3b1d3bf8165cf08b719b4a342b288ae7b23
 # ***
 #
 # Helios Mesh
@@ -749,7 +749,7 @@ def _rehearse_clean(directory: Path, settings: dict) -> None:
             "MISE_CACHE_DIR": str(scratch / "mise-cache"),
             "MISE_LOCKED": "1",
             "MISE_TRUSTED_CONFIG_PATHS": str(checkout),
-            "npm_config_store_dir": str(scratch / "pnpm"),
+            "pnpm_config_store_dir": str(scratch / "pnpm"),
             "CARGO_INCREMENTAL": "0",
             "RELEASE_PROFILE": "release",
         }

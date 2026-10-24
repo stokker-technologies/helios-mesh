@@ -30,3 +30,24 @@ Product and Tests Build jobs SHALL run independently in parallel with their own 
 - **WHEN** the same candidate is validated on a native platform and profile
 - **THEN** Tests Build duration is no greater than Product Build duration and the warm full pipeline finishes below 45 minutes, targeting 30
 - **AND** a regression requires reassessment without silently reducing coverage or changing architecture or shipping feature scope
+
+### Requirement: Built-In Cargo Profiles
+
+Projects SHALL declare no workspace, package or build-dependency compiler-profile overrides. Product SHALL use built-in dev or release, Bench built-in bench, and Tests and their preceding Clippy built-in unoptimized test in either graph context. Artifact and report namespaces SHALL retain the requested graph profile. Infrastructure cache policy may disable incremental compilation.
+
+#### Scenario: Release Graph Tests
+
+- **WHEN** a release graph requests Product and Tests
+- **THEN** Product selects default release while Tests and matching Clippy select default test
+- **AND** both producers retain release artifact namespaces and existing features, coverage and publication gates
+
+### Requirement: Canonical Landing Page And Declared Prose Impact
+
+The root README and CONTRIBUTING SHALL follow the shared product-readmes structure. Existing executable examples SHALL remain unchanged during the prose/layout migration. The landing page SHALL use an approved existing logo without fabricating media or registry publication status.
+
+#### Scenario: Documentation Candidate
+
+- **WHEN** only root README, CONTRIBUTING or explicitly audited ordinary documentation prose changes
+- **THEN** declared impact rules select repository structure/configuration checks without application compilation or test lanes
+- **AND** mixed and unknown changes retain the union or conservative full graph respectively
+- **AND** LICENSE changes retain Rust packaging and its Product prerequisites because the firmware ZIP embeds that file
