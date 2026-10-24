@@ -6,22 +6,18 @@
 #
 # ***
 
-
 """Check Noncanonical Rust Feature Combinations Locally"""
 
 # === Imports === #
 
 # Standard Library Imports
-import argparse
 from pathlib import Path
 
 # Third Party Imports
-
 # Local Imports
 from .. import cargo
 
 # Type Checking Imports
-
 
 # === Public Exports === #
 
@@ -37,17 +33,7 @@ ROOT = Path(__file__).resolve().parents[6]
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--profile", choices=("dev", "release"), default="dev")
-    options = parser.parse_args()
-    check(options.profile)
-
-
-# === Private Functions === #
-
-
-def check(profile: str) -> None:
-    compiler_profile = "release-tests" if profile == "release" else profile
+    compiler_profile = "test"
     configurations = [
         ["--workspace", "--exclude", "helios-mesh-nodes", "--all-targets", "--all-features"],
         ["--workspace", "--exclude", "helios-mesh-nodes", "--all-targets", "--no-default-features"],
@@ -59,6 +45,8 @@ def check(profile: str) -> None:
     for configuration in configurations:
         cargo.clippy(ROOT, ["--locked", "--profile", compiler_profile, *configuration])
 
+
+# === Private Functions === #
 
 # === Entry Point === #
 

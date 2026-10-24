@@ -1,5 +1,20 @@
 # Helios Mesh
 
+[![Release](https://img.shields.io/badge/release-unpublished-lightgrey)](https://github.com/stokker-technologies/helios-mesh/releases)
+[![CI](https://github.com/stokker-technologies/helios-mesh/actions/workflows/ci.yml/badge.svg)](https://github.com/stokker-technologies/helios-mesh/actions/workflows/ci.yml)
+[![CI / Nightly](https://github.com/stokker-technologies/helios-mesh/actions/workflows/nightly.yml/badge.svg)](https://github.com/stokker-technologies/helios-mesh/actions/workflows/nightly.yml)
+[![crates.io](https://img.shields.io/badge/crates.io-unpublished-lightgrey)](#quick-start)
+[![PyPI](https://img.shields.io/badge/PyPI-unpublished-lightgrey)](#quick-start)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
+<img src="https://stokkertechnologies.ch/logo.svg" height="256" alt="Stokker Technologies Mark">
+
+[Website](https://github.com/stokker-technologies/helios-mesh) ·
+[Getting Started](#quick-start) ·
+[Tutorials](crates/firmware/helios-mesh-board-feather-rp2040/README.md#authoring-a-node) ·
+[Examples](#interfaces) ·
+[Documentation](crates/system/helios-mesh/README.md)
+
 **Control embedded nodes over USB and LoRa from Rust or Python.**
 
 Helios Mesh connects an engineering workstation to RP2040 boards that run
@@ -7,32 +22,14 @@ motion and GPIO jobs. Connect a node directly over USB, or use a Gateway to
 reach Rotator and Sidecar nodes over LoRa. The firmware owns timing, queued
 work, cancellation, and cleanup; your application uses typed handles.
 
-[Quick Start](#quick-start) · [Examples](#examples) ·
-[Firmware](#firmware) · [Documentation](#documentation)
-
-With a Gateway attached over USB and a Sidecar in its radio network, list
-the nodes, inspect one, then schedule a one-second pulse on GPIO 1:
-
-```sh
-mise run dev:cli -- nodes
-mise run dev:cli -- --node <sidecar-id> status
-mise run dev:cli -- --node <sidecar-id> gpio-pulse 1 1000
-```
-
-The Sidecar times the pulse locally and drives the pin low during cleanup.
-Once admitted, the job continues if the host disconnects. GPIO 1 is D11 on
-the built-in Sidecar image; check the
-[hardware and GPIO limits](crates/firmware/helios-mesh-board-feather-rp2040/README.md#hardware-and-gpio-safety)
-before connecting a load.
-
 ## Features
 
-- **USB And LoRa Control**
+- **USB And LoRa Control** [host]
 
   Use the same node operations through a direct USB connection or a Gateway.
   Select devices by stable six-digit IDs derived from onboard flash identity.
 
-- **Typed Host APIs**
+- **Typed Host APIs** [host]
 
   Discover Gateway, Rotator, and Sidecar nodes and connect to their concrete
   Rust or Python handles. Python bindings include type stubs and asynchronous
@@ -57,12 +54,150 @@ before connecting a load.
   journal, or record its events to JSONL. Local and remote node diagnostics
   use the same CLI command tree.
 
-- **Firmware Authoring**
+- **Firmware Authoring** [firmware]
 
   Declare node types, typed routes, resources, jobs, and attached hardware in
   Rust. The board validates pin reservations before starting shared buses.
   See the [firmware guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md#authoring-a-node)
   for a complete Sidecar implementation.
+
+## Interfaces
+
+### CLI
+
+Inspect nodes, submit bounded operations, read diagnostics, and flash compatible firmware.
+
+#### Examples
+
+With a Gateway attached over USB and a Sidecar in its radio network, list
+the nodes, inspect one, then schedule a one-second pulse on GPIO 1:
+
+```sh
+mise run dev:cli -- nodes
+mise run dev:cli -- --node <sidecar-id> status
+mise run dev:cli -- --node <sidecar-id> gpio-pulse 1 1000
+```
+
+The Sidecar times the pulse locally and drives the pin low during cleanup.
+Once admitted, the job continues if the host disconnects. GPIO 1 is D11 on
+the built-in Sidecar image; check the
+[hardware and GPIO limits](crates/firmware/helios-mesh-board-feather-rp2040/README.md#hardware-and-gpio-safety)
+before connecting a load.
+
+### Python
+
+Use typed discovery and asynchronous operation handles from the native Python extension.
+
+#### Examples
+
+Install the local extension after the build:
+
+```sh
+mise run dev:python
+```
+
+Run this example with a directly attached Sidecar. It discovers that node,
+starts a 250 ms pulse, and waits until execution and cleanup have finished:
+
+```python
+import asyncio
+from datetime import timedelta
+
+import helios_mesh
+
+
+async def main():
+    devices = await helios_mesh.discover(helios_mesh.NodeType.SIDECAR)
+    if not devices:
+        raise RuntimeError("Connect a Sidecar over USB")
+    sidecar = await devices[0].connect()
+    assert isinstance(sidecar, helios_mesh.SidecarNode)
+
+    operation = await sidecar.pulse_gpio(
+        helios_mesh.AuxGpioId(1), timedelta(milliseconds=250)
+    )
+    result = await operation.completed()
+    print(result)
+
+
+asyncio.run(main())
+```
+
+The [host contracts](crates/system/helios-mesh/README.md#python-host-api)
+describe result handling and gateway connections. The
+[Python acceptance stories](crates/system/helios-mesh-python/tests/acceptance/)
+exercise native exports, discovery errors, and asynchronous behavior without
+physical devices. This pulse example requires the matching board and firmware.
+
+The [Rotator sweep](crates/system/helios-mesh-python/examples/rotator_sweep.py)
+configures and homes both channels, then runs opposed relative moves. The
+[motor tuning example](crates/system/helios-mesh-python/examples/motor_tuning.py)
+explores motion settings. Both control physical hardware; read the
+[motor setup](crates/firmware/helios-mesh-board-feather-rp2040/README.md#motor-setup)
+before running them.
+
+### Rust
+
+Use the public facade for typed host control and firmware authoring.
+
+#### Examples
+
+Inside an async application using the `helios-mesh` crate:
+
+```rust
+use helios_mesh::prelude::*;
+use std::time::Duration;
+
+let devices = helios_mesh::discover_type(NodeType::Sidecar).await?;
+let device = devices.first().ok_or(helios_mesh::Error::DeviceNotFound)?;
+let ConnectedNode::Sidecar(sidecar) = device.connect().await? else {
+    unreachable!("discovery rechecks the node type")
+};
+
+let operation = sidecar.pulse_gpio(AuxGpioId(1), Duration::from_millis(250)).await?;
+let result = operation.completed().await?;
+assert!(result.cleanup_error.is_none());
+```
+
+See the [Rust host API](crates/system/helios-mesh/README.md#rust-host-api)
+for discovery, typed gateway scans, operation ownership, and cancellation.
+
+### Firmware
+
+Built-in images target Feather RP2040 boards with RFM95 radios:
+
+| Role | Attached Hardware | Purpose |
+| --- | --- | --- |
+| Gateway | TFT FeatherWing V2 | USB attachment and LoRa coordination |
+| Rotator | Motor FeatherWing | Two stepper channels |
+| Sidecar | OLED FeatherWing | Two independent GPIOs on D11 and D12 |
+
+#### Examples
+
+On Linux, build and package one profile:
+
+```sh
+mise run build --profile dev
+mise run package --profile dev
+```
+
+`target/package/dev/linux-x86_64/rust/firmware/helios-mesh-firmware-feather-rp2040.zip` contains all
+three UF2 images, their matching ELF files in `debug/`, flashing instructions,
+and the Apache-2.0 license.
+Individual UF2s also remain in `target/package/dev/linux-x86_64/rust/firmware/` for local use. Packaging
+consumes the existing build; it does not compile firmware again.
+
+For a blank board, hold BOOTSEL while connecting USB. Copy the role's UF2 to
+its mounted `RPI-RP2` volume, or use the CLI with exactly one such volume present:
+
+```sh
+mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-sidecar.uf2
+```
+
+Flash one physical board at a time. An already-running, compatible node can
+be selected with `--device <id>` to restart into its bootloader and flash.
+Read the [flashing guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md#firmware-packages-and-flashing)
+before updating boards across a protocol change.
 
 ## Quick Start
 
@@ -105,118 +240,18 @@ declared attachments, and RFM95 radios need suitable antennas before power-up.
 The [board guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md)
 owns wiring and electrical precautions.
 
-## Examples
+For contributor setup, task outputs, and validation, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-### Await A Sidecar Pulse In Python
+## Contributing
 
-Install the local extension after the build:
+Bug reports, focused fixes, hardware observations, and examples are welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, validation, and pull requests.
 
-```sh
-mise run dev:python
-```
+## About
 
-Run this example with a directly attached Sidecar. It discovers that node,
-starts a 250 ms pulse, and waits until execution and cleanup have finished:
+Helios Mesh is developed by [Stokker Technologies](https://github.com/stokker-technologies).
 
-```python
-import asyncio
-from datetime import timedelta
-
-import helios_mesh
-
-
-async def main():
-    devices = await helios_mesh.discover(helios_mesh.NodeType.SIDECAR)
-    if not devices:
-        raise RuntimeError("Connect a Sidecar over USB")
-    sidecar = await devices[0].connect()
-    assert isinstance(sidecar, helios_mesh.SidecarNode)
-
-    operation = await sidecar.pulse_gpio(
-        helios_mesh.AuxGpioId(1), timedelta(milliseconds=250)
-    )
-    result = await operation.completed()
-    print(result)
-
-
-asyncio.run(main())
-```
-
-The [host contracts](crates/system/helios-mesh/README.md#python-host-api)
-describe result handling and gateway connections. The
-[Python acceptance stories](crates/system/helios-mesh-python/tests/acceptance/)
-exercise native exports, discovery errors, and asynchronous behavior without
-physical devices. This pulse example requires the matching board and firmware.
-
-### Use The Same Operation From Rust
-
-Inside an async application using the `helios-mesh` crate:
-
-```rust
-use helios_mesh::prelude::*;
-use std::time::Duration;
-
-let devices = helios_mesh::discover_type(NodeType::Sidecar).await?;
-let device = devices.first().ok_or(helios_mesh::Error::DeviceNotFound)?;
-let ConnectedNode::Sidecar(sidecar) = device.connect().await? else {
-    unreachable!("discovery rechecks the node type")
-};
-
-let operation = sidecar.pulse_gpio(AuxGpioId(1), Duration::from_millis(250)).await?;
-let result = operation.completed().await?;
-assert!(result.cleanup_error.is_none());
-```
-
-See the [Rust host API](crates/system/helios-mesh/README.md#rust-host-api)
-for discovery, typed gateway scans, operation ownership, and cancellation.
-
-### Coordinate Two Stepper Channels
-
-The [Rotator sweep](crates/system/helios-mesh-python/examples/rotator_sweep.py)
-configures and homes both channels, then runs opposed relative moves. The
-[motor tuning example](crates/system/helios-mesh-python/examples/motor_tuning.py)
-explores motion settings. Both control physical hardware; read the
-[motor setup](crates/firmware/helios-mesh-board-feather-rp2040/README.md#motor-setup)
-before running them.
-
-## Firmware
-
-Built-in images target Feather RP2040 boards with RFM95 radios:
-
-| Role | Attached Hardware | Purpose |
-| --- | --- | --- |
-| Gateway | TFT FeatherWing V2 | USB attachment and LoRa coordination |
-| Rotator | Motor FeatherWing | Two stepper channels |
-| Sidecar | OLED FeatherWing | Two independent GPIOs on D11 and D12 |
-
-On Linux, build and package one profile:
-
-```sh
-mise run build --profile dev
-mise run package --profile dev
-```
-
-`target/package/dev/linux-x86_64/rust/firmware/helios-mesh-firmware-feather-rp2040.zip` contains all
-three UF2 images, their matching ELF files in `debug/`, flashing instructions,
-and the Apache-2.0 license.
-Individual UF2s also remain in `target/package/dev/linux-x86_64/rust/firmware/` for local use. Packaging
-consumes the existing build; it does not compile firmware again.
-
-For a blank board, hold BOOTSEL while connecting USB. Copy the role's UF2 to
-its mounted `RPI-RP2` volume, or use the CLI with exactly one such volume present:
-
-```sh
-mise run dev:cli -- flash target/package/dev/linux-x86_64/rust/firmware/helios-mesh-node-sidecar.uf2
-```
-
-Flash one physical board at a time. An already-running, compatible node can
-be selected with `--device <id>` to restart into its bootloader and flash.
-Read the [flashing guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md#firmware-packages-and-flashing)
-before updating boards across a protocol change.
-
-## Project Status & Roadmap
-
-Helios Mesh is in active development at `0.1.0`. Pin the revision you use and
+Helios Mesh is in active development before 1.0. Pin the revision you use and
 expect API changes before 1.0. The wire protocol is version **14** and requires
 an exact match between host software and every participating board.
 
@@ -233,100 +268,5 @@ Follow [issues](https://github.com/stokker-technologies/helios-mesh/issues)
 for development discussions. GitHub is authoritative;
 [GitLab](https://gitlab.com/stokker-technologies/open-source/helios-mesh)
 is a one-way mirror with CI disabled.
-
-## Documentation
-
-- [Host Contracts](crates/system/helios-mesh/README.md) — discovery, typed Rust/Python APIs, transport, and operation ownership.
-- [Board And Firmware Guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md) — wiring, safety, node authoring, and field diagnostics.
-- [Python Examples](crates/system/helios-mesh-python/examples/) — Rotator sweep and tuning workflows.
-- [Public Rust Facade](crates/system/helios-mesh/src/lib.rs) — the host and firmware API exports.
-- [Wire Contract](crates/common/helios-mesh-protocol/src/lib.rs) — the shared versioned protocol.
-
-## Development Setup
-
-After [Quick Start](#quick-start), choose a repository task:
-
-| Command | Purpose |
-| --- | --- |
-| `mise run check` | Check Hub conventions, formatting, dependency hygiene, Python lints and types, and workflow syntax |
-| `mise run build --profile dev` | Build shipping binaries, wheels, and Linux firmware with matching Clippy |
-| `mise run build:rust:tests --profile dev` | Run canonical matched Clippy and build the independent Rust test archive |
-| `mise run check:python:generated --profile dev` | Verify the built wheel against Python stubs |
-| `mise run test` | Run Rust unit, integration, acceptance, and Python acceptance lanes |
-| `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
-
-Build outputs live under `target/build/<profile>/<target>/`, package outputs under
-`target/package/<profile>/<target>/<language>/`, and reports under
-`target/tests/<profile>/<target>/`; the examples use `linux-x86_64`, and Windows
-uses `windows-x86_64`. Tests consume the matching test archive from
-`mise run build:rust:tests` and the installed native wheel. The root
-`.venv` is shared by local tasks, which run sequentially; native CI jobs use
-isolated workspaces. The root uv workspace includes `tools/python` and owns
-`uv.lock`; the Python distribution keeps its independent manifest and lockfile.
-Required public CI uses repository-native tooling.
-
-Task changes target `dev`. The manual `Release / Prepare` job opens
-`release/v<version>` into `dev`. After the required checks and release rehearsal,
-the review squash-merges into `dev`; `Release / Tag` creates the stable tag,
-publishes crates, and fast-forwards `main` to that commit. The tag workflow
-publishes and verifies the native packages. Release notes come from Conventional
-Commits at tag time. Downloads include the firmware ZIP, host binaries, wheels,
-and `SHA256SUMS`; the Linux label on the firmware download names its build host,
-while its contents target RP2040.
-
-## Contributing
-
-Bug reports, focused fixes, hardware observations, and examples are welcome.
-[Open an issue](https://github.com/stokker-technologies/helios-mesh/issues)
-to discuss a change. Include the revision, host platform, node role, attached
-hardware, and relevant diagnostics when reporting a device problem.
-
-After completing source changes, run the native candidate proof in order:
-
-```sh
-mise run check
-mise run build
-mise run build:rust:tests
-mise run check:python:generated
-mise run test
-mise run package
-mise run release:publish:dry
-```
-
-Provider CI runs the native graph on every configured platform.
-Background validation keeps Windows child consoles hidden while preserving
-command output and exit status. Interactive product commands keep their normal
-console behavior.
-
-Every GitHub CI job uses a platform-matching GitHub-hosted runner. Separate
-Product and Tests Build jobs run in parallel, with independent canonical feature
-sets. Each compilation follows Clippy with matching packages, features, target
-and profile. Tests Build needs no Product outputs; test lanes receive the
-matching archive and Product artifacts they require. Package consumes Product
-independently of Tests. Linux Product also
-cross-compiles all three shipped RP2040 firmware images.
-
-Ordinary CI and local validation use shipping features. The optional local
-`mise run build:rust:compatibility` checks six additional feature combinations,
-including all-features and no-default-features SDK variants. On either native
-platform, `mise run test:rust:extended` builds and runs the 28 instrumented
-transport tests with the `testing` feature, writing Nextest JUnit under
-`target/tests/<profile>/<target>/extended-rust/store/stkr/`. Both tasks accept
-`--profile release`; neither runs automatically in CI or ordinary validation.
-The compatibility task also cross-checks ARM binaries and needs the declared
-`thumbv6m-none-eabi` Rust target. These opt-in tasks add compilation cost and
-reuse the workspace Cargo directory without replacing the canonical archive.
-Ordinary CI jobs default to 120 minutes while individual test deadlines remain
-unchanged. Pull requests can write compatible caches within their native merge-ref
-scope. New PR and ordinary `dev` commits cancel superseded validation while
-release tagging and publication retain their required handoff.
-CI prepares native compiler and archive tools before restoring caches; runner
-slots use isolated mise stores. Lane artifacts retain native diagnostics beside
-JUnit reports, including on failure, for seven days.
-
-Linux and Windows native checks are both required. Hardware tests and
-firmware flashing require an explicit decision and suitable physical setup.
-
-## License
 
 Helios Mesh is licensed under [Apache-2.0](LICENSE).

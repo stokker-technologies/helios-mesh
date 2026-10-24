@@ -1,23 +1,29 @@
-# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-linux.yml; sha256:0900dab35ad952ad62d67f7d78c718cfc0f84e0ff150665c1e0c7af7cc7fda7b
+# Rendered by stkr project update from templates/ci/.github/workflows/managed-test-linux.yml; sha256:0096a3c11d7aa9f1a631138093ee70dbb4d714ac4fe38c6d4a7478850032d0db
 name: Test
 "on":
   workflow_call:
     inputs:
+      pipeline:
+        type: string
+        required: true
       runners:
         type: string
         required: true
       timeouts:
         type: string
         required: true
+      impact:
+        type: string
+        required: true
 env:
   PROFILE: >-
-    ${{ (startsWith(github.ref, 'refs/tags/v') || startsWith(github.head_ref,
-    'release/v')) && 'release' || 'dev' }}
+    ${{ inputs.pipeline == 'nightly' && 'release' || ((startsWith(github.ref,
+    'refs/tags/v') || startsWith(github.head_ref, 'release/v')) && 'release' || 'dev') }}
   MISE_LOCKED: "1"
   MISE_EXPERIMENTAL: "1"
   CARGO_INCREMENTAL: "0"
   CARGO_HOME: ${{ github.workspace }}/.cache/cargo
-  npm_config_store_dir: ${{ github.workspace }}/.cache/pnpm
+  pnpm_config_store_dir: ${{ github.workspace }}/.cache/pnpm
   UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
 jobs:
   validate_test_rust_unit_linux:
@@ -270,10 +276,18 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: >-
         go,node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,git-cliff
       MISE_TASK_SKIP: build:rust:tests
+    if: contains(fromJSON(inputs.impact), 'test:rust:unit') && (true)
   validate_test_rust_integration_linux:
     name: Rust / Integration (linux)
     runs-on: ${{ fromJSON(inputs.runners).linux.small }}
@@ -524,10 +538,18 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: >-
         go,node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,git-cliff
       MISE_TASK_SKIP: build:rust:tests
+    if: contains(fromJSON(inputs.impact), 'test:rust:integration') && (true)
   validate_test_rust_acceptance_linux:
     name: Rust / Acceptance (linux)
     runs-on: ${{ fromJSON(inputs.runners).linux.small }}
@@ -778,7 +800,15 @@ jobs:
       with:
         key: ${{ steps.uv.outputs.cache-primary-key }}
         path: .cache/uv/
+    - name: Cache Summary
+      if: always()
+      env:
+        STKR_CACHE_RESTORES: "{\"Mise\":\"${{ steps.mise.outputs.cache-hit == 'true' && 'Exact Hit' || steps.mise.outputs.cache-hit == 'false' && 'Partial Hit' || steps.mise.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"Cargo\":\"${{ steps.cargo_downloads.outputs.cache-hit == 'true' && 'Exact Hit' || steps.cargo_downloads.outputs.cache-hit == 'false' && 'Partial Hit' || steps.cargo_downloads.outcome == 'success' && 'Miss' || 'Unavailable' }}\",\"UV\":\"${{ steps.uv.outputs.cache-hit == 'true' && 'Exact Hit' || steps.uv.outputs.cache-hit == 'false' && 'Partial Hit' || steps.uv.outcome == 'success' && 'Miss' || 'Unavailable' }}\"}"
+      run: >-
+        mise exec -- uv run --locked --project tools/python python -m
+        helios_mesh_tools.ci.summary
     env:
       MISE_ENABLE_TOOLS: >-
         go,node,python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,git-cliff
       MISE_TASK_SKIP: build:rust:tests
+    if: contains(fromJSON(inputs.impact), 'test:rust:acceptance') && (true)

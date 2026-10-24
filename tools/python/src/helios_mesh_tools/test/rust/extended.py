@@ -6,7 +6,6 @@
 #
 # ***
 
-
 """Build And Run The Local Instrumented Transport Suite"""
 
 # === Imports === #
@@ -18,13 +17,11 @@ import sys
 from pathlib import Path
 
 # Third Party Imports
-
 # Local Imports
 from .. import nextest, policy
 from ...build import cargo, paths
 
 # Type Checking Imports
-
 
 # === Public Exports === #
 
@@ -46,11 +43,8 @@ def main() -> None:
     execute(options.profile)
 
 
-# === Private Functions === #
-
-
 def execute(profile: str) -> None:
-    compiler_profile = "release-tests" if profile == "release" else profile
+    compiler_profile = "test"
     arguments = ["--locked", "--package", "helios-mesh", "--test", "transport", "--features", "testing"]
     cargo.clippy(ROOT, [*arguments, "--profile", compiler_profile])
     output = paths.output(ROOT, "tests", profile) / "extended-rust"
@@ -80,6 +74,8 @@ def execute(profile: str) -> None:
         check=True,
     )
 
+
+# === Private Functions === #
 
 # === Entry Point === #
 

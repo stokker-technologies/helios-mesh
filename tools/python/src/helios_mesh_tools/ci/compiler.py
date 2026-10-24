@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/compiler.py; sha256:8c434d9a8929804159114297e2f17cfd3e4c40e79aa0aff56c8e3bca0f79a77c
+# Rendered by stkr project update from templates/python/ci/compiler.py; sha256:6cd0749316beb8b8e388e829edf1781fcfa9d1473fdcdea420fc8cc98925a01e
 # ***
 #
 # Helios Mesh
@@ -46,7 +46,7 @@ def run(
     *,
     statistics: dict | None = None,
 ) -> int:
-    """Require The Declared Remote Backend And Clean Up Only Our Process."""
+    """Require The Declared Backend And Clean Up Only Our Process."""
     backend = os.environ.get("STKR_SCCACHE_BACKEND")
     environment = {key: value for key, value in os.environ.items() if not key.startswith("SCCACHE_")}
     mode = os.environ.get(
@@ -76,6 +76,10 @@ def run(
         )
         if endpoint := os.environ.get("STKR_SCCACHE_ENDPOINT"):
             environment["SCCACHE_ENDPOINT"] = endpoint
+    elif backend == "disk" and os.environ.get("STKR_CI_SIMULATE") == "1":
+        directory = Path(os.environ["STKR_SCCACHE_DIR"])
+        directory.mkdir(parents=True, exist_ok=True)
+        environment["SCCACHE_DIR"] = str(directory.resolve())
     else:
         raise RuntimeError("sccache: a supported remote backend is required")
     with tempfile.TemporaryDirectory(prefix="stkr-sccache-") as temporary:
@@ -101,11 +105,12 @@ def _execute(
     statistics: dict | None = None,
 ) -> int:
     endpoint: queue.Queue[str] = queue.Queue(maxsize=1)
+    write_errors = dict.fromkeys(("AlreadyExists", "PermissionDenied", "RateLimited", "Unexpected", "Unknown"), 0)
     server_environment = environment | {
         "SCCACHE_START_SERVER": "1",
         "SCCACHE_NO_DAEMON": "1",
         "SCCACHE_SERVER_PORT": "0",
-        "SCCACHE_LOG": "info",
+        "SCCACHE_LOG": "off,sccache::server=debug/^(server started, listening on |Error executing cache write: )",
         "SCCACHE_IDLE_TIMEOUT": "0",
     }
     # Pinned 0.18.0 Logs This Only After Backend Readiness And Binding Port 0.
@@ -121,6 +126,8 @@ def _execute(
         def read_endpoint() -> None:
             assert server.stderr is not None
             for line in server.stderr:
+                if category := _write_error(line):
+                    write_errors[category] += 1
                 match = re.search(r"server started, listening on 127\.0\.0\.1:([1-9][0-9]*)\s*$", line)
                 if match and endpoint.empty():
                     endpoint.put(match[1])
@@ -133,9 +140,9 @@ def _execute(
             try:
                 port = endpoint.get(timeout=60)
             except queue.Empty:
-                raise RuntimeError("sccache: remote backend readiness timed out; check native CI credentials and storage access") from None
+                raise RuntimeError("sccache: backend readiness timed out; check the declared storage access") from None
             if not port or server.poll() is not None:
-                raise RuntimeError("sccache: remote backend startup failed; check native CI credentials and storage access")
+                raise RuntimeError("sccache: backend startup failed; check the declared storage access")
             child_environment = environment | {
                 "SCCACHE_SERVER_PORT": port,
                 "RUSTC_WRAPPER": "sccache",
@@ -153,11 +160,11 @@ def _execute(
                         timeout=10,
                     )
                     information = json.loads(readiness.stdout)
-                    scheme = "ghac" if backend == "gha" else "s3"
-                    if not information.get("cache_location", "").startswith(scheme + ",") or information.get("version") != "0.18.0":
+                    scheme = "Local disk:" if backend == "disk" else ("ghac," if backend == "gha" else "s3,")
+                    if not information.get("cache_location", "").startswith(scheme) or information.get("version") != "0.18.0":
                         raise ValueError
                 except (OSError, ValueError, subprocess.SubprocessError):
-                    raise RuntimeError("sccache: pinned remote backend verification failed; refusing local storage fallback") from None
+                    raise RuntimeError("sccache: pinned backend verification failed; refusing implicit storage fallback") from None
             if isinstance(command, str):
                 shell = shell or ("pwsh" if os.name == "nt" else "bash")
                 command = (
@@ -231,6 +238,17 @@ def _execute(
                 server.kill()
                 server.wait(timeout=10)
             reader.join(timeout=1)
+            if statistics is not None:
+                statistics.update({f"write_error_{category}": count for category, count in write_errors.items()})
+
+
+def _write_error(line: str) -> str | None:
+    """Classify Native Write Failures Without Exposing Backend URLs Or Credentials."""
+    _, marker, reason = line.partition("Error executing cache write: ")
+    if not marker:
+        return None
+    category = re.match(r"(AlreadyExists|PermissionDenied|RateLimited|Unexpected)\b", reason)
+    return category[1] if category else "Unknown"
 
 
 def _statistics(information: dict) -> dict[str, int | None]:
@@ -247,6 +265,7 @@ def _statistics(information: dict) -> dict[str, int | None]:
         "requests_not_cacheable",
         "cache_read_errors",
         "cache_write_errors",
+        "cache_writes",
     ):
         value = stats.get(key)
         if key in {"cache_hits", "cache_misses", "cache_errors"}:

@@ -24,6 +24,22 @@ generated = ["crates/system/helios-mesh-python"]
 [ci]
 mirror = true
 
+# --- Impact --- #
+
+[ci.impact]
+default = "full"
+
+[[ci.impact.rules]]
+name = "prose"
+only = ["README.md", "CONTRIBUTING.md", "docs/**/*.md"]
+exclude = ["docs/examples/**", "docs/tutorials/**", "docs/templates/**", "docs/src/**"]
+jobs = ["check:repository"]
+
+[[ci.impact.rules]]
+name = "firmware-license"
+only = ["LICENSE"]
+jobs = ["check:repository", "package:rust"]
+
 # --- Stage / Check --- #
 
 [[ci.jobs]]
