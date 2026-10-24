@@ -250,7 +250,7 @@ After [Quick Start](#quick-start), choose a repository task:
 | --- | --- |
 | `mise run check` | Check Hub conventions, formatting, dependency hygiene, Python lints and types, and workflow syntax |
 | `mise run build --profile dev` | Build shipping binaries, wheels, and Linux firmware with matching Clippy |
-| `mise run build:rust:tests --profile dev` | Prove Rust feature and firmware configurations with Clippy, then build the shared test archive and fixtures |
+| `mise run build:rust:tests --profile dev` | Run canonical matched Clippy and build the independent Rust test archive |
 | `mise run check:python:generated --profile dev` | Verify the built wheel against Python stubs |
 | `mise run test` | Run Rust unit, integration, acceptance, and Python acceptance lanes |
 | `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
@@ -298,15 +298,24 @@ Background validation keeps Windows child consoles hidden while preserving
 command output and exit status. Interactive product commands keep their normal
 console behavior.
 
-CI runner overrides live in `stkr.toml`: one shared native Build job per
-platform runs Product and, when selected tests need it, the Tests producer on
-local Linux and Windows runners. Each Rust compilation follows Clippy with
-matching packages, features, target and profile. Product and Tests keep separate
-artifacts; Test and Package consume them independently in parallel. Rust checks
-perform formatting and dependency hygiene on hosted runners. Rust coverage and Release Dry, Rehearsal and
-Tag also compile crates and use local Linux runners. Artifact-consuming tests
-and packaging, other checks, publication and final verification use native
-hosted runners with the same tasks.
+Every GitHub CI job uses a platform-matching GitHub-hosted runner. Separate
+Product and Tests Build jobs run in parallel, with independent canonical feature
+sets. Each compilation follows Clippy with matching packages, features, target
+and profile. Tests Build needs no Product outputs; test lanes receive the
+matching archive and Product artifacts they require. Package consumes Product
+independently of Tests. Linux Product also
+cross-compiles all three shipped RP2040 firmware images.
+
+Ordinary CI and local validation use shipping features. The optional local
+`mise run build:rust:compatibility` checks six additional feature combinations,
+including all-features and no-default-features SDK variants. On either native
+platform, `mise run test:rust:extended` builds and runs the 28 instrumented
+transport tests with the `testing` feature, writing Nextest JUnit under
+`target/tests/<profile>/<target>/extended-rust/store/stkr/`. Both tasks accept
+`--profile release`; neither runs automatically in CI or ordinary validation.
+The compatibility task also cross-checks ARM binaries and needs the declared
+`thumbv6m-none-eabi` Rust target. These opt-in tasks add compilation cost and
+reuse the workspace Cargo directory without replacing the canonical archive.
 Ordinary CI jobs default to 120 minutes while individual test deadlines remain
 unchanged. Pull requests can write compatible caches within their native merge-ref
 scope. New PR and ordinary `dev` commits cancel superseded validation while

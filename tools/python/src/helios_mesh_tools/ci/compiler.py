@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/sccache.py; sha256:566dd188a05d8942a4e1fed03a5100e3862a0c2e9a8f58aa213210a55894ddd7
+# Rendered by stkr project update from templates/python/ci/compiler.py; sha256:8c434d9a8929804159114297e2f17cfd3e4c40e79aa0aff56c8e3bca0f79a77c
 # ***
 #
 # Helios Mesh
@@ -6,14 +6,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # ***
-
-
 """Run Compiler Commands With An Owned Foreground Sccache Server."""
 
 # === Imports === #
 
 # Standard Library Imports
-import argparse
 import json
 import os
 import queue
@@ -22,6 +19,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from collections.abc import Sequence
 from pathlib import Path
 
 # Third Party Imports
@@ -42,11 +40,19 @@ from pathlib import Path
 # === Public Functions === #
 
 
-def run(script: str, shell: str | None = None) -> int:
+def run(
+    command: Sequence[str] | str,
+    shell: str | None = None,
+    *,
+    statistics: dict | None = None,
+) -> int:
     """Require The Declared Remote Backend And Clean Up Only Our Process."""
     backend = os.environ.get("STKR_SCCACHE_BACKEND")
     environment = {key: value for key, value in os.environ.items() if not key.startswith("SCCACHE_")}
-    mode = os.environ.get("STKR_SCCACHE_MODE", "READ_WRITE" if os.environ.get("STKR_CACHE_POLICY") == "pull-push" else "READ_ONLY")
+    mode = os.environ.get(
+        "STKR_SCCACHE_MODE",
+        "READ_WRITE" if os.environ.get("STKR_CACHE_POLICY") == "pull-push" else "READ_ONLY",
+    )
     if mode not in {"READ_ONLY", "READ_WRITE"}:
         raise RuntimeError("sccache: invalid backend access mode")
     if backend == "gha":
@@ -54,7 +60,11 @@ def run(script: str, shell: str | None = None) -> int:
             os.environ.get(name) for name in ("ACTIONS_RESULTS_URL", "ACTIONS_CACHE_URL")
         ):
             raise RuntimeError("sccache: Actions runtime storage credentials are unavailable")
-        environment.update(SCCACHE_GHA_ENABLED="true", SCCACHE_GHA_RW_MODE=mode, SCCACHE_GHA_VERSION="stkr-v5")
+        environment.update(
+            SCCACHE_GHA_ENABLED="true",
+            SCCACHE_GHA_RW_MODE=mode,
+            SCCACHE_GHA_VERSION="stkr-v5",
+        )
     elif backend == "s3":
         if not os.environ.get("STKR_SCCACHE_BUCKET") or not os.environ.get("STKR_SCCACHE_REGION"):
             raise RuntimeError("sccache: S3 bucket and region are required")
@@ -72,14 +82,24 @@ def run(script: str, shell: str | None = None) -> int:
         # Ignore Persistent Runner Configuration And Never Fall Back To Its Local Store.
         configuration = Path(temporary) / "config"
         configuration.write_text("", encoding="utf-8")
-        environment.update(SCCACHE_CONF=str(configuration), SCCACHE_CACHED_CONF=str(Path(temporary) / "cached-config"))
-        return _execute(script, shell, environment, backend)
+        environment.update(
+            SCCACHE_CONF=str(configuration),
+            SCCACHE_CACHED_CONF=str(Path(temporary) / "cached-config"),
+        )
+        return _execute(command, shell, environment, backend, statistics=statistics)
 
 
 # === Private Functions === #
 
 
-def _execute(script: str, shell: str | None, environment: dict[str, str], backend: str | None = None) -> int:
+def _execute(
+    command: Sequence[str] | str,
+    shell: str | None,
+    environment: dict[str, str],
+    backend: str | None = None,
+    *,
+    statistics: dict | None = None,
+) -> int:
     endpoint: queue.Queue[str] = queue.Queue(maxsize=1)
     server_environment = environment | {
         "SCCACHE_START_SERVER": "1",
@@ -116,10 +136,14 @@ def _execute(script: str, shell: str | None, environment: dict[str, str], backen
                 raise RuntimeError("sccache: remote backend readiness timed out; check native CI credentials and storage access") from None
             if not port or server.poll() is not None:
                 raise RuntimeError("sccache: remote backend startup failed; check native CI credentials and storage access")
-            child_environment = environment | {"SCCACHE_SERVER_PORT": port, "RUSTC_WRAPPER": "sccache", "CARGO_INCREMENTAL": "0"}
+            child_environment = environment | {
+                "SCCACHE_SERVER_PORT": port,
+                "RUSTC_WRAPPER": "sccache",
+                "CARGO_INCREMENTAL": "0",
+            }
             if backend is not None:
                 try:
-                    statistics = subprocess.run(
+                    readiness = subprocess.run(
                         ["sccache", "--show-stats", "--stats-format", "json"],
                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                         env=child_environment,
@@ -128,18 +152,34 @@ def _execute(script: str, shell: str | None, environment: dict[str, str], backen
                         check=True,
                         timeout=10,
                     )
-                    information = json.loads(statistics.stdout)
+                    information = json.loads(readiness.stdout)
                     scheme = "ghac" if backend == "gha" else "s3"
                     if not information.get("cache_location", "").startswith(scheme + ",") or information.get("version") != "0.18.0":
                         raise ValueError
                 except (OSError, ValueError, subprocess.SubprocessError):
                     raise RuntimeError("sccache: pinned remote backend verification failed; refusing local storage fallback") from None
-            shell = shell or ("pwsh" if os.name == "nt" else "bash")
-            command = (
-                ["pwsh", "-NoProfile", "-NonInteractive", "-Command", "$ErrorActionPreference = 'Stop'\n" + script + "\nexit $LASTEXITCODE"]
-                if shell == "pwsh"
-                else ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script]
-            )
+            if isinstance(command, str):
+                shell = shell or ("pwsh" if os.name == "nt" else "bash")
+                command = (
+                    [
+                        "pwsh",
+                        "-NoProfile",
+                        "-NonInteractive",
+                        "-Command",
+                        "$ErrorActionPreference = 'Stop'\n" + command + "\nexit $LASTEXITCODE",
+                    ]
+                    if shell == "pwsh"
+                    else [
+                        "bash",
+                        "--noprofile",
+                        "--norc",
+                        "-e",
+                        "-o",
+                        "pipefail",
+                        "-c",
+                        command,
+                    ]
+                )
             with subprocess.Popen(
                 command,
                 stdin=sys.stdin,
@@ -161,18 +201,26 @@ def _execute(script: str, shell: str | None, environment: dict[str, str], backen
                 finally:
                     if server.poll() is None:
                         try:
-                            subprocess.run(
-                                ["sccache", "--show-stats"],
+                            result = subprocess.run(
+                                ["sccache", "--show-stats", "--stats-format", "json"],
                                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                                 env=child_environment,
                                 stdin=subprocess.DEVNULL,
-                                stdout=sys.stdout,
+                                stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL,
+                                text=True,
                                 check=True,
                                 timeout=10,
                             )
-                        except (OSError, subprocess.SubprocessError):
-                            print("sccache: final statistics unavailable", file=sys.stderr)
+                            if statistics is not None:
+                                statistics.update(_statistics(json.loads(result.stdout)))
+                        except (
+                            OSError,
+                            ValueError,
+                            TypeError,
+                            subprocess.SubprocessError,
+                        ):
+                            pass
         finally:
             # The Process Handle Is Ours; Never Issue Stop-Server Against A Reused Endpoint.
             if server.poll() is None:
@@ -185,15 +233,31 @@ def _execute(script: str, shell: str | None, environment: dict[str, str], backen
             reader.join(timeout=1)
 
 
-# === Entry Point === #
+def _statistics(information: dict) -> dict[str, int | None]:
+    if not isinstance(information, dict):
+        return {}
+    stats = information.get("stats", {})
+    if not isinstance(stats, dict):
+        return {}
+    result = {}
+    for key in (
+        "cache_hits",
+        "cache_misses",
+        "cache_errors",
+        "requests_not_cacheable",
+        "cache_read_errors",
+        "cache_write_errors",
+    ):
+        value = stats.get(key)
+        if key in {"cache_hits", "cache_misses", "cache_errors"}:
+            counts = value.get("counts") if isinstance(value, dict) else None
+            value = (
+                sum(counts.values())
+                if isinstance(counts, dict) and all(type(item) is int and item >= 0 for item in counts.values())
+                else None
+            )
+        result[key] = value if type(value) is int and value >= 0 else None
+    return result
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--script", help="Hex-Encoded Native Shell Script")
-    parser.add_argument("--shell", choices=("bash", "pwsh"))
-    arguments = parser.parse_args()
-    try:
-        source = bytes.fromhex(arguments.script).decode("utf-8") if arguments.script else os.environ["STKR_SCCACHE_SCRIPT"]
-        raise SystemExit(run(source, arguments.shell))
-    except (OSError, ValueError, KeyError, RuntimeError) as error:
-        parser.exit(1, f"{error}\n")
+
+# === Entry Point === #

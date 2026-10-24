@@ -1,18 +1,18 @@
 # Native CI Specification
 
 ## Purpose
-Produce native shipping and optional test artifacts in one shared job per platform and profile, preserving compiler configuration and required platform proof.
+Produce native shipping and optional test artifacts in independent parallel jobs per platform and profile, preserving canonical compiler configuration and required platform proof.
 
 ## Requirements
 
-### Requirement: Shared Native Build
+### Requirement: Independent Native Builds
 
-The pipeline SHALL have one native Build job per selected platform/profile that produces product artifacts and, when needed, test artifacts using their respective declared feature sets.
+The pipeline SHALL have independent Product and Tests Build jobs per selected platform/profile, running in parallel with their respective canonical feature sets. Tests Build SHALL NOT require Product output.
 
 #### Scenario: Tests Selected
 
 - **WHEN** selected jobs consume native tests
-- **THEN** Build runs matched Clippy and product/test compilation in the same job and exports separate artifacts for parallel Test and Package consumers.
+- **THEN** the independent producers run matched Clippy and compilation and export separate artifacts; Test receives its required Product and Tests artifacts while Package depends only on Product.
 
 #### Scenario: Installer Only
 

@@ -24,12 +24,92 @@ generated = ["crates/system/helios-mesh-python"]
 [ci]
 mirror = true
 
+# --- Stage / Check --- #
+
+[[ci.jobs]]
+id = "check:python:generated"
+inputs = ["build#product"]
+
+# --- Stage / Build --- #
+
+[[ci.jobs]]
+id = "build"
+outputs.product = [
+  "target/build/{profile}/{target}/bin",
+  "target/build/{profile}/{target}/python",
+  "target/build/{profile}/{target}/product",
+]
+
+[[ci.jobs]]
+id = "build"
+platform = "linux"
+outputs.product = [
+  "target/build/{profile}/{target}/bin",
+  "target/build/{profile}/{target}/python",
+  "target/build/{profile}/{target}/product",
+  "target/build/{profile}/{target}/firmware",
+]
+
+[[ci.jobs]]
+id = "build:rust:tests"
+outputs.tests = ["target/build/{profile}/{target}/tests", "target/build/{profile}/{target}/fixtures"]
+
+# --- Stage / Test --- #
+
+[[ci.jobs]]
+id = "test:rust:unit"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:rust:integration"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:rust:acceptance"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:python:acceptance"
+inputs = ["build#product"]
+
+[[ci.jobs]]
+id = "test:rust:coverage"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:python:coverage"
+inputs = ["build#product"]
+
 # --- Stage / Package --- #
+
+[[ci.jobs]]
+id = "package:rust"
+inputs = ["build#product"]
+outputs.package = ["target/package/{profile}/{target}/rust"]
 
 [[ci.jobs]]
 id = "package:rust"
 platform = "linux"
 bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+
+[[ci.jobs]]
+id = "package:python"
+inputs = ["build#product"]
+outputs.package = ["target/package/{profile}/{target}/python"]
+
+# --- Stage / Release --- #
+
+[[ci.jobs]]
+id = "release:publish:dry"
+inputs = ["package:rust#package", "package:python#package"]
+
+[[ci.jobs]]
+id = "release:rehearse"
+inputs = ["package:rust#package", "package:python#package"]
+
+[[ci.jobs]]
+id = "release:publish"
+inputs = ["package:rust#package", "package:python#package"]
 
 # === === Hooks === === #
 
