@@ -82,8 +82,7 @@ mise run ci:simulate
 ```
 
 It runs the required Windows and Linux jobs from the same declared provider graph,
-one job at a time, without CPU, memory or thread limits. Run repository simulations
-serially.
+one job at a time, without CPU, memory or thread limits.
 A platform-limited simulation is partial evidence and does not satisfy the review gate.
 
 - [Host Contracts](crates/system/helios-mesh/README.md) — discovery, typed Rust/Python APIs, transport, and operation ownership.

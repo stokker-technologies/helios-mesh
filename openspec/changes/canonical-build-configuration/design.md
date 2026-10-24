@@ -53,4 +53,4 @@ Continue in fix/test-runtime-guards from that merged dev in the same owned workt
 
 ## Serial Local Simulation
 
-Local simulation runs one declared job at a time, and repository simulations run serially. It imposes no thread, CPU or memory limits. Remove the shared resource allocator and its options rather than retaining a parallel compatibility path. Native Linux and Windows execution, declared artifact prerequisites, failure propagation and timing/cache evidence remain required. Provider jobs retain their declared graph; this decision changes local execution only.
+Each local simulation runs one declared job at a time without thread, CPU or memory limits. Independent repository gates may run concurrently. Remove the shared resource allocator and its options rather than retaining a parallel compatibility path. Native Linux and Windows execution, declared artifact prerequisites, failure propagation and timing/cache evidence remain required. Provider jobs retain their declared graph; this decision changes local execution only.

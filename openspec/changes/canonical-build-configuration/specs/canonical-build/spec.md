@@ -63,7 +63,7 @@ Every correctness-test hang guard SHALL be at least 30 seconds, including explic
 
 ### Requirement: Serial Local Simulation
 
-Local CI simulation SHALL execute one declared job at a time without imposing thread, CPU or memory limits. Repository simulations SHALL run serially. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
+Each local CI simulation SHALL execute one declared job at a time without imposing thread, CPU or memory limits. Independent repository gates MAY run concurrently. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
 
 #### Scenario: Local Graph Execution
 
