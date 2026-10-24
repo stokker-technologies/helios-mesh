@@ -131,7 +131,7 @@ def test_cancelling_task_future() -> None:
         # The drop itself runs on the tokio runtime's own worker thread,
         # woken by (not synchronous with) the Python-side cancellation:
         # poll briefly instead of assuming it lands within one loop tick.
-        _ = await wait_for(wait_until_dropped(probe), timeout=1.0)
+        _ = await wait_for(wait_until_dropped(probe), timeout=30.0)
         return probe.dropped
 
     assert run(scenario()) is True

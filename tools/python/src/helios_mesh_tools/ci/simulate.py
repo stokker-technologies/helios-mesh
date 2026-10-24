@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/simulate.py; sha256:e2ad963e5bf8c7709ad2d1c513f52704436ae0b45fcb0959b1adec27dbc98cb4
+# Rendered by stkr project update from templates/python/ci/simulate.py; sha256:2dd6a5336a7893592d62034d1022eadfef5bd506635eda97fb9a298f8d2d1006
 # ***
 #
 # Helios Mesh
@@ -585,12 +585,11 @@ def run_job(job: dict, candidate: Path, output: Path, cache: Path, identity: str
             and name not in ("UV_PROJECT_ENVIRONMENT", "RUSTC_WRAPPER", "RUSTFLAGS", "CARGO_ENCODED_RUSTFLAGS", "CARGO_TARGET_DIR")
             and not name.startswith(("STKR_SCCACHE_", "SCCACHE_", "GITHUB_", "CI_", "CARGO_PROFILE_"))
         }
-        compiler_cpu = BUDGET.cpu if BUDGET else cpu
         environment.update(
             PROFILE=graph_profile,
             RELEASE_PROFILE=graph_profile,
-            CARGO_BUILD_JOBS=str(compiler_cpu),
-            CMAKE_BUILD_PARALLEL_LEVEL=str(compiler_cpu),
+            CARGO_BUILD_JOBS=str(cpu),
+            CMAKE_BUILD_PARALLEL_LEVEL=str(cpu),
             CARGO_INCREMENTAL="0",
             MISE_YES="1",
             MISE_LOCKED="1",

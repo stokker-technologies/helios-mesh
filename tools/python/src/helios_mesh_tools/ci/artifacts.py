@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/ci/artifacts.py; sha256:be18fb6f09275f73dfb23a67cd2622922f93937b18944fe0419be5d573526372
+# Rendered by stkr project update from templates/python/ci/artifacts.py; sha256:552fb95e5f7c9b8b7aab45a591699e99276ba78ba2ee6e568a182f3c8639f43b
 # ***
 #
 # Helios Mesh
@@ -95,6 +95,8 @@ def extract(directory: Path, archive: Path) -> None:
         try:
             with tarfile.open(fileobj=decompressor.stdout, mode="r|") as source:
                 source.extractall(root, filter=_member)
+            while decompressor.stdout.read(1024 * 1024):
+                pass
         finally:
             decompressor.stdout.close()
         status = decompressor.wait()

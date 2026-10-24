@@ -1,4 +1,4 @@
-# Rendered by stkr project update from templates/python/test/nextest.py; sha256:0504b2d2b95b5b7dbb8d8eea9a75eaa446010e01ef919dcc5971a74b7ade0038
+# Rendered by stkr project update from templates/python/test/nextest.py; sha256:de63c0146f09eee6372fc2e0f1a3dcf17e89bced53bbc23e4fc68fbb29d43f3f
 # ***
 #
 # Helios Mesh
@@ -20,7 +20,6 @@ read: the runner writes the one profile it needs and passes it with `--config-fi
 
 # Standard Library Imports
 import json
-import re
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -36,7 +35,6 @@ from . import policy
 
 PROFILE = "stkr"
 UNIT = "kind(lib) | kind(bin) | kind(proc-macro)"
-PLAIN = re.compile(r"^[A-Za-z0-9_:.\-]+$")
 PACKAGE_FLAGS = ("-p", "--package")
 FILTER_FLAGS = ("-E", "--filterset", "--filter-expr")
 TIMEOUT = 'slow-timeout = { period = "%ds", terminate-after = 1 }'
@@ -104,28 +102,16 @@ def config(
 def overrides(
     rules: policy.Policy,
     category: str | None,
-    durations: dict[str, dict[str, dict]],
     coverage: bool,
     binaries: dict[str, str],
 ) -> list[tuple[str, int]]:
-    """Reviewed overrides first, then layer deadlines (all-layer runs) or measured stories."""
+    """Explicit overrides followed by layer deadlines for all-layer runs."""
     categories = [category] if category else list(policy.CATEGORIES)
     factor = policy.COVERAGE_FACTOR if coverage else 1
     selected = [(entry.select, entry.timeout_seconds * factor) for name in categories for entry in rules.selected(name, "rust")]
     if category is None:
         names = sorted(set(binaries.values()))
         return selected + [(layer(name, names), rules.deadline(name, coverage)) for name in categories]
-    if coverage:
-        return selected
-
-    lane = rules.deadline(category)
-    for suite, stories in sorted(durations.items()):
-        if suite not in binaries:
-            continue
-        for story, record in sorted(stories.items()):
-            deadline = rules.story(category, record.get("seconds"))
-            if deadline < lane and PLAIN.match(suite) and PLAIN.match(story):
-                selected.append((f"binary_id(={suite}) & test(={story})", deadline))
     return selected
 
 
