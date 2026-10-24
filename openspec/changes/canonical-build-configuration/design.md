@@ -44,3 +44,13 @@ Remove the five root Cargo profile tables: release, release-tests, dev, dev pack
 The root README keeps CLI, Python, Rust and firmware examples under their shipped interfaces; CONTRIBUTING owns setup, validation and contribution detail. Existing executable example blocks remain unchanged. Registry badges state unpublished and route to source setup until real registry owners exist. An approved logo is required; no product identity asset is invented.
 
 Explicit stkr.toml prose rules select check:repository for root README/CONTRIBUTING and audited docs Markdown, excluding examples, tutorials, templates and site code. LICENSE selects package:rust as well because package/product.py embeds it in the firmware ZIP. The canonical shared resolver unions known per-path selections, closes producer dependencies and uses full proof for unknown/protected changes. Provider protection reconciliation to the stable aggregate remains a delivery action, separate from credential-disabled rendering.
+
+## Runtime Guard And Artifact Follow-Up
+
+PR 28 merged into dev at 07d4d71e5607198ff74ded125cf710fb7845cffe. Its later warm-cache replay failed before Linux unit tests started: successful artifact download was followed by zstd SIGPIPE during streaming tar extraction. The shared extractor must drain decompressed trailing bytes after tar end-of-archive, then require a successful decompressor exit. Corrupt streams still fail; no SIGPIPE suppression or retry is introduced.
+
+Continue in fix/test-runtime-guards from that merged dev in the same owned worktree. Adopt the coordinated Hub repair and minimum 30-second correctness-test hang guards, preserving higher declared budgets. Historical test durations do not tighten deadlines. The under-10-second application responsiveness target is investigated independently by phase; setup and artifact extraction are not application execution, and larger guards do not prove performance. Existing canonical and extended coverage remains unchanged. Final local validation and protected delivery remain open for this follow-up.
+
+## Serial Local Simulation
+
+Each local simulation runs one declared job at a time without thread, CPU or memory limits. Independent repository gates may run concurrently. Remove the shared resource allocator and its options rather than retaining a parallel compatibility path. Native Linux and Windows execution, declared artifact prerequisites, failure propagation and timing/cache evidence remain required. Provider jobs retain their declared graph; this decision changes local execution only.

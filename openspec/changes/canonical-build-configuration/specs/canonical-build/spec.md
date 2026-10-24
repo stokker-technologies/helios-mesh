@@ -23,7 +23,7 @@ Noncanonical feature combinations and instrumented tests SHALL remain available 
 
 ### Requirement: Independent Parallel Producers
 
-Product and Tests Build jobs SHALL run independently in parallel with their own canonical feature sets. Tests SHALL NOT require Product outputs. Downstream lanes SHALL receive their required artifacts.
+Provider Product and Tests Build jobs SHALL run independently in parallel with their own canonical feature sets. Tests SHALL NOT require Product outputs. Downstream lanes SHALL receive their required artifacts.
 
 #### Scenario: Producer Timing
 
@@ -51,3 +51,22 @@ The root README and CONTRIBUTING SHALL follow the shared product-readmes structu
 - **THEN** declared impact rules select repository structure/configuration checks without application compilation or test lanes
 - **AND** mixed and unknown changes retain the union or conservative full graph respectively
 - **AND** LICENSE changes retain Rust packaging and its Product prerequisites because the firmware ZIP embeds that file
+### Requirement: Correctness Hang Guards And Complete Artifact Streams
+
+Every correctness-test hang guard SHALL be at least 30 seconds, including explicit overrides, while larger declared budgets SHALL be preserved. Historical durations SHALL NOT tighten correctness deadlines. Responsiveness below 10 seconds SHALL be assessed separately from the liveness guard and by execution phase.
+
+#### Scenario: Artifact Ends Before Decompressor Output
+
+- **WHEN** a valid tar artifact contains trailing padding beyond its end-of-archive marker
+- **THEN** extraction drains the decompressor output before closing the pipe and requires its successful exit
+- **AND** a corrupt compressed stream still fails rather than ignoring its nonzero status
+
+### Requirement: Serial Local Simulation
+
+Each local CI simulation SHALL execute one declared job at a time without imposing thread, CPU or memory limits. Independent repository gates MAY run concurrently. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
+
+#### Scenario: Local Graph Execution
+
+- **WHEN** local simulation validates a candidate
+- **THEN** each job finishes before the next begins, failed prerequisites block their consumers, and independent jobs still execute
+- **AND** the simulator applies no resource allocation flags, worker overrides or memory controls

@@ -51,7 +51,7 @@ def execute(profile: str) -> None:
     output.mkdir(parents=True, exist_ok=True)
     configuration = output / "nextest.toml"
     rules = policy.load(ROOT)
-    overrides = nextest.overrides(rules, "integration", {}, False, {})
+    overrides = nextest.overrides(rules, "integration", coverage=False, binaries={})
     configuration.write_text(nextest.config(str(output / "store"), rules.deadline("integration"), overrides), encoding="utf-8")
     subprocess.run(
         [
