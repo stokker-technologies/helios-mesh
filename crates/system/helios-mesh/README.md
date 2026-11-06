@@ -9,8 +9,8 @@ the typed host API through PyO3.
 
 The optional `testing` feature supplies an in-process byte-stream backend under
 `helios_mesh::testing`. Host integration stories use it to drive the real framing,
-request, typed-handle, and operation logic without USB hardware. The Build task
-enables this feature for the host test archive; ordinary host and Python users
+request, typed-handle, and operation logic without USB hardware. The local
+`test:rust:extended` task enables this feature; ordinary host and Python users
 use the default features.
 
 | Crate | Responsibility |
@@ -185,6 +185,37 @@ discovery and maintenance use one short attempt rather than a foreground retry
 budget. Long-running requests return an operation ID on admission; status reads
 the worker's completion state, including cleanup errors.
 
+### Remote Readiness And Refusals
+
+`GatewayNode::connect` verifies the USB gateway only. `remote(id)` constructs an
+addressed handle without probing it; `SidecarNode::from_handle` sends `Describe`
+and verifies the returned type. Neither gateway connection nor a cached roster
+entry guarantees a live radio exchange. `scan` reads that cached roster.
+
+For a registered node, an exhausted radio exchange returns `Unavailable`; an
+unsuccessful probe of an unknown ID returns `NotFound`. Three 200 ms receive
+windows with 20 ms between attempts can therefore refuse a remote conversion
+within roughly a second, before the host's 20-second remote timeout. A malformed
+packet is discarded within the same receive window; unrelated packets do not
+restart its deadline. Radio driver failures can also abort an exchange.
+
+Retrying a read such as `Describe` is safe, within the caller's existing overall
+deadline. A new mutation call uses a new request ID: do not blindly retry an
+uncertain admission, because its physical work may already have started. Firmware
+retries retain the original ID and replay the response. `Unavailable` also covers
+missing or faulted channel resources, failed configuration persistence, motor
+driver failure or completion timeout, job deadline expiry, and exhaustion of a
+channel's 24-bit operation sequence until reboot. Repeated calls cannot repair
+every cause. A stale roster entry can persist until both eight consecutive
+failures and four minutes of silence justify eviction.
+
+There is no fleet-readiness API today. Prefer a future explicit, deadline-bounded
+remote probe over waiting for the entire fleet inside USB gateway connection:
+the fleet is dynamic, and one absent leaf must not delay local gateway use.
+Such an API would establish only that one node answered a read at that instant.
+
+### Multi-Node Bounds
+
 The Gateway has capacity for 16 registered nodes and 32 pending radio jobs,
 including two emergency slots. Selection orders emergency, interactive,
 operation, maintenance, and discovery work, then deadline and least-recently
@@ -192,6 +223,31 @@ served node. Maintenance deadlines are staggered over thirty seconds; an
 arriving host request takes precedence over new background work. Node listings
 are paged in stable ID order. Best-effort broadcast discovery continues while
 nodes are registered so newly powered nodes can join without a Gateway restart.
+
+These are shared bounds, not per-node credits: the host allows 16 in-flight USB
+requests, but firmware retains only eight pending forwards. Excess forwards or
+scheduled work return `Busy`. Firmware has eight input slots, eight USB response
+slots with oldest-response eviction, six cached radio replies per node, and one
+mesh reply slot for its single radio resident. Nearby/UI observations hold 16
+peers. Each job channel defaults to four queued jobs and 128 history records;
+the gateway tracks 64 operations across leaves. The two motor/GPIO channels and
+two emergency slots are not two-peer limits.
+
+Radio routing is a gateway-to-leaf star on one channel, not multi-hop relaying.
+Each leaf has its own request sequence at the gateway; duplicate detection uses
+source ID, source boot session, and request ID at the receiving node. Distinct
+physical boards must have distinct six-digit IDs; there is no duplicate-ID
+negotiation. Write binding belongs to each leaf, so adding another leaf does not
+take another leaf's binding. `BoundElsewhere` rejects writes from another gateway;
+reads, including the typed-handle `Describe`, remain open.
+
+The deterministic firmware harness in `helios-mesh-core/tests/jobs/mesh.rs` drives
+the production gateway dispatcher, coordinator, link, and codec with scheduled
+chip-level packet arrivals. It covers 2, 3, 4, 8, and 17 total nodes, roster paging,
+addressing, lost-reply replay, queue saturation, malformed frames, and receive
+deadlines. Host transport coverage checks concurrent typed handles and reversed
+responses at the same sizes. These tests prescribe packet delivery; they do not
+model RF capture, airtime overlap, signal strength, or board scheduling.
 
 Transport establishes request origin; caller metadata does not establish it.
 Gateway brokerage arriving over radio is rejected before replay and dispatch.

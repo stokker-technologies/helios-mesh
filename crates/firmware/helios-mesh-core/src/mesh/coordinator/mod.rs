@@ -510,8 +510,13 @@ where
                 preparation_ms: timing.preparation_ms,
                 transmit_ms: timing.transmit_ms,
             });
+            let deadline = Instant::now() + policy.response_timeout;
             loop {
-                let incoming = match inner.link.receive_timeout(policy.response_timeout).await {
+                let remaining = deadline.saturating_duration_since(Instant::now());
+                if remaining == Duration::MIN {
+                    break;
+                }
+                let incoming = match inner.link.receive_timeout(remaining).await {
                     Ok(incoming) => incoming,
                     Err(LinkError::Timeout) => break,
                     Err(_) => return None,

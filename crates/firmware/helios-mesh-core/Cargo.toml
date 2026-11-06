@@ -76,6 +76,9 @@ defmt = { workspace = true, features = ["unstable-test"] }
 
 # Utilities
 
+embedded-hal = { workspace = true }
+embedded-hal-async = { workspace = true }
+
 # Serialization
 
 # Configuration
