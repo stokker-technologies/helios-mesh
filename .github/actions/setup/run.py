@@ -33,8 +33,8 @@ spawn_flags = runpy.run_path(str(Path(__file__).resolve().parents[1] / "process.
 
 ZSTD_URL = "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-v1.5.7-win64.zip"
 ZSTD_SHA256 = "acb4e8111511749dc7a3ebedca9b04190e37a17afeb73f55d4425dbf0b90fad9"
-MISE_URL = "https://github.com/jdx/mise/releases/download/v2026.10.17/mise-v2026.10.17-windows-x64.zip"
-MISE_SHA256 = "32bcfda5f72bf7cb189e18ba93c2798bffcb4a678fd004e3127780363f2d8c8c"
+MISE_URL = "https://github.com/jdx/mise/releases/download/v2026.11.2/mise-v2026.11.2-windows-x64.zip"
+MISE_SHA256 = "07a552fd755664057bc58cd4fabb8a9fedde77d6b68fcbc81b23714ac0ca034a"
 EXPORTED = {}
 # Preinstalled GitHub-Hosted Linux Toolchains No Job Uses; Heavy Builds Reclaim Their Space.
 UNUSED_RUNNER_PATHS = (

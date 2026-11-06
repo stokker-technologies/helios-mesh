@@ -245,7 +245,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.packag
 description = "Package Rust"
 depends = ["prepare:firmware"]
 usage = 'flag "--profile <profile>" default="dev"'
-run = "mise exec {{vars.firmware_converter}} -- uv run --locked --project tools/python python -m helios_mesh_tools.package.product --language rust --profile {{usage.profile}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.package.product --language rust --profile {{usage.profile}} --firmware-converter {{vars.firmware_converter}}"
 run_windows = "uv run --locked --project tools/python python -m helios_mesh_tools.package.product --language rust --profile {{usage.profile}}"
 
 # === CI === #
