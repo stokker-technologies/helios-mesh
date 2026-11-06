@@ -24,7 +24,7 @@ only under `firmware` on ARM. Existing public paths SHALL remain available.
 The repository root SHALL own the uv workspace and lockfile, with `tools/python`
 as a member and the Python distribution excluded. Tasks SHALL use the root
 environment without redirecting `UV_PROJECT_ENVIRONMENT`. Python lanes SHALL
-use their starting interpreter through the Hub-rendered runner.
+use their starting interpreter through the project-owned runner.
 
 #### Scenario: Tasks Run From A Sibling Worktree
 

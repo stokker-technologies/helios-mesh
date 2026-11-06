@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Versioned JSONL journal record schema and shared journal pagination."""
 
 # === Imports === #
@@ -13,6 +14,19 @@
 # Standard Library Imports
 # Third Party Imports
 # Local Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 from helios_mesh._native import RECORD_VERSION as RECORD_VERSION
 from helios_mesh._native import SCHEMA_VERSION as SCHEMA_VERSION
 from helios_mesh._native import Cursor as Cursor

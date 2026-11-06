@@ -80,7 +80,10 @@ where
     BUS::Config: Clone,
 {
     fn clone(&self) -> Self {
-        Self { bus: self.bus, config: self.config.clone() }
+        Self {
+            bus: self.bus,
+            config: self.config.clone(),
+        }
     }
 }
 
@@ -205,8 +208,11 @@ mod tests {
         let writes = Rc::new(RefCell::new(Vec::new()));
         let async_calls = Rc::new(RefCell::new(0));
         let applied_config = Rc::new(RefCell::new(None));
-        let bus: SharedI2c<NoopRawMutex, MockBus> =
-            SharedI2c::new(MockBus { writes: writes.clone(), async_calls: async_calls.clone(), applied_config: applied_config.clone() });
+        let bus: SharedI2c<NoopRawMutex, MockBus> = SharedI2c::new(MockBus {
+            writes: writes.clone(),
+            async_calls: async_calls.clone(),
+            applied_config: applied_config.clone(),
+        });
         let mut device = bus.batched_device(MockConfig(42));
 
         block_on(device.write_batch(0x60, &[&[1, 2, 3], &[4, 5]])).unwrap();

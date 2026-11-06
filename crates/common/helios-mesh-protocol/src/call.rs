@@ -149,9 +149,12 @@ mod tests {
 
     #[test]
     fn pulse_decodes_operation() {
-        let response =
-            node::Response::AuxGpioPulseScheduled { operation: crate::node::OperationId(1), gpio: node::AuxGpioId(2), duration_ms: 60_000 }
-                .into();
+        let response = node::Response::AuxGpioPulseScheduled {
+            operation: crate::node::OperationId(1),
+            gpio: node::AuxGpioId(2),
+            duration_ms: 60_000,
+        }
+        .into();
         assert_eq!(node::PulseAuxGpio::decode(response), Ok(node::OperationId(1)));
     }
 

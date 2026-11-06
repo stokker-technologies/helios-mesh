@@ -9,7 +9,7 @@ After [Quick Start](README.md#quick-start), choose a repository task:
 
 | Command | Purpose |
 | --- | --- |
-| `mise run check` | Check Hub conventions, formatting, dependency hygiene, Python lints and types, and workflow syntax |
+| `mise run check` | Check repository configuration, formatting, dependency hygiene, Python lints and types, and workflow syntax |
 | `mise run build --profile dev` | Build shipping binaries, wheels, and Linux firmware with matching Clippy |
 | `mise run build:rust:tests --profile dev` | Run canonical matched Clippy and build the independent Rust test archive |
 | `mise run check:python:generated --profile dev` | Verify the built wheel against Python stubs |
@@ -55,16 +55,14 @@ and reports. Workspace and package compiler-profile overrides are absent.
 Ordinary CI and local validation use shipping features. The optional local
 `mise run build:rust:compatibility` checks six additional feature combinations,
 including all-features and no-default-features SDK variants. On either native
-platform, `mise run test:rust:extended` builds and runs the 28 instrumented
+platform, `mise run test:rust:extended` builds and runs the instrumented
 transport tests with the `testing` feature, writing Nextest JUnit under
 `target/tests/<profile>/<target>/extended-rust/store/stkr/`. The extended task accepts `--profile release` to select the report namespace;
 neither runs automatically in CI or ordinary validation.
 The compatibility task also cross-checks ARM binaries and needs the declared
 `thumbv6m-none-eabi` Rust target. These opt-in tasks add compilation cost and
 reuse the workspace Cargo directory without replacing the canonical archive.
-Ordinary CI jobs default to 120 minutes while individual test deadlines remain
-unchanged. Pull requests can write compatible caches within their native merge-ref
-scope. New PR and ordinary `dev` commits cancel superseded validation while
+CI jobs allow 120 minutes. Correctness-test hang guards use doubled hosted-runner budgets; operation deadlines remain unchanged. Pull requests restore compatible caches without saving them. New PR and ordinary `dev` commits cancel superseded validation while
 release tagging and publication retain their required handoff.
 CI prepares native compiler and archive tools before restoring caches; runner
 slots use isolated mise stores. Lane artifacts retain native diagnostics beside
@@ -75,15 +73,10 @@ firmware flashing require an explicit decision and suitable physical setup.
 
 ## Tests And Checks
 
-After source closure, run the impact-selected native review gate:
-
-```sh
-mise run ci:simulate
-```
-
-It runs the required Windows and Linux jobs from the same declared provider graph,
-one job at a time, without CPU, memory or thread limits.
-A platform-limited simulation is partial evidence and does not satisfy the review gate.
+After source closure, run `mise run check` and targeted deterministic checks of changed paths.
+`mise run test:python:integration` checks repository automation. Use `mise run build:rust:focused -- test <Cargo arguments> -- <test filter>` for focused Rust proof.
+Full local CI simulation is optional unless explicitly required by a release gate; hosted Linux and Windows proof remains authoritative for stable publication.
+Compile and test tasks serialize across worktrees through the shared machine build lock and use a capped shared sccache; each checkout retains its own `target/`.
 
 - [Host Contracts](crates/system/helios-mesh/README.md) — discovery, typed Rust/Python APIs, transport, and operation ownership.
 - [Board And Firmware Guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md) — wiring, safety, node authoring, and field diagnostics.
@@ -102,8 +95,7 @@ Commits at tag time. Downloads include the firmware ZIP, host binaries, wheels,
 and `SHA256SUMS`; the Linux label on the firmware download names its build host,
 while its contents target RP2040.
 
-Use one pull request into `dev` and enable squash auto-merge after local validation.
-Required Linux and Windows native checks must pass before integration.
+Use one pull request into `dev` and squash immediately when provider protections permit it. Ordinary dev pushes run quick checks and Product Build only; reviews run tests and packaging. Stable preparation commits run the full release gate on the exact commit required by `main` protection. Never bypass existing protections. Nightly publication waits for build and package while suites run independently; a started publisher is never cancelled.
 
 ## Reporting Issues
 

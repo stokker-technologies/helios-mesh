@@ -170,7 +170,15 @@ impl Job for Mixed {
     type Resources = ();
     async fn run(&mut self, (): &mut (), cx: &mut JobContext) -> Result<(), Error> {
         let a = cx.submit(&self.quick, Quick)?;
-        let b = cx.submit(&self.leaf, Leaf { run_gate: self.run, cleanup_gate: self.cleanup, cleanup_error: false, timeout: None })?;
+        let b = cx.submit(
+            &self.leaf,
+            Leaf {
+                run_gate: self.run,
+                cleanup_gate: self.cleanup,
+                cleanup_error: false,
+                timeout: None,
+            },
+        )?;
         let (a, b) = embassy_futures::join::join(a.finished(), b.finished()).await;
         assert_eq!(a.result, Ok(()));
         assert_eq!(b.result, Ok(()));
@@ -190,15 +198,30 @@ impl Job for Saturate {
     type Resources = ();
     fn run(&mut self, (): &mut (), cx: &mut JobContext) -> impl Future<Output = Result<(), Error>> {
         for _ in 0..MAX_JOB_CHILDREN {
-            let admission =
-                cx.submit(&self.child, Leaf { run_gate: self.run, cleanup_gate: self.cleanup, cleanup_error: false, timeout: None });
+            let admission = cx.submit(
+                &self.child,
+                Leaf {
+                    run_gate: self.run,
+                    cleanup_gate: self.cleanup,
+                    cleanup_error: false,
+                    timeout: None,
+                },
+            );
             match admission {
                 Ok(child) => drop(child),
                 Err(error) => return core::future::ready(Err(error)),
             }
         }
         assert!(matches!(
-            cx.submit(&self.child, Leaf { run_gate: self.run, cleanup_gate: self.cleanup, cleanup_error: false, timeout: None }),
+            cx.submit(
+                &self.child,
+                Leaf {
+                    run_gate: self.run,
+                    cleanup_gate: self.cleanup,
+                    cleanup_error: false,
+                    timeout: None
+                }
+            ),
             Err(Error::Busy)
         ));
         core::future::ready(Ok(()))
@@ -326,7 +349,12 @@ fn deadline_execution_only() {
     let channel: LeafChannel = channel(1, Counts::default());
     let cleanup = gate();
     let operation = channel
-        .submit(Leaf { run_gate: gate(), cleanup_gate: cleanup, cleanup_error: true, timeout: Some(Duration::from_millis(5)) })
+        .submit(Leaf {
+            run_gate: gate(),
+            cleanup_gate: cleanup,
+            cleanup_error: true,
+            timeout: Some(Duration::from_millis(5)),
+        })
         .unwrap();
     // Time queued, and waiting for external resource access, does not consume execution budget.
     embassy_time::MockDriver::get().advance(Duration::from_millis(10));
@@ -345,7 +373,13 @@ fn deadline_execution_only() {
     assert!(matches!(channel.try_resources(), Err(Error::Busy)));
     cleanup.signal(());
     pending(worker.as_mut());
-    assert_eq!(finished(channel, operation.id()), JobOutcome { result: Err(JobError::Deadline), cleanup: Some(Err(Error::Unavailable)) });
+    assert_eq!(
+        finished(channel, operation.id()),
+        JobOutcome {
+            result: Err(JobError::Deadline),
+            cleanup: Some(Err(Error::Unavailable))
+        }
+    );
     let snapshot = channel.snapshot(operation.id()).unwrap();
     assert_eq!(snapshot.state, OperationState::Failed);
     assert_eq!(snapshot.error, Some(Error::Unavailable));
@@ -414,7 +448,13 @@ fn failed_second_automatically() {
     assert_eq!(parent.status(operation.id()), Some(JobStatus::Running));
     pending(child_worker.as_mut());
     pending(parent_worker.as_mut());
-    assert_eq!(finished(parent, operation.id()), JobOutcome { result: Err(JobError::Rejected(Error::Unavailable)), cleanup: Some(Ok(())) });
+    assert_eq!(
+        finished(parent, operation.id()),
+        JobOutcome {
+            result: Err(JobError::Rejected(Error::Unavailable)),
+            cleanup: Some(Ok(()))
+        }
+    );
     assert_eq!(first.try_resources().unwrap().runs, 0);
     assert!(first.is_idle());
 }

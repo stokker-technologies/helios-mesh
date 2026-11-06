@@ -321,7 +321,12 @@ impl From<AuxGpioConfigured> for crate::wire::Response {
 
 impl From<AuxGpioPulseScheduled> for crate::wire::Response {
     fn from(value: AuxGpioPulseScheduled) -> Self {
-        Response::AuxGpioPulseScheduled { operation: value.operation, gpio: value.gpio, duration_ms: value.duration_ms }.into()
+        Response::AuxGpioPulseScheduled {
+            operation: value.operation,
+            gpio: value.gpio,
+            duration_ms: value.duration_ms,
+        }
+        .into()
     }
 }
 
@@ -379,11 +384,34 @@ mod tests {
 
     #[test]
     fn typed_gpio_variants() {
-        let configured: crate::wire::Response = AuxGpioConfigured { gpio: AuxGpioId(1), mode: AuxGpioMode::DriveHigh }.into();
-        assert_eq!(configured, Response::AuxGpioConfigured { gpio: AuxGpioId(1), mode: AuxGpioMode::DriveHigh }.into());
-        let scheduled: crate::wire::Response =
-            AuxGpioPulseScheduled { gpio: AuxGpioId(2), duration_ms: 100, operation: OperationId(514) }.into();
-        assert_eq!(scheduled, Response::AuxGpioPulseScheduled { gpio: AuxGpioId(2), duration_ms: 100, operation: OperationId(514) }.into());
+        let configured: crate::wire::Response = AuxGpioConfigured {
+            gpio: AuxGpioId(1),
+            mode: AuxGpioMode::DriveHigh,
+        }
+        .into();
+        assert_eq!(
+            configured,
+            Response::AuxGpioConfigured {
+                gpio: AuxGpioId(1),
+                mode: AuxGpioMode::DriveHigh
+            }
+            .into()
+        );
+        let scheduled: crate::wire::Response = AuxGpioPulseScheduled {
+            gpio: AuxGpioId(2),
+            duration_ms: 100,
+            operation: OperationId(514),
+        }
+        .into();
+        assert_eq!(
+            scheduled,
+            Response::AuxGpioPulseScheduled {
+                gpio: AuxGpioId(2),
+                duration_ms: 100,
+                operation: OperationId(514)
+            }
+            .into()
+        );
     }
 
     #[test]

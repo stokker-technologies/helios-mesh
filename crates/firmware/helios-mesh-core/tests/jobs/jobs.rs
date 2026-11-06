@@ -113,7 +113,13 @@ fn gate() -> &'static Gate {
 }
 
 fn work() -> Work {
-    Work { invalid: false, run_gate: None, cleanup_gate: None, result: Ok(()), cleanup_result: Ok(()) }
+    Work {
+        invalid: false,
+        run_gate: None,
+        cleanup_gate: None,
+        result: Ok(()),
+        cleanup_result: Ok(()),
+    }
 }
 
 /* === Tests === */
@@ -130,9 +136,18 @@ fn invalid_queued_resources() {
     assert_eq!(worker.as_mut().poll(&mut cx), Poll::Pending);
     assert_eq!(
         channel.status(invalid.id()),
-        Some(JobStatus::Finished(JobOutcome { result: Err(JobError::Rejected(Error::InvalidInput)), cleanup: None }))
+        Some(JobStatus::Finished(JobOutcome {
+            result: Err(JobError::Rejected(Error::InvalidInput)),
+            cleanup: None
+        }))
     );
-    assert_eq!(channel.status(cancelled.id()), Some(JobStatus::Finished(JobOutcome { result: Err(JobError::Cancelled), cleanup: None })));
+    assert_eq!(
+        channel.status(cancelled.id()),
+        Some(JobStatus::Finished(JobOutcome {
+            result: Err(JobError::Cancelled),
+            cleanup: None
+        }))
+    );
     let resource = channel.try_resources().unwrap();
     assert_eq!(resource.value, 7);
     assert_eq!(resource.runs, 0);
@@ -146,7 +161,13 @@ fn independent_channels_observer() {
     let finish_a = gate();
     let finish_b = gate();
     let clean_a = gate();
-    let a = first.submit(Work { run_gate: Some(finish_a), cleanup_gate: Some(clean_a), ..work() }).unwrap();
+    let a = first
+        .submit(Work {
+            run_gate: Some(finish_a),
+            cleanup_gate: Some(clean_a),
+            ..work()
+        })
+        .unwrap();
     let b = second.submit(Work { run_gate: Some(finish_b), ..work() }).unwrap();
     assert_ne!(a.id(), b.id());
     let mut ar = pin!(first.run());
@@ -206,7 +227,12 @@ fn explicit_cancellation_failure() {
     let channel = channel::<2, 4>(1);
     let clean = gate();
     let operation = channel
-        .submit(Work { run_gate: Some(gate()), cleanup_gate: Some(clean), cleanup_result: Err(Error::Unavailable), ..work() })
+        .submit(Work {
+            run_gate: Some(gate()),
+            cleanup_gate: Some(clean),
+            cleanup_result: Err(Error::Unavailable),
+            ..work()
+        })
         .unwrap();
     let mut cx = Context::from_waker(Waker::noop());
     let mut worker = pin!(channel.run());
@@ -221,7 +247,10 @@ fn explicit_cancellation_failure() {
     assert_eq!(worker.as_mut().poll(&mut cx), Poll::Pending);
     assert_eq!(
         finished.as_mut().poll(&mut cx),
-        Poll::Ready(JobOutcome { result: Err(JobError::Cancelled), cleanup: Some(Err(Error::Unavailable)) })
+        Poll::Ready(JobOutcome {
+            result: Err(JobError::Cancelled),
+            cleanup: Some(Err(Error::Unavailable))
+        })
     );
     assert_eq!(channel.try_resources().unwrap().cleanups, 1);
 }
@@ -266,7 +295,10 @@ fn cancellation_purges_observers() {
     channel.cancel_all();
     assert!(counter_a.0.load(Ordering::SeqCst) > 0);
     assert!(counter_b.0.load(Ordering::SeqCst) > 0);
-    let cancelled = JobOutcome { result: Err(JobError::Cancelled), cleanup: None };
+    let cancelled = JobOutcome {
+        result: Err(JobError::Cancelled),
+        cleanup: None,
+    };
     assert_eq!(a.as_mut().poll(&mut cx_a), Poll::Ready(cancelled));
     assert_eq!(b.as_mut().poll(&mut cx_b), Poll::Ready(cancelled));
     assert_eq!(channel.status(second.id()), Some(JobStatus::Finished(cancelled)));
@@ -288,13 +320,22 @@ fn unavailable_board_rejected() {
 fn cleanup_preserves_primary() {
     for result in [Ok(()), Err(Error::Conflict)] {
         let channel = channel::<1, 2>(1);
-        let operation = channel.submit(Work { result, cleanup_result: Err(Error::Unavailable), ..work() }).unwrap();
+        let operation = channel
+            .submit(Work {
+                result,
+                cleanup_result: Err(Error::Unavailable),
+                ..work()
+            })
+            .unwrap();
         let mut cx = Context::from_waker(Waker::noop());
         let mut worker = pin!(channel.run());
         assert_eq!(worker.as_mut().poll(&mut cx), Poll::Pending);
         assert_eq!(
             pin!(operation.finished()).as_mut().poll(&mut cx),
-            Poll::Ready(JobOutcome { result: result.map_err(JobError::Rejected), cleanup: Some(Err(Error::Unavailable)) })
+            Poll::Ready(JobOutcome {
+                result: result.map_err(JobError::Rejected),
+                cleanup: Some(Err(Error::Unavailable))
+            })
         );
         let snapshot = channel.snapshot(operation.id()).unwrap();
         assert_eq!(snapshot.error, result.err());
@@ -316,7 +357,10 @@ fn partial_admission_cancellation() {
     assert_eq!(worker.as_mut().poll(&mut cx), Poll::Pending);
     assert_eq!(
         pin!(a.finished()).as_mut().poll(&mut cx),
-        Poll::Ready(JobOutcome { result: Err(JobError::Cancelled), cleanup: Some(Ok(())) })
+        Poll::Ready(JobOutcome {
+            result: Err(JobError::Cancelled),
+            cleanup: Some(Ok(()))
+        })
     );
     assert_eq!(first.try_resources().unwrap().cleanups, 1);
     assert_eq!(second.status(occupied.id()), Some(JobStatus::Queued));
@@ -341,5 +385,11 @@ fn purge_drops_handles() {
     assert_eq!(worker.as_mut().poll(&mut cx), Poll::Pending);
     let nested = channel.submit(Holding { _operation: Some(operation) }).unwrap();
     channel.cancel_all();
-    assert_eq!(pin!(nested.finished()).as_mut().poll(&mut cx), Poll::Ready(JobOutcome { result: Err(JobError::Cancelled), cleanup: None }));
+    assert_eq!(
+        pin!(nested.finished()).as_mut().poll(&mut cx),
+        Poll::Ready(JobOutcome {
+            result: Err(JobError::Cancelled),
+            cleanup: None
+        })
+    );
 }

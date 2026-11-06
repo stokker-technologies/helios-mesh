@@ -94,7 +94,11 @@ pub enum Kind {
 impl Header {
     #[must_use]
     pub fn new(node: NodeId) -> Self {
-        Self { schema: SCHEMA_VERSION, node: node.0, captured_at_us: now_us() }
+        Self {
+            schema: SCHEMA_VERSION,
+            node: node.0,
+            captured_at_us: now_us(),
+        }
     }
 
     pub fn to_json(&self) -> serde_json::Result<String> {
@@ -216,11 +220,23 @@ mod tests {
 
     #[test]
     fn event_names_names() {
-        let event = JournalEvent::RequestRetried { peer: NodeId(42), request_id: RequestId(9), retry: 1 };
+        let event = JournalEvent::RequestRetried {
+            peer: NodeId(42),
+            request_id: RequestId(9),
+            retry: 1,
+        };
         assert_eq!(event_name(&event), "hnm.request.retried");
-        let event = JournalEvent::SatelliteState { name: SatelliteName::MotorWing, state: SatelliteState::Absent };
+        let event = JournalEvent::SatelliteState {
+            name: SatelliteName::MotorWing,
+            state: SatelliteState::Absent,
+        };
         assert_eq!(event_name(&event), "hnm.satellite.state");
-        let event = JournalEvent::I2cBaudApplied { frequency_hz: 400_000, hcnt: 126, lcnt: 187, spklen: 11 };
+        let event = JournalEvent::I2cBaudApplied {
+            frequency_hz: 400_000,
+            hcnt: 126,
+            lcnt: 187,
+            spklen: 11,
+        };
         assert_eq!(event_name(&event), "hnm.i2c.baud-applied");
     }
 
@@ -234,7 +250,11 @@ mod tests {
         let entry = JournalEntry {
             sequence: 3,
             timestamp_ms: 30,
-            event: JournalEvent::RequestRetried { peer: NodeId(42), request_id: RequestId(9), retry: 1 },
+            event: JournalEvent::RequestRetried {
+                peer: NodeId(42),
+                request_id: RequestId(9),
+                retry: 1,
+            },
         };
         let record = Record::new(1, NodeId(42), &entry);
         let line = record.to_json().unwrap();
@@ -246,7 +266,10 @@ mod tests {
         JournalEntry {
             sequence,
             timestamp_ms: u64::from(sequence) * 10,
-            event: JournalEvent::MeshRequestReceived { peer: NodeId(42), request_id: RequestId(sequence) },
+            event: JournalEvent::MeshRequestReceived {
+                peer: NodeId(42),
+                request_id: RequestId(sequence),
+            },
         }
     }
 

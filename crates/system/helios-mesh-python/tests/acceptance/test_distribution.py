@@ -18,13 +18,11 @@ from importlib import metadata
 from pathlib import Path
 
 # Third Party Imports
+# Local Imports
 import helios_mesh
 from helios_mesh import _native
 
-# Local Imports
-
 # Type Checking Imports
-
 
 # === Public Exports === #
 

@@ -65,8 +65,20 @@ async fn main(spawner: Spawner) {
         hardware
     } else {
         hardware
-            .auxiliary(AuxGpioId(1), board::Auxiliary::PushPull { initial: AuxGpioMode::HighImpedance, drive: board::Drive::Ma2 })
-            .auxiliary(AuxGpioId(2), board::Auxiliary::PushPull { initial: AuxGpioMode::HighImpedance, drive: board::Drive::Ma2 })
+            .auxiliary(
+                AuxGpioId(1),
+                board::Auxiliary::PushPull {
+                    initial: AuxGpioMode::HighImpedance,
+                    drive: board::Drive::Ma2,
+                },
+            )
+            .auxiliary(
+                AuxGpioId(2),
+                board::Auxiliary::PushPull {
+                    initial: AuxGpioMode::HighImpedance,
+                    drive: board::Drive::Ma2,
+                },
+            )
     };
     let hardware = defmt::unwrap!(hardware.validate());
     let mut board = board::Board::start(spawner, Sidecar::NODE_TYPE.definition().label, hardware).await;

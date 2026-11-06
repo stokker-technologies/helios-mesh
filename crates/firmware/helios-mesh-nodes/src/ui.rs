@@ -62,12 +62,19 @@ pub async fn run(mut snapshots: Receiver, watch: &'static display::SnapshotWatch
 #[must_use]
 pub fn project(snapshot: &Snapshot) -> display::Snapshot {
     let local_id = snapshot.local.id;
-    let mut local = display::LocalPage { title: title(snapshot.local.label, local_id), rows: heapless::Vec::new() };
+    let mut local = display::LocalPage {
+        title: title(snapshot.local.label, local_id),
+        rows: heapless::Vec::new(),
+    };
     for row in snapshot.local.rows.rows() {
         push_row(&mut local.rows, row.label, status_value(row.value));
     }
 
-    let mut view = display::Snapshot { local, activity: activity(snapshot.activity, local_id, local_id), nearby: heapless::Vec::new() };
+    let mut view = display::Snapshot {
+        local,
+        activity: activity(snapshot.activity, local_id, local_id),
+        nearby: heapless::Vec::new(),
+    };
     for page in most_recently_seen(snapshot) {
         let _ = view.nearby.push(display::NearbyPage {
             id: page.id.0,
@@ -133,7 +140,10 @@ fn status_value(value: StatusValue) -> display::Value {
 }
 
 fn activity(activity: Option<RequestActivity>, viewpoint: NodeId, observer: NodeId) -> display::Activity {
-    display::Activity { request: request_value(activity, viewpoint, observer), response: response_value(activity) }
+    display::Activity {
+        request: request_value(activity, viewpoint, observer),
+        response: response_value(activity),
+    }
 }
 
 fn request_value(activity: Option<RequestActivity>, viewpoint: NodeId, observer: NodeId) -> display::Value {
@@ -180,7 +190,11 @@ mod tests {
     const PEER: NodeId = NodeId(273_282);
 
     fn nearby(id: u32, last_seen_ms: u64) -> NearbyPage {
-        NearbyPage { id: NodeId(id), label: NodeLabel::try_from("rotator").unwrap(), last_seen_ms }
+        NearbyPage {
+            id: NodeId(id),
+            label: NodeLabel::try_from("rotator").unwrap(),
+            last_seen_ms,
+        }
     }
 
     #[test]

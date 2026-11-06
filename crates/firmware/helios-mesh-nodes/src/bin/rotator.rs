@@ -46,7 +46,11 @@ use helios_mesh_protocol::motion::{Mechanics, Microsteps, Power};
 /* === Constants === */
 
 const UNCONFIGURED: motor::Config = motor::Config {
-    mechanics: Mechanics { full_steps: 200, microsteps: Microsteps::Four, reversed: false },
+    mechanics: Mechanics {
+        full_steps: 200,
+        microsteps: Microsteps::Four,
+        reversed: false,
+    },
     power: Power { moving: 0, holding: 0 },
 };
 static NODE: StaticCell<node::Runtime<Rotator, board::Flash, board::Platform>> = StaticCell::new();

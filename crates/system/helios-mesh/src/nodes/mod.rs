@@ -116,7 +116,9 @@ impl SidecarNode {
     }
 
     pub async fn connect(selector: DeviceSelector) -> Result<Self> {
-        Ok(Self { inner: connect_type(selector, NodeType::Sidecar).await? })
+        Ok(Self {
+            inner: connect_type(selector, NodeType::Sidecar).await?,
+        })
     }
 
     #[must_use]
@@ -154,7 +156,9 @@ impl RotatorNode {
     }
 
     pub async fn connect(selector: DeviceSelector) -> Result<Self> {
-        Ok(Self { inner: connect_type(selector, NodeType::Rotator).await? })
+        Ok(Self {
+            inner: connect_type(selector, NodeType::Rotator).await?,
+        })
     }
 
     #[must_use]
@@ -202,7 +206,10 @@ async fn connect_type(selector: DeviceSelector, kind: NodeType) -> Result<NodeHa
                 return Err(Error::AmbiguousDevices(
                     devices
                         .iter()
-                        .map(|device| crate::Candidate { id: device.info.id, label: device.definition().label.to_owned() })
+                        .map(|device| crate::Candidate {
+                            id: device.info.id,
+                            label: device.definition().label.to_owned(),
+                        })
                         .collect(),
                 ));
             }

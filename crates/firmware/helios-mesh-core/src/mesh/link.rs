@@ -99,7 +99,13 @@ where
         let rx = lora
             .create_rx_packet_params(PREAMBLE_SYMBOLS, IMPLICIT_HEADER, max_packet_size, true, false, &modulation)
             .map_err(Error::Radio)?;
-        Ok(Self { lora, modulation, tx, rx, last_send_timing: SendTiming::default() })
+        Ok(Self {
+            lora,
+            modulation,
+            tx,
+            rx,
+            last_send_timing: SendTiming::default(),
+        })
     }
 
     pub async fn send(&mut self, packet: &Envelope) -> Result<(), Error> {

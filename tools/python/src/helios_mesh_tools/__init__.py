@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Repository automation for Helios Mesh."""
 
 # === Imports === #
@@ -31,3 +32,17 @@
 # === Private Functions === #
 
 # === Entry Point === #
+
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***

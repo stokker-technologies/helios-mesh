@@ -117,7 +117,13 @@ impl NodeHandle {
     }
 
     async fn probe(device: &UsbDevice) -> Option<(Self, Option<NodeDescription>)> {
-        let node = Self::open(device).await.ok()?;
+        let node = match Self::open(device).await {
+            Ok(node) => node,
+            Err(error) => {
+                tracing::warn!(node = device.id.0, port = %device.port, %error, "gateway probe could not open USB device");
+                return None;
+            }
+        };
         // Probe a clone, not `node` itself: `with_timeout` mutates the
         // handle it is called on, and the kept `node` must keep the default
         // timeout it will serve real requests under once selected. Bound to
@@ -126,6 +132,9 @@ impl NodeHandle {
         // owner of its connection for `select_probed`'s eventual
         // `Connection::close`.
         let described = node.clone().with_timeout(PROBE_TIMEOUT).describe().await;
+        if let Err(error) = &described {
+            tracing::warn!(node = device.id.0, port = %device.port, %error, "gateway probe could not describe USB device");
+        }
         Some((node, described.ok()))
     }
 
@@ -168,7 +177,11 @@ impl NodeHandle {
 
     async fn call_extended<C: Call>(&self, call: C, extended: bool) -> Result<C::Output> {
         let timeout = self.timeout.unwrap_or(if extended || self.remote { EXTENDED_TIMEOUT } else { DEFAULT_TIMEOUT });
-        self.connection.call(self.id, timeout, call).await
+        let result = self.connection.call(self.id, timeout, call).await;
+        if let Err(error) = &result {
+            tracing::warn!(node = self.id.0, remote = self.remote, request = core::any::type_name::<C>(), timeout_ms = timeout.as_millis(), %error, "node request failed");
+        }
+        result
     }
 
     pub async fn describe(&self) -> Result<NodeDescription> {
@@ -220,10 +233,15 @@ impl NodeHandle {
         if !gpio.is_valid() {
             return Err(Error::AuxGpio { gpio, reason: AuxGpioError::InvalidId });
         }
-        let duration_ms =
-            u32::try_from(duration.as_millis()).map_err(|_| Error::AuxGpio { gpio, reason: AuxGpioError::InvalidDuration })?;
+        let duration_ms = u32::try_from(duration.as_millis()).map_err(|_| Error::AuxGpio {
+            gpio,
+            reason: AuxGpioError::InvalidDuration,
+        })?;
         if duration_ms == 0 || duration_ms > node::MAX_AUX_GPIO_PULSE_MS || !duration.subsec_nanos().is_multiple_of(1_000_000) {
-            return Err(Error::AuxGpio { gpio, reason: AuxGpioError::InvalidDuration });
+            return Err(Error::AuxGpio {
+                gpio,
+                reason: AuxGpioError::InvalidDuration,
+            });
         }
         let id = self.request(node::PulseAuxGpio { gpio, duration_ms }).await?;
         Ok(self.operation(id))
@@ -255,7 +273,12 @@ impl NodeHandle {
     pub(crate) fn channels() -> impl core::future::Future<Output = Result<Vec<Description>>> {
         core::future::ready(Ok([1, 2]
             .into_iter()
-            .map(|channel| Description { channel: ChannelId(channel), kind: motion::Kind::Rotational, minimum: 0, maximum: 359_999_999 })
+            .map(|channel| Description {
+                channel: ChannelId(channel),
+                kind: motion::Kind::Rotational,
+                minimum: 0,
+                maximum: 359_999_999,
+            })
             .collect()))
     }
 
@@ -364,9 +387,10 @@ impl Operation {
 
     async fn check_roster_silence(&self) -> Result<()> {
         match self.node.roster_entry().await {
-            Ok(Some(summary)) if summary.silent_for_s > UNREACHABLE_SILENCE_S => {
-                Err(Error::NodeUnreachable { node: self.node.id(), silent_for_s: summary.silent_for_s })
-            }
+            Ok(Some(summary)) if summary.silent_for_s > UNREACHABLE_SILENCE_S => Err(Error::NodeUnreachable {
+                node: self.node.id(),
+                silent_for_s: summary.silent_for_s,
+            }),
             Ok(_) | Err(Error::Unavailable | Error::Timeout) => Ok(()),
             Err(error) => Err(error),
         }
@@ -415,7 +439,11 @@ mod tests {
     use crate::testing;
 
     fn device(id: u32, name: &str) -> UsbDevice {
-        UsbDevice { id: NodeId(id), label: name.to_owned(), port: format!("/dev/tty.fake-{id}") }
+        UsbDevice {
+            id: NodeId(id),
+            label: name.to_owned(),
+            port: format!("/dev/tty.fake-{id}"),
+        }
     }
 
     fn description(coordinator: bool) -> NodeDescription {

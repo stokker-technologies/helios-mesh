@@ -21,7 +21,6 @@ pub mod motor;
 /* === Re-Exports === */
 
 pub use error::{Error, Result};
-
 pub use motor::wing as motor_wing;
 
 /* === Imports === */

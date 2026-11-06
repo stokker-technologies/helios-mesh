@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/test/__init__.py; sha256:8d8cf650889f9fc158ec0b1c2f4cd151987cdc5ae329f57a8e7204a5522a2b04
 # ***
 #
 # Helios Mesh
@@ -7,7 +6,7 @@
 #
 # ***
 
-"""Hub-Rendered Test Evidence Runner: Lanes, Archives, Reports And Benchmarks"""
+"""Test Evidence Runner: Lanes, Archives, Reports And Benchmarks"""
 
 # === Imports === #
 

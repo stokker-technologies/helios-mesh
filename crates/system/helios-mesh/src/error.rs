@@ -136,13 +136,19 @@ pub enum Error {
 
 impl From<&crate::UsbDevice> for Candidate {
     fn from(device: &crate::UsbDevice) -> Self {
-        Self { id: device.id, label: device.label.clone() }
+        Self {
+            id: device.id,
+            label: device.label.clone(),
+        }
     }
 }
 
 impl From<&crate::node::NodeSummary> for Candidate {
     fn from(summary: &crate::node::NodeSummary) -> Self {
-        Self { id: summary.info.id, label: summary.info.label().to_owned() }
+        Self {
+            id: summary.info.id,
+            label: summary.info.label().to_owned(),
+        }
     }
 }
 

@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/test/nextest.py; sha256:de63c0146f09eee6372fc2e0f1a3dcf17e89bced53bbc23e4fc68fbb29d43f3f
 # ***
 #
 # Helios Mesh
@@ -33,7 +32,7 @@ from . import policy
 
 # === Constants === #
 
-PROFILE = "stkr"
+PROFILE = "project"
 UNIT = "kind(lib) | kind(bin) | kind(proc-macro)"
 PACKAGE_FLAGS = ("-p", "--package")
 FILTER_FLAGS = ("-E", "--filterset", "--filter-expr")

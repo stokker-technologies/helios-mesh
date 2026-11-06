@@ -286,7 +286,9 @@ impl<D: StepperDriver> Stepper<D> {
             let position = normalize_heading(self.axis.position_microdegrees());
             self.axis.set_position(position);
             let outcome = if self.settle().await {
-                Outcome::Reached { requested_microdegrees: movement.target_microdegrees }
+                Outcome::Reached {
+                    requested_microdegrees: movement.target_microdegrees,
+                }
             } else {
                 Outcome::Failed
             };
@@ -383,7 +385,12 @@ impl<D: StepperDriver> Stepper<D> {
 
     async fn complete(&mut self, operation: OperationId, outcome: Outcome, timing: Timing) {
         self.completions
-            .send(Completion { operation, outcome, position_microdegrees: normalize_heading(self.axis.position_microdegrees()), timing })
+            .send(Completion {
+                operation,
+                outcome,
+                position_microdegrees: normalize_heading(self.axis.position_microdegrees()),
+                timing,
+            })
             .await;
     }
 }

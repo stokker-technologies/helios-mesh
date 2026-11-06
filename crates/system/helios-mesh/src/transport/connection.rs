@@ -29,7 +29,7 @@ use tokio::{
     io::{AsyncRead, AsyncWrite},
     sync::{mpsc, oneshot},
     task::JoinHandle,
-    time::{Instant, sleep_until},
+    time::{Instant, sleep_until, timeout_at},
 };
 use tokio_serial::SerialPortBuilderExt;
 
@@ -75,7 +75,7 @@ struct TaskGuard {
 struct Outbound {
     destination: NodeId,
     request: Request,
-    timeout: Duration,
+    deadline: Instant,
     completion: oneshot::Sender<Result<Response>>,
 }
 
@@ -146,17 +146,32 @@ impl Connection {
         let (events, inbound) = mpsc::channel(QUEUE_CAPACITY);
         let reader = tokio::spawn(run_reader(FrameReader::new(reader, corrupt_frames), events));
         let driver = tokio::spawn(run_driver(writer, requests, inbound));
-        Self { outbound, guard: Arc::new(TaskGuard { reader: Some(reader), driver: Some(driver) }) }
+        Self {
+            outbound,
+            guard: Arc::new(TaskGuard {
+                reader: Some(reader),
+                driver: Some(driver),
+            }),
+        }
     }
 
     pub async fn call<C: Call>(&self, destination: NodeId, timeout: Duration, call: C) -> Result<C::Output> {
-        let (completion, response) = oneshot::channel();
-        self.outbound
-            .send(Outbound { destination, request: call.into(), timeout, completion })
-            .await
-            .map_err(|_| Error::Connection("transport driver stopped".into()))?;
-        let response = response.await.map_err(|_| Error::Connection("transport driver stopped".into()))??;
-        C::decode(response).map_err(Error::from)
+        let deadline = Instant::now() + timeout;
+        let operation = async {
+            let (completion, response) = oneshot::channel();
+            self.outbound
+                .send(Outbound {
+                    destination,
+                    request: call.into(),
+                    deadline,
+                    completion,
+                })
+                .await
+                .map_err(|_| Error::Connection("transport driver stopped before request admission".into()))?;
+            let response = response.await.map_err(|_| Error::Connection("transport driver stopped before response".into()))??;
+            C::decode(response).map_err(Error::from)
+        };
+        timeout_at(deadline, operation).await.map_err(|_| Error::Timeout)?
     }
 
     pub async fn close(self) {
@@ -202,13 +217,14 @@ async fn open_serial_stream(path: &str) -> Result<tokio_serial::SerialStream> {
         let owned = path.to_owned();
         let outcome = tokio::task::spawn_blocking(move || tokio_serial::new(&owned, 115_200).open_native_async())
             .await
-            .map_err(|error| Error::Device(error.to_string()))?;
+            .map_err(|error| Error::Device(format!("opening USB port {path}: serial open task failed: {error}")))?;
         match outcome {
             Ok(stream) => return Ok(stream),
             Err(error) if attempts_left > 0 && is_exclusive_open_race(&error) => {
+                tracing::debug!(port = path, %error, attempts_left, "retrying exclusive USB open");
                 tokio::time::sleep(EXCLUSIVE_OPEN_RETRY_DELAY).await;
             }
-            Err(error) => return Err(Error::Device(error.to_string())),
+            Err(error) => return Err(Error::Device(format!("opening USB port {path}: {error}"))),
         }
     }
 }
@@ -243,14 +259,20 @@ fn classify_frame(mut frame: Vec<u8>) -> Option<Inbound> {
         if envelope.version == PROTOCOL_VERSION {
             return Some(Inbound::Response(Box::new(envelope)));
         }
-        return Some(Inbound::Mismatch { request_id: envelope.request_id, device: envelope.version });
+        return Some(Inbound::Mismatch {
+            request_id: envelope.request_id,
+            device: envelope.version,
+        });
     }
     // The payload encoding of a foreign version is unknown, but the envelope
     // prefix (version, request identifier) stays readable.
     if let Ok(head) = postcard::from_bytes_cobs::<EnvelopeHead>(&mut frame)
         && head.version != PROTOCOL_VERSION
     {
-        return Some(Inbound::Mismatch { request_id: head.request_id, device: head.version });
+        return Some(Inbound::Mismatch {
+            request_id: head.request_id,
+            device: head.version,
+        });
     }
     None
 }
@@ -284,6 +306,10 @@ async fn drive_requests<W: AsyncWrite + Unpin>(
                     fail_pending(&mut awaiting, "connection dropped");
                     return;
                 };
+                if request.completion.is_closed() || request.deadline <= Instant::now() {
+                    let _ = request.completion.send(Err(Error::Timeout));
+                    continue;
+                }
                 let request_id = allocate_request_id(&mut next_request_id, |id| awaiting.contains_key(&id));
                 let envelope = RequestEnvelope {
                     version: PROTOCOL_VERSION,
@@ -292,12 +318,22 @@ async fn drive_requests<W: AsyncWrite + Unpin>(
                     request: request.request,
                 };
                 awaiting.insert(request_id.0, Pending {
-                    deadline: Instant::now() + request.timeout,
+                    deadline: request.deadline,
                     completion: request.completion,
                 });
-                if let Err(error) = write_request(writer, &envelope).await {
-                    fail_pending(&mut awaiting, &error.to_string());
-                    return;
+                let deadline = awaiting.values().map(|pending| pending.deadline).min().expect("request was inserted");
+                match timeout_at(deadline, write_request(writer, &envelope)).await {
+                    Ok(Ok(())) => {}
+                    Ok(Err(error)) => {
+                        fail_pending(&mut awaiting, &format!("writing USB request to node {:06}: {error}", envelope.destination.0));
+                        return;
+                    }
+                    Err(_) => {
+                        // A Cancelled Write May Have Sent A Partial Frame; Close The Driver Instead Of Replaying A Hardware Command.
+                        expire_pending(&mut awaiting);
+                        fail_pending(&mut awaiting, &format!("USB write stalled while sending to node {:06}; reconnect the device", envelope.destination.0));
+                        return;
+                    }
                 }
             }
             event = inbound.recv() => {
@@ -322,18 +358,7 @@ async fn drive_requests<W: AsyncWrite + Unpin>(
                 }
             }
             () = expiry => {
-                let now = Instant::now();
-                let expired: Vec<_> = awaiting
-                    .iter()
-                    .filter_map(|(&request_id, pending)| {
-                        (pending.deadline <= now).then_some(request_id)
-                    })
-                    .collect();
-                for request_id in expired {
-                    if let Some(pending) = awaiting.remove(&request_id) {
-                        let _ = pending.completion.send(Err(Error::Timeout));
-                    }
-                }
+                expire_pending(&mut awaiting);
             }
         }
     }
@@ -358,6 +383,16 @@ fn complete_pending(awaiting: &mut HashMap<u32, Pending>, envelope: ResponseEnve
 fn fail_pending(awaiting: &mut HashMap<u32, Pending>, message: &str) {
     for (_, pending) in awaiting.drain() {
         let _ = pending.completion.send(Err(Error::Connection(message.to_owned())));
+    }
+}
+
+fn expire_pending(awaiting: &mut HashMap<u32, Pending>) {
+    let now = Instant::now();
+    let expired: Vec<_> = awaiting.iter().filter_map(|(&id, pending)| (pending.deadline <= now).then_some(id)).collect();
+    for id in expired {
+        if let Some(pending) = awaiting.remove(&id) {
+            let _ = pending.completion.send(Err(Error::Timeout));
+        }
     }
 }
 

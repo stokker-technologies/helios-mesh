@@ -109,7 +109,12 @@ impl OutputPin for DisplayOutput {
 impl TftResources {
     pub(crate) fn new(header: &mut Header, wiring: TftV2, spi: &'static SpiBus, i2c: &'static I2cBus) -> Self {
         // SD CS and touch IRQ remain permanently idled in the header owner.
-        Self { cs: header.take(wiring.cs), dc: header.take(wiring.dc), i2c, spi }
+        Self {
+            cs: header.take(wiring.cs),
+            dc: header.take(wiring.dc),
+            i2c,
+            spi,
+        }
     }
     pub async fn detect(&mut self) -> bool {
         embassy_time::Timer::after_millis(50).await;
@@ -133,7 +138,11 @@ impl TftResources {
 
 impl OledResources {
     pub(crate) fn new(header: &mut Header, wiring: Oled, i2c: &'static I2cBus) -> Self {
-        Self { a: DisplayInput(header.take(wiring.button_a)), c: DisplayInput(header.take(wiring.button_c)), i2c }
+        Self {
+            a: DisplayInput(header.take(wiring.button_a)),
+            c: DisplayInput(header.take(wiring.button_c)),
+            i2c,
+        }
     }
     pub async fn detect(&mut self) -> bool {
         embassy_time::Timer::after_millis(50).await;

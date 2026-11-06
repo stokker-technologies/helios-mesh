@@ -1,0 +1,41 @@
+name: Mirror
+run-name: Mirror / Synchronization
+on:
+  push:
+    branches: [dev, main]
+    tags: [v*]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gitlab-mirror
+  cancel-in-progress: false
+jobs:
+  mirror:
+    name: Mirror / Push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Push Published Ref
+        shell: bash
+        env:
+          MIRROR_DEPLOY_KEY: ${{ secrets.MIRROR_DEPLOY_KEY }}
+          MIRROR_SSH_URL: ${{ secrets.MIRROR_SSH_URL }}
+        run: |
+          set -euo pipefail
+          test -n "$MIRROR_DEPLOY_KEY"
+          test -n "$MIRROR_SSH_URL"
+          key="$RUNNER_TEMP/mirror-key"
+          hosts="$RUNNER_TEMP/mirror-hosts"
+          trap 'rm -f "$key" "$hosts"' EXIT
+          umask 077
+          printf '%s\n' "$MIRROR_DEPLOY_KEY" > "$key"
+          printf '%s\n' 'gitlab.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAfuCHKVTjquxvt6CM6tdG4SLp1Btn/nOeHHE5UOzRdf' > "$hosts"
+          test "$(ssh-keygen -lf "$hosts" -E sha256 | awk '{print $2}')" = 'SHA256:eUXGGm1YGsMAS7vkcx6JOJdOGHPem5gQp4taiCfCLB8'
+          export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$hosts"
+          test "$GITHUB_REPOSITORY" = stokker-technologies/helios-mesh
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          git push --no-force --no-follow-tags "$MIRROR_SSH_URL" "HEAD:$GITHUB_REF"

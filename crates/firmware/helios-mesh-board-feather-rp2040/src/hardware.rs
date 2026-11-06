@@ -21,6 +21,7 @@
 
 // Local Imports
 use crate::wings::{Motor, Oled, TftV2, Wing};
+
 #[cfg(any(target_arch = "arm", test))]
 use helios_mesh_protocol::node::AuxGpioError;
 use helios_mesh_protocol::node::{AuxGpioAccess, AuxGpioId, AuxGpioMode};
@@ -118,7 +119,14 @@ impl Default for Hardware {
 impl Hardware {
     #[must_use]
     pub const fn new() -> Self {
-        Self { known: true, tft: None, oled: None, motor: false, auxiliary: [None; 4], error: None }
+        Self {
+            known: true,
+            tft: None,
+            oled: None,
+            motor: false,
+            auxiliary: [None; 4],
+            error: None,
+        }
     }
     #[must_use]
     pub const fn unknown() -> Self {
@@ -199,7 +207,12 @@ impl Hardware {
                 };
             }
         }
-        Ok(ValidatedHardware { hardware: self, access, idle: reservation.idle, i2c: reservation.i2c })
+        Ok(ValidatedHardware {
+            hardware: self,
+            access,
+            idle: reservation.idle,
+            i2c: reservation.i2c,
+        })
     }
 }
 
@@ -248,7 +261,12 @@ impl Reservation {
         for pin in [2, 3, 8, 14, 15, 16, 17, 21, 22] {
             used[pin] = true;
         }
-        Self { used, idle: [Idle::HighImpedance; 30], addresses: [false; 128], i2c: false }
+        Self {
+            used,
+            idle: [Idle::HighImpedance; 30],
+            addresses: [false; 128],
+            i2c: false,
+        }
     }
     pub(crate) fn pin(&mut self, pin: u8, idle: Idle) -> Result<(), HardwareError> {
         claim(&mut self.used, pin)?;
@@ -301,7 +319,10 @@ mod tests {
     use super::*;
 
     fn output() -> Auxiliary {
-        Auxiliary::PushPull { initial: AuxGpioMode::HighImpedance, drive: Drive::Ma2 }
+        Auxiliary::PushPull {
+            initial: AuxGpioMode::HighImpedance,
+            drive: Drive::Ma2,
+        }
     }
 
     #[test]

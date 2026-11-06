@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Journal record schema versions and cursor pagination state."""
 
 # === Imports === #

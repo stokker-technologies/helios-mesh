@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Typed Python facade for Helios Mesh."""
 
 # === Imports === #
@@ -13,6 +14,19 @@
 # Standard Library Imports
 # Third Party Imports
 # Local Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 from helios_mesh import gateway as gateway
 from helios_mesh import journal as journal
 from helios_mesh import motion as motion

@@ -134,7 +134,9 @@ impl PySettings {
     #[new]
     #[pyo3(signature = (*, speed = None, acceleration = None))]
     const fn new(speed: Option<u16>, acceleration: Option<u16>) -> Self {
-        Self { inner: helios_mesh_wire::Settings { speed, acceleration } }
+        Self {
+            inner: helios_mesh_wire::Settings { speed, acceleration },
+        }
     }
 
     #[getter]
@@ -161,7 +163,9 @@ impl PyLimits {
     #[new]
     #[pyo3(signature = (*, speed, acceleration))]
     const fn new(speed: u16, acceleration: u16) -> Self {
-        Self { inner: helios_mesh_wire::Limits { speed, acceleration } }
+        Self {
+            inner: helios_mesh_wire::Limits { speed, acceleration },
+        }
     }
 
     #[getter]
@@ -188,7 +192,13 @@ impl PyMechanics {
     #[new]
     #[pyo3(signature = (full_steps, microsteps, *, reversed = false))]
     const fn new(full_steps: u16, microsteps: &PyMicrosteps, reversed: bool) -> Self {
-        Self { inner: helios_mesh_wire::Mechanics { full_steps, microsteps: microsteps.inner, reversed } }
+        Self {
+            inner: helios_mesh_wire::Mechanics {
+                full_steps,
+                microsteps: microsteps.inner,
+                reversed,
+            },
+        }
     }
 
     #[getter]
@@ -219,7 +229,9 @@ impl PyMechanics {
 impl PyPower {
     #[new]
     const fn new(moving: u8, holding: u8) -> Self {
-        Self { inner: helios_mesh_wire::Power { moving, holding } }
+        Self {
+            inner: helios_mesh_wire::Power { moving, holding },
+        }
     }
 
     #[getter]
@@ -245,7 +257,13 @@ impl PyPower {
 impl PyStepperConfiguration {
     #[new]
     const fn new(mechanics: &PyMechanics, limits: &PyLimits, power: &PyPower) -> Self {
-        Self { inner: helios_mesh_wire::StepperConfiguration { mechanics: mechanics.inner, limits: limits.inner, power: power.inner } }
+        Self {
+            inner: helios_mesh_wire::StepperConfiguration {
+                mechanics: mechanics.inner,
+                limits: limits.inner,
+                power: power.inner,
+            },
+        }
     }
 
     #[getter]

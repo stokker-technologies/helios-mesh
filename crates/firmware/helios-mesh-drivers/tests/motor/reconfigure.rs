@@ -81,7 +81,14 @@ impl StepperDriver for RecordingDriver {
 /* === Private Functions === */
 
 fn config(microsteps: Microsteps) -> Config {
-    Config { mechanics: Mechanics { full_steps: 8, microsteps, reversed: false }, power: Power { moving: 80, holding: 20 } }
+    Config {
+        mechanics: Mechanics {
+            full_steps: 8,
+            microsteps,
+            reversed: false,
+        },
+        power: Power { moving: 80, holding: 20 },
+    }
 }
 
 /* === Tests === */

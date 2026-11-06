@@ -118,7 +118,12 @@ impl State {
     }
 
     fn snapshot(&self, node: NodeId, uptime_ms: u64) -> NodeDiagnostics {
-        NodeDiagnostics { node, uptime_ms, requests: self.requests, journal: self.journal.summary() }
+        NodeDiagnostics {
+            node,
+            uptime_ms,
+            requests: self.requests,
+            journal: self.journal.summary(),
+        }
     }
 }
 
@@ -148,7 +153,13 @@ mod tests {
         state.request_completed(true);
         state.request_received();
         state.request_completed(false);
-        state.record(42, JournalEvent::MeshRequestReceived { peer: NodeId(273_282), request_id: RequestId(7) });
+        state.record(
+            42,
+            JournalEvent::MeshRequestReceived {
+                peer: NodeId(273_282),
+                request_id: RequestId(7),
+            },
+        );
 
         let snapshot = state.snapshot(NodeId(566_114), 84);
 

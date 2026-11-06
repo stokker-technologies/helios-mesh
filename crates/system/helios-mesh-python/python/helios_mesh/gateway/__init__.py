@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Typed gateway API: coordinator connection and roster scan."""
 
 # === Imports === #
@@ -13,6 +14,19 @@
 # Standard Library Imports
 # Third Party Imports
 # Local Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 from helios_mesh._native import NODE_PAGE_SIZE as NODE_PAGE_SIZE
 from helios_mesh._native import GatewayNode as GatewayNode
 from helios_mesh._native import NodePage as NodePage

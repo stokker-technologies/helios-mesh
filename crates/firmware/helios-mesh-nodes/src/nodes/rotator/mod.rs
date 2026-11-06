@@ -81,7 +81,16 @@ impl MotorChannel {
 
     #[cfg(any(target_arch = "arm", test))]
     fn new(motor: motor::Handle, completions: &'static motor::Completions, channel: ChannelId) -> Self {
-        Self { motor, completions, channel, configuration: None, homed: false, position: 0, diagnostics: None, faulted: false }
+        Self {
+            motor,
+            completions,
+            channel,
+            configuration: None,
+            homed: false,
+            position: 0,
+            diagnostics: None,
+            faulted: false,
+        }
     }
 
     async fn completion(&mut self, operation: OperationId, timeout: Duration) -> Result<(), Error> {
@@ -112,7 +121,11 @@ impl MotorChannel {
             motor::Outcome::Stopped { interrupted } => {
                 self.homed = false;
                 if let Some(diagnostics) = self.diagnostics {
-                    diagnostics.record(JournalEvent::MotionStopped { channel: self.channel, operation, interrupted });
+                    diagnostics.record(JournalEvent::MotionStopped {
+                        channel: self.channel,
+                        operation,
+                        interrupted,
+                    });
                 }
             }
             motor::Outcome::Failed => {
@@ -366,7 +379,11 @@ mod tests {
 
     fn configuration() -> motion::StepperConfiguration {
         motion::StepperConfiguration {
-            mechanics: motion::Mechanics { full_steps: 200, microsteps: motion::Microsteps::Four, reversed: false },
+            mechanics: motion::Mechanics {
+                full_steps: 200,
+                microsteps: motion::Microsteps::Four,
+                reversed: false,
+            },
             limits: motion::Limits { speed: 90, acceleration: 180 },
             power: motion::Power { moving: 20, holding: 5 },
         }
@@ -515,7 +532,10 @@ mod tests {
             )))
             .channel()
         }
-        let mut node = Rotator { channel_1: channel(1), channel_2: channel(2) };
+        let mut node = Rotator {
+            channel_1: channel(1),
+            channel_2: channel(2),
+        };
         for (index, channel) in node.motor_channels().into_iter().enumerate() {
             let operation = channel.submit(Jobs::Home(Home { active: false })).unwrap();
             let snapshot = node.operation_status(operation.id()).unwrap();

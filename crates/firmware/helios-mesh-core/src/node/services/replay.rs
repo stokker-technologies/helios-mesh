@@ -81,7 +81,13 @@ impl<const N: usize> Cache<N> {
         if N == 0 {
             return;
         }
-        self.entries[self.next] = Some(Entry { source, source_session, request_id, request, response });
+        self.entries[self.next] = Some(Entry {
+            source,
+            source_session,
+            request_id,
+            request,
+            response,
+        });
         self.next = (self.next + 1) % N;
     }
 }

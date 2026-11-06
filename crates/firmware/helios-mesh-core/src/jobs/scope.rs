@@ -65,7 +65,12 @@ pub(super) trait ChildControl {
 
 impl JobContext {
     pub(super) fn new(operation: OperationId, owner: usize) -> Self {
-        Self { operation, owner, children: heapless::Vec::new(), child_error: None }
+        Self {
+            operation,
+            owner,
+            children: heapless::Vec::new(),
+            child_error: None,
+        }
     }
 
     #[must_use]

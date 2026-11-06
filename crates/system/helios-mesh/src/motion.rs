@@ -11,10 +11,6 @@
 
 /* === Modules === */
 
-pub mod wire {
-    pub use helios_mesh_protocol::motion::{Configuration, Limits, Mechanics, Microsteps, Power, Settings, StepperConfiguration};
-}
-
 /* === Re-Exports === */
 
 pub use helios_mesh_protocol::motion::{
@@ -86,9 +82,19 @@ impl StepperConfig {
             _ => return Err(Error::InvalidArgument("microsteps must be 4 or 8")),
         };
         Ok(wire::StepperConfiguration {
-            mechanics: wire::Mechanics { full_steps: self.steps, microsteps, reversed: self.reversed },
-            limits: wire::Limits { speed: self.max_speed, acceleration: self.max_acceleration },
-            power: wire::Power { moving: self.moving_pwm, holding: self.holding_pwm },
+            mechanics: wire::Mechanics {
+                full_steps: self.steps,
+                microsteps,
+                reversed: self.reversed,
+            },
+            limits: wire::Limits {
+                speed: self.max_speed,
+                acceleration: self.max_acceleration,
+            },
+            power: wire::Power {
+                moving: self.moving_pwm,
+                holding: self.holding_pwm,
+            },
         })
     }
 }
@@ -126,15 +132,27 @@ impl Axis {
 
     pub async fn start_turn(&self, degrees: f64, speed: Option<u16>, acceleration: Option<u16>) -> Result<Operation> {
         let delta = self.rotational_delta(degrees)?;
-        let operation =
-            self.node.request(motion::MoveRelative { channel: self.id(), delta, settings: wire::Settings { speed, acceleration } }).await?;
+        let operation = self
+            .node
+            .request(motion::MoveRelative {
+                channel: self.id(),
+                delta,
+                settings: wire::Settings { speed, acceleration },
+            })
+            .await?;
         Ok(self.node.operation(operation))
     }
 
     pub async fn start_move_to(&self, degrees: f64, speed: Option<u16>, acceleration: Option<u16>) -> Result<Operation> {
         let target = self.rotational_target(degrees)?;
-        let operation =
-            self.node.request(motion::MoveTo { channel: self.id(), target, settings: wire::Settings { speed, acceleration } }).await?;
+        let operation = self
+            .node
+            .request(motion::MoveTo {
+                channel: self.id(),
+                target,
+                settings: wire::Settings { speed, acceleration },
+            })
+            .await?;
         Ok(self.node.operation(operation))
     }
 
@@ -190,7 +208,11 @@ impl AxesGuard {
         for (axis, &value) in self.axes.iter().zip(degrees) {
             let target = axis.rotational_target(value)?;
             wire_moves
-                .push(motion::MoveTo { channel: axis.id(), target, settings: wire::Settings::default() })
+                .push(motion::MoveTo {
+                    channel: axis.id(),
+                    target,
+                    settings: wire::Settings::default(),
+                })
                 .map_err(|_| Error::InvalidArgument("more axes than motion channels"))?;
         }
         let operations = self.node.request(motion::MoveTogether { moves: wire_moves }).await?;
@@ -272,6 +294,42 @@ fn rotational_delta(degrees: f64) -> Result<motion::Delta> {
     Ok(motion::Delta::Rotational { microdegrees: value.round() as i32 })
 }
 
+pub mod wire {
+    /* === Modules === */
+
+    /* === Re-Exports === */
+
+    pub use helios_mesh_protocol::motion::{Configuration, Limits, Mechanics, Microsteps, Power, Settings, StepperConfiguration};
+
+    /* === Imports === */
+
+    // Standard Library Imports
+
+    // Third Party Imports
+
+    // Local Imports
+
+    /* === Constants === */
+
+    /* === Macros === */
+
+    /* === Type Aliases === */
+
+    /* === Structs === */
+
+    /* === Enums === */
+
+    /* === Traits === */
+
+    /* === Implementations === */
+
+    /* === Public Functions === */
+
+    /* === Private Functions === */
+
+    /* === Tests === */
+}
+
 /* === Tests === */
 
 #[cfg(test)]
@@ -298,7 +356,11 @@ mod tests {
 
     #[test]
     fn timing_reads_fact() {
-        let timing = Timing { steps: 40, delayed_steps: 1, ..Default::default() };
+        let timing = Timing {
+            steps: 40,
+            delayed_steps: 1,
+            ..Default::default()
+        };
         let event = JournalEvent::MotionCompleted {
             channel: CHANNEL_1,
             operation: OPERATION,
@@ -311,7 +373,11 @@ mod tests {
 
     #[test]
     fn timing_extracts_timing() {
-        let timing = Timing { steps: 22, delayed_steps: 3, ..Default::default() };
+        let timing = Timing {
+            steps: 22,
+            delayed_steps: 3,
+            ..Default::default()
+        };
         let event = JournalEvent::CapabilityEventReturned {
             peer: NODE,
             request_id: RequestId(1),

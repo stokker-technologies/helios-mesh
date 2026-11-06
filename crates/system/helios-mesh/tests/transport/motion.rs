@@ -55,15 +55,29 @@ const OPERATION: OperationId = OperationId(7);
 /* === Private Functions === */
 
 fn rotational(channel: WireChannelId) -> Description {
-    Description { channel, kind: Kind::Rotational, minimum: 0, maximum: 359_999_999 }
+    Description {
+        channel,
+        kind: Kind::Rotational,
+        minimum: 0,
+        maximum: 359_999_999,
+    }
 }
 
 fn translational(channel: WireChannelId) -> Description {
-    Description { channel, kind: Kind::Translational, minimum: -1_000_000, maximum: 1_000_000 }
+    Description {
+        channel,
+        kind: Kind::Translational,
+        minimum: -1_000_000,
+        maximum: 1_000_000,
+    }
 }
 
 fn describe_response(_descriptions: &[Description]) -> Response {
-    node::Response::Description(node::NodeDescription { info: testing::info(NODE), satellites: heapless::Vec::new() }).into()
+    node::Response::Description(node::NodeDescription {
+        info: testing::info(NODE),
+        satellites: heapless::Vec::new(),
+    })
+    .into()
 }
 
 #[tokio::test(start_paused = true)]
