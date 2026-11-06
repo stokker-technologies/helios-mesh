@@ -81,11 +81,17 @@ impl Arrival {
         let mut buffer = [0; mesh::MAX_PACKET_SIZE];
         let bytes = mesh::encode(packet, &mut buffer).unwrap().to_vec();
         assert_eq!(mesh::decode(&bytes).unwrap(), *packet);
-        Self { at: Instant::now() + Duration::from_millis(delay_ms), bytes }
+        Self {
+            at: Instant::now() + Duration::from_millis(delay_ms),
+            bytes,
+        }
     }
 
     pub fn corrupt(delay_ms: u64) -> Self {
-        Self { at: Instant::now() + Duration::from_millis(delay_ms), bytes: vec![0xff] }
+        Self {
+            at: Instant::now() + Duration::from_millis(delay_ms),
+            bytes: vec![0xff],
+        }
     }
 }
 
@@ -245,7 +251,16 @@ impl RadioKind for Radio {
 /* === Public Functions === */
 
 pub async fn link(air: Rc<RefCell<Air>>) -> Link<Radio, Delay> {
-    let parameters = Sx127x::new(NoSpi, NoInterface, Config { chip: Sx1276, tcxo_used: false, tx_boost: true, rx_boost: false });
+    let parameters = Sx127x::new(
+        NoSpi,
+        NoInterface,
+        Config {
+            chip: Sx1276,
+            tcxo_used: false,
+            tx_boost: true,
+            rx_boost: false,
+        },
+    );
     let radio = Radio {
         air,
         parameters,

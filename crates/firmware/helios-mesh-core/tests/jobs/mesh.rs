@@ -93,7 +93,12 @@ struct Leaf {
 
 impl Leaf {
     fn new(id: u32) -> Self {
-        Self { id: NodeId(id), binding: Binding::new(), replay: Cache::new(), writes: 0 }
+        Self {
+            id: NodeId(id),
+            binding: Binding::new(),
+            replay: Cache::new(),
+            writes: 0,
+        }
     }
 
     fn response(&mut self, packet: &Envelope) -> Envelope {
@@ -127,12 +132,20 @@ impl Leaf {
     fn execute(&mut self, request: &Request) -> Response {
         match request {
             Request::Node(node::Request::Describe(_)) => node::Response::Description(NodeDescription {
-                info: NodeInfo { node_type: NodeType::Sidecar, id: self.id, firmware: FIRMWARE_VERSION },
+                info: NodeInfo {
+                    node_type: NodeType::Sidecar,
+                    id: self.id,
+                    firmware: FIRMWARE_VERSION,
+                },
                 satellites: heapless::Vec::new(),
             })
             .into(),
             Request::Node(node::Request::Status(_)) => node::Response::Status(node::NodeStatus {
-                info: NodeInfo { node_type: NodeType::Sidecar, id: self.id, firmware: FIRMWARE_VERSION },
+                info: NodeInfo {
+                    node_type: NodeType::Sidecar,
+                    id: self.id,
+                    firmware: FIRMWARE_VERSION,
+                },
                 auxiliary_gpio: [AuxGpioMode::HighImpedance; 4],
                 auxiliary_gpio_access: [AuxGpioAccess::PushPull; 4],
             })
@@ -215,12 +228,22 @@ fn packet(source: NodeId, request_id: RequestId) -> Envelope {
         session: SESSION,
         destination: GATEWAY,
         request_id,
-        message: Message::Response { response: node::Response::Polled.into(), event: None },
+        message: Message::Response {
+            response: node::Response::Polled.into(),
+            event: None,
+        },
     }
 }
 
 async fn usb(node: Handle<Gateway>, id: u32, destination: NodeId, request: Request) -> Response {
-    node.submit(Submission { origin: Origin::Usb, version: PROTOCOL_VERSION, request_id: RequestId(id), destination, request }).await;
+    node.submit(Submission {
+        origin: Origin::Usb,
+        version: PROTOCOL_VERSION,
+        request_id: RequestId(id),
+        destination,
+        request,
+    })
+    .await;
     let reply = node.next_usb_response().await;
     assert_eq!(reply.request_id, RequestId(id));
     reply.response
@@ -345,7 +368,10 @@ fn mesh_scales() {
                         let drop_reply = leaf.writes == 0
                             && matches!(
                                 request.message,
-                                Message::Request { request: Request::Node(node::Request::ConfigureAuxGpio(_)), .. }
+                                Message::Request {
+                                    request: Request::Node(node::Request::ConfigureAuxGpio(_)),
+                                    ..
+                                }
                             );
                         let response = leaf.response(request);
                         if !drop_reply {
@@ -381,8 +407,17 @@ fn mesh_scales() {
                         "node {id:?}: {response:?}; air={:?}",
                         air.borrow().sent
                     );
-                    let response =
-                        usb(handle, 3, id, node::ConfigureAuxGpio { gpio: node::AuxGpioId(1), mode: AuxGpioMode::DriveLow }.into()).await;
+                    let response = usb(
+                        handle,
+                        3,
+                        id,
+                        node::ConfigureAuxGpio {
+                            gpio: node::AuxGpioId(1),
+                            mode: AuxGpioMode::DriveLow,
+                        }
+                        .into(),
+                    )
+                    .await;
                     assert!(matches!(response, Response::Node(node::Response::AuxGpioConfigured { .. })));
                 }
             };
@@ -396,7 +431,13 @@ fn mesh_scales() {
             let writes = requests
                 .iter()
                 .filter(|packet| {
-                    matches!(packet.message, Message::Request { request: Request::Node(node::Request::ConfigureAuxGpio(_)), .. })
+                    matches!(
+                        packet.message,
+                        Message::Request {
+                            request: Request::Node(node::Request::ConfigureAuxGpio(_)),
+                            ..
+                        }
+                    )
                 })
                 .count();
             assert_eq!(writes, 2, "a lost reply must retry the original admission");
@@ -454,7 +495,13 @@ fn exchange_deadline_authoritative() {
         script: Box::new(move |request, arrivals| {
             if request.destination == NodeId::BROADCAST {
                 arrivals.push_back(Arrival::packet(20, &leaf.response(request)));
-            } else if matches!(request.message, Message::Request { request: Request::Node(node::Request::Describe(_)), .. }) {
+            } else if matches!(
+                request.message,
+                Message::Request {
+                    request: Request::Node(node::Request::Describe(_)),
+                    ..
+                }
+            ) {
                 // Another Pair's Traffic Must Not Renew This Attempt's 200ms Budget.
                 for delay in (50..=500).step_by(50) {
                     arrivals.push_back(Arrival::packet(delay, &packet(NodeId(100_002), RequestId(999))));
@@ -476,7 +523,13 @@ fn exchange_deadline_authoritative() {
                 .iter()
                 .filter(|(_, packet)| {
                     packet.destination == NodeId(100_001)
-                        && matches!(packet.message, Message::Request { request: Request::Node(node::Request::Describe(_)), .. })
+                        && matches!(
+                            packet.message,
+                            Message::Request {
+                                request: Request::Node(node::Request::Describe(_)),
+                                ..
+                            }
+                        )
                 })
                 .map(|(at, packet)| (*at, packet.request_id))
                 .collect::<Vec<_>>();
