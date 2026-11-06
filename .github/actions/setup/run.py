@@ -62,9 +62,13 @@ def group(title):
         print("::endgroup::", flush=True)
 
 
-def roots(environment, workspace, home):
+def roots(environment, workspace, home, platform):
     """Keep Installation Identity Independent Of The Runner's Per-Job Temp Directory."""
-    data = Path(environment.get("MISE_DATA_DIR") or home / ".local/share/mise")
+    temporary = Path(tempfile.gettempdir()).resolve()
+    default_data = temporary / "mise" if platform == "windows" else home / ".local/share/mise"
+    data = Path(environment.get("MISE_DATA_DIR") or default_data)
+    if platform == "windows" and data.resolve().drive.casefold() != temporary.drive.casefold():
+        raise RuntimeError("mise installation and temporary extraction must use the same volume")
     cargo = Path(environment.get("CARGO_HOME") or home / ".cargo")
     rustup = Path(environment.get("RUSTUP_HOME") or home / ".rustup")
     return {
@@ -100,7 +104,6 @@ def download(url, checksum, destination):
 
 
 def windows(workspace):
-    temporary_root(workspace)
     vswhere = Path(os.environ["ProgramFiles(x86)"]) / "Microsoft Visual Studio/Installer/vswhere.exe"
     installation = subprocess.check_output(
         [
@@ -392,8 +395,10 @@ def main():
         glab(options.glab_version)
         return
     workspace = Path.cwd()
+    if options.platform == "windows":
+        temporary_root(workspace)
     with group("Toolchain Roots"):
-        export(roots(os.environ, workspace, Path.home()))
+        export(roots(os.environ, workspace, Path.home(), options.platform))
         export({name: os.environ[name] for name in ("COMPILER_CACHE_BACKEND", "COMPILER_CACHE_MODE") if os.environ.get(name)})
         rustup()
         if destination := os.environ.get("GITHUB_OUTPUT"):
