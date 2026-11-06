@@ -218,7 +218,9 @@ async fn connect_type(selector: DeviceSelector, kind: NodeType) -> Result<NodeHa
         selector
     };
     let node = NodeHandle::connect(selector).await?;
-    if node.describe().await?.info.node_type != kind {
+    let info = node.describe().await?.info;
+    if info.node_type != kind {
+        tracing::warn!(node = node.id().0, actual = ?info.node_type, expected = ?kind, "typed connection selected another node type");
         return Err(Error::InvalidArgument("the selected node has a different type"));
     }
     Ok(node)

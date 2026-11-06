@@ -35,9 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: go,python,uv,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -56,7 +56,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - run: mise run check:repository
@@ -91,9 +91,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: node,python,uv
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -112,7 +112,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - run: mise run check:python
@@ -147,9 +147,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: rust,github:bnjbvr/cargo-machete
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -168,7 +168,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - run: mise run check:rust
@@ -211,9 +211,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,rust,sccache,uv
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -232,7 +232,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.build --profile ${{ env.PROFILE }} --output product
@@ -296,9 +296,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
       COMPILER_CACHE_KIND: tests
@@ -318,7 +318,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.build --profile ${{ env.PROFILE }} --output tests
@@ -372,9 +372,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,uv
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -393,7 +393,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -441,146 +441,14 @@ jobs:
     concurrency:
       group: nightly-generated-${{ matrix.platform }}
       cancel-in-progress: true
-  tests:
-    name: ${{ matrix.display }}
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
-    env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
-      COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
-      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
-      SCCACHE_CACHE_SIZE: 8G
-    steps:
-    - name: Configure Checkout Git
-      run: git config --global core.longpaths true
-    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      with:
-        fetch-depth: 0
-    - id: setup
-      uses: ./.github/actions/setup
-      with:
-        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
-        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
-          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
-          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
-          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
-          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
-        cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
-        bootstrap: '[]'
-        free-disk: 'true'
-    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-      with:
-        name: build-tests-${{ env.PROFILE }}-${{ matrix.platform }}
-        path: target/ci
-    - name: Extract Output
-      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/build-tests-${{
-        env.PROFILE }}-${{ matrix.platform }}.tar.zst --profile ${{ env.PROFILE }}
-    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-      with:
-        name: build-product-${{ env.PROFILE }}-${{ matrix.platform }}
-        path: target/ci
-    - name: Extract Output
-      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/build-product-${{
-        env.PROFILE }}-${{ matrix.platform }}.tar.zst --profile ${{ env.PROFILE }}
-    - run: mise run test:${{ matrix.language }}:${{ matrix.layer }} --profile ${{ env.PROFILE }}
-    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-      if: always()
-      with:
-        name: junit-${{ matrix.language }}-${{ matrix.layer }}-${{ matrix.platform }}
-        path: target/tests/
-        if-no-files-found: ignore
-    - uses: ./.github/actions/save-caches
-      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
-      with:
-        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
-        path: ${{ steps.setup.outputs.mise-path }}
-    - uses: ./.github/actions/save-caches
-      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
-      with:
-        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
-        path: ${{ steps.setup.outputs.cargo_downloads-path }}
-    - uses: ./.github/actions/save-caches
-      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
-      with:
-        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
-        path: ${{ steps.setup.outputs.uv-path }}
-    - uses: ./.github/actions/save-caches
-      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
-      with:
-        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
-        path: ${{ steps.setup.outputs.sccache-path }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - platform: linux
-          runner: ubuntu-latest
-          language: rust
-          layer: unit
-          display: Validate / Unit / Rust (linux)
-        - platform: linux
-          runner: ubuntu-latest
-          language: rust
-          layer: integration
-          display: Validate / Integration / Rust (linux)
-        - platform: linux
-          runner: ubuntu-latest
-          language: rust
-          layer: acceptance
-          display: Validate / Acceptance / Rust (linux)
-        - platform: linux
-          runner: ubuntu-latest
-          language: python
-          layer: acceptance
-          display: Validate / Acceptance / Python
-        - platform: windows
-          runner: windows-latest
-          language: rust
-          layer: unit
-          display: Validate / Unit / Rust (windows)
-        - platform: windows
-          runner: windows-latest
-          language: rust
-          layer: integration
-          display: Validate / Integration / Rust (windows)
-        - platform: windows
-          runner: windows-latest
-          language: rust
-          layer: acceptance
-          display: Validate / Acceptance / Rust (windows)
-        - platform: windows
-          runner: windows-latest
-          language: python
-          layer: acceptance
-          display: Validate / Acceptance / Python (windows)
-        - platform: linux
-          runner: ubuntu-latest
-          language: python
-          layer: integration
-          display: Validate / Integration / Python
-        - platform: windows
-          runner: windows-latest
-          language: python
-          layer: integration
-          display: Validate / Integration / Python (windows)
-    needs:
-    - freshness
-    - build
-    - build_tests
-    if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
-    concurrency:
-      group: nightly-tests-${{ matrix.platform }}-${{ matrix.language }}-${{ matrix.layer }}
-      cancel-in-progress: true
   publish:
     name: Nightly / Publish
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,rust,uv,git-cliff
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -599,7 +467,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -675,12 +543,14 @@ jobs:
     - build
     - build_tests
     - generated
-    - tests
     - publish
     - package_rust
     - package_python
     - coverage_rust
     - coverage_python
+    - tests_rust
+    - tests_python
+    - tests_tooling
     permissions:
       contents: write
       actions: read
@@ -702,9 +572,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: ${{ matrix.platform == 'linux' && 'python,rust,sccache,uv' || 'python,uv' }}
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -723,7 +593,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -794,9 +664,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,uv
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -815,7 +685,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -878,9 +748,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -899,7 +769,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -950,9 +820,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: go,node,python,rust,sccache,uv,aqua:nextest-rs/nextest/cargo-nextest,aqua:taiki-e/cargo-llvm-cov,github:bnjbvr/cargo-machete,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo,git-cliff
+      MISE_ENABLE_TOOLS: python,uv
       COMPILER_CACHE_BACKEND: disk
-      COMPILER_CACHE_MODE: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+      COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
     steps:
@@ -971,7 +841,7 @@ jobs:
           ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
           }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
         cache-backend: disk
-        cache-mode: ${{ github.event_name == 'pull_request' && 'READ_ONLY' || 'READ_WRITE' }}
+        cache-mode: READ_WRITE
         bootstrap: '[]'
         free-disk: 'true'
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
@@ -981,16 +851,7 @@ jobs:
     - name: Extract Output
       run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/build-product-${{
         env.PROFILE }}-linux.tar.zst --profile ${{ env.PROFILE }}
-    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-      with:
-        name: build-tests-${{ env.PROFILE }}-linux
-        path: target/ci
-    - name: Extract Output
-      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/build-tests-${{
-        env.PROFILE }}-linux.tar.zst --profile ${{ env.PROFILE }}
-    - run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.build
-      env:
-        BUILD_SCRIPT: mise run test:python:coverage --profile release
+    - run: mise run test:python:coverage --profile release
     - uses: ./.github/actions/save-caches
       if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
       with:
@@ -1013,7 +874,256 @@ jobs:
         path: ${{ steps.setup.outputs.sccache-path }}
     needs:
     - build
-    - build_tests
     concurrency:
       group: nightly-coverage_python
+      cancel-in-progress: true
+  tests_rust:
+    name: Validate / ${{ matrix.display }} / Rust (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python,rust,uv,aqua:nextest-rs/nextest/cargo-nextest
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: build-tests-${{ env.PROFILE }}-${{ matrix.platform }}
+        path: target/ci
+    - name: Extract Output
+      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/build-tests-${{
+        env.PROFILE }}-${{ matrix.platform }}.tar.zst --profile ${{ env.PROFILE }}
+    - run: mise run test:rust:${{ matrix.layer }} --profile ${{ env.PROFILE }}
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      if: always()
+      with:
+        name: junit-rust-${{ matrix.layer }}-${{ matrix.platform }}
+        path: target/tests/
+        if-no-files-found: ignore
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - platform: linux
+          runner: ubuntu-latest
+          layer: unit
+          display: Unit
+        - platform: linux
+          runner: ubuntu-latest
+          layer: integration
+          display: Integration
+        - platform: linux
+          runner: ubuntu-latest
+          layer: acceptance
+          display: Acceptance
+        - platform: windows
+          runner: windows-latest
+          layer: unit
+          display: Unit
+        - platform: windows
+          runner: windows-latest
+          layer: integration
+          display: Integration
+        - platform: windows
+          runner: windows-latest
+          layer: acceptance
+          display: Acceptance
+    needs:
+    - freshness
+    - build_tests
+    if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
+    concurrency:
+      group: nightly-tests_rust-${{ matrix.platform }}-${{ matrix.layer }}
+      cancel-in-progress: true
+  tests_python:
+    name: ${{ matrix.display }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python,uv
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: build-product-${{ env.PROFILE }}-${{ matrix.platform }}
+        path: target/ci
+    - name: Extract Output
+      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/build-product-${{
+        env.PROFILE }}-${{ matrix.platform }}.tar.zst --profile ${{ env.PROFILE }}
+    - run: mise run test:python:acceptance --profile ${{ env.PROFILE }}
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      if: always()
+      with:
+        name: junit-python-acceptance-${{ matrix.platform }}
+        path: target/tests/
+        if-no-files-found: ignore
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - platform: linux
+          runner: ubuntu-latest
+          display: Validate / Acceptance / Python
+        - platform: windows
+          runner: windows-latest
+          display: Validate / Acceptance / Python (windows)
+    needs:
+    - freshness
+    - build
+    if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
+    concurrency:
+      group: nightly-tests_python-${{ matrix.platform }}
+      cancel-in-progress: true
+  tests_tooling:
+    name: ${{ matrix.display }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python,uv
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - run: mise run test:python:integration --profile ${{ env.PROFILE }}
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+      if: always()
+      with:
+        name: junit-python-integration-${{ matrix.platform }}
+        path: target/tests/
+        if-no-files-found: ignore
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - platform: linux
+          runner: ubuntu-latest
+          display: Validate / Integration / Python
+        - platform: windows
+          runner: windows-latest
+          display: Validate / Integration / Python (windows)
+    if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
+    needs:
+    - freshness
+    concurrency:
+      group: nightly-tests_tooling-${{ matrix.platform }}
       cancel-in-progress: true

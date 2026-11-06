@@ -12,13 +12,17 @@
 
 # Standard Library Imports
 import copy
+import os
 import runpy
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 # Third Party Imports
 
 # Local Imports
+from helios_mesh_tools.release import registry
 
 # Type Checking Imports
 
@@ -34,6 +38,20 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 class ReleaseGateTests(unittest.TestCase):
+    def test_wheel_profile(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for profile in ("dev", "release"):
+                wheel = root / f"target/package/{profile}/native/python/example.whl"
+                wheel.parent.mkdir(parents=True)
+                wheel.write_bytes(profile.encode())
+            with patch.dict(os.environ, {"PROFILE": "dev"}, clear=True), patch.object(registry.policy, "execute") as execute:
+                registry.python(root, {"provider": "github"}, dry_run=True)
+                self.assertEqual(Path(execute.call_args.args[1][-1]), Path("target/package/dev/native/python/example.whl"))
+                with patch.dict(os.environ, {"RELEASE_PROFILE": "release"}):
+                    registry.python(root, {"provider": "github"}, dry_run=True)
+                    self.assertEqual(Path(execute.call_args.args[1][-1]), Path("target/package/release/native/python/example.whl"))
+
     def test_exact_gate(self):
         guard = runpy.run_path(str(ROOT / ".github/actions/review-release/checks.py"))
         sha = "a" * 40

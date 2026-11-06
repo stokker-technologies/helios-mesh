@@ -1,7 +1,6 @@
 # === Settings === #
 
 [settings]
-jobs = 1
 lockfile = true
 
 # === Tools === #
@@ -55,7 +54,7 @@ run = ["rustup target add thumbv6m-none-eabi", "uv sync --locked --project tools
 
 [tasks."prepare:firmware"]
 description = "Install The Pinned Firmware Converter With Compiler Preflight"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.prepare.firmware {{vars.firmware_converter}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.prepare.firmware {{vars.firmware_converter}}"
 
 # === Format === #
 
@@ -128,32 +127,32 @@ run = [{ task = "format:rust --check" }, "cargo-machete --skip-target-dir"]
 description = "Build Native Products, Wheels And Linux Firmware"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"; flag "--hardware-unknown"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build --profile {{usage.profile}} {% if usage.hardware_unknown %}--hardware-unknown{% endif %}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.build --profile {{usage.profile}} {% if usage.hardware_unknown %}--hardware-unknown{% endif %}"
 
 [tasks."build:rust:compatibility"]
 description = "Check Noncanonical Rust Feature Combinations Locally"
 env.CARGO_INCREMENTAL = "0"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build.rust.compatibility"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.build.rust.compatibility"
 
 [tasks."build:rust:focused"]
 description = "Compile Or Test A Focused Rust Selection"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build.cargo focused"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.build.cargo focused"
 
 [tasks."build:rust:tests"]
 description = "Build The Shared Test Archive And Fixtures"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build.rust.tests --profile {{usage.profile}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.build.rust.tests --profile {{usage.profile}}"
 
 # === Dev === #
 
 [tasks."dev:cli"]
 description = "Run The Helios Mesh Command-Line Interface"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build.develop cli"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.build.develop cli"
 
 [tasks."dev:python"]
 description = "Install The Python Extension For Local Development"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build.develop python"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.build.develop python"
 
 # === Test === #
 
@@ -176,14 +175,17 @@ run = "uv run --locked --project tools/python --group test python -m helios_mesh
 [tasks."test:python:acceptance"]
 description = "Test Installed Python Distribution"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language python --project crates/system/helios-mesh-python"
+run = "uv run --locked --project tools/python --group test python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language python --project crates/system/helios-mesh-python"
 env = { CARGO_INCREMENTAL = "0" }
 
 [tasks."test:python:coverage"]
 description = "Measure Python Coverage Over Instrumented Lanes"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.run coverage --language python --profile {{usage.profile}}"
+run = [
+  "uv run --locked --project tools/python python -m helios_mesh_tools.test.archive --profile {{usage.profile}} --install-wheels",
+  "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run coverage --language python --profile {{usage.profile}} --project crates/system/helios-mesh-python -- --cov-reset --cov=helios_mesh",
+]
 
 [tasks."test:rust"]
 description = "Test Rust"
@@ -198,32 +200,32 @@ depends = [
 [tasks."test:rust:unit"]
 description = "Test Unit Rust"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category unit --language rust"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category unit --language rust"
 env = { CARGO_INCREMENTAL = "0" }
 
 [tasks."test:rust:integration"]
 description = "Test Integration Rust"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language rust"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category integration --language rust"
 
 [tasks."test:rust:acceptance"]
 description = "Test CLI Acceptance"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language rust"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run test --profile {{usage.profile}} --category acceptance --language rust"
 
 [tasks."test:rust:coverage"]
 description = "Measure Rust Coverage Over Instrumented Lanes"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.run coverage --language rust --profile {{usage.profile}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run coverage --language rust --profile {{usage.profile}} -- --exclude helios-mesh-python"
 
 [tasks."test:rust:extended"]
 description = "Build And Test Instrumented Rust Transport Locally"
 env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.test.rust.extended --profile {{usage.profile}}"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.rust.extended --profile {{usage.profile}}"
 
 # === Bench === #
 
@@ -280,7 +282,7 @@ description = "Dry-Run Every Publication"
 run = [
   "uv run --locked --project tools/python python -m helios_mesh_tools.release.version check",
   "uv run --locked --project tools/python python -m helios_mesh_tools.release.run dry",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.release.run crates-dry",
+  "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.release.run crates-dry",
   "uv run --locked --project tools/python python -m helios_mesh_tools.release.run python-dry",
 ]
 
@@ -294,11 +296,11 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.releas
 
 [tasks."release:publish:rust"]
 description = "Publish Rust Crates"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.release.run crates"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.release.run crates"
 
 [tasks."release:rehearse"]
 description = "Rehearse The Publication Chain On A Disposable Draft"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.release.run rehearse"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.release.run rehearse"
 
 [tasks."release:stage"]
 description = "Stage Native Release Assets"
@@ -306,7 +308,7 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.releas
 
 [tasks."release:tag"]
 description = "Tag The Rehearsed Release And Fast-Forward Main"
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.machine -- python -m helios_mesh_tools.release.run tag"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.release.run tag"
 
 [tasks."release:verify"]
 description = "Verify Published Release Assets"

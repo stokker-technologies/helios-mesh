@@ -304,7 +304,9 @@ impl NodeHandle {
     }
 
     pub(crate) async fn gateway(&self) -> Result<GatewayNode> {
-        if self.describe().await?.info.node_type != crate::NodeType::Gateway {
+        let info = self.describe().await?.info;
+        if info.node_type != crate::NodeType::Gateway {
+            tracing::warn!(node = self.id.0, actual = ?info.node_type, expected = ?crate::NodeType::Gateway, "gateway connection selected another node type");
             return Err(Error::Unsupported);
         }
         Ok(GatewayNode::new(self.clone()))

@@ -7,7 +7,7 @@
 # ***
 
 
-"""Install The Pinned Firmware Converter Under The Native Build Lock."""
+"""Install The Pinned Firmware Converter After Compiler Output Preflight."""
 
 # === Imports === #
 

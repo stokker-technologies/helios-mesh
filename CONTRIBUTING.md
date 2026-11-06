@@ -76,7 +76,7 @@ firmware flashing require an explicit decision and suitable physical setup.
 After source closure, run `mise run check` and targeted deterministic checks of changed paths.
 `mise run test:python:integration` checks repository automation. Use `mise run build:rust:focused -- test <Cargo arguments> -- <test filter>` for focused Rust proof.
 Full local CI simulation is optional unless explicitly required by a release gate; hosted Linux and Windows proof remains authoritative for stable publication.
-Compile and test tasks serialize across worktrees through the shared machine build lock and use a capped shared sccache; each checkout retains its own `target/`.
+Compile and test tasks may run concurrently and use a capped shared sccache; each checkout retains its own `target/`. No workstation build lock is held.
 
 - [Host Contracts](crates/system/helios-mesh/README.md) — discovery, typed Rust/Python APIs, transport, and operation ownership.
 - [Board And Firmware Guide](crates/firmware/helios-mesh-board-feather-rp2040/README.md) — wiring, safety, node authoring, and field diagnostics.
@@ -94,6 +94,7 @@ publishes and verifies the native packages. Release notes come from Conventional
 Commits at tag time. Downloads include the firmware ZIP, host binaries, wheels,
 and `SHA256SUMS`; the Linux label on the firmware download names its build host,
 while its contents target RP2040.
+Native CLI download names contain the actual Rust target triple.
 
 Use one pull request into `dev` and squash immediately when provider protections permit it. Ordinary dev pushes run quick checks and Product Build only; reviews run tests and packaging. Stable preparation commits run the full release gate on the exact commit required by `main` protection. Never bypass existing protections. Nightly publication waits for build and package while suites run independently; a started publisher is never cancelled.
 

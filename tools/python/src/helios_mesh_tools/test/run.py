@@ -147,7 +147,7 @@ def coverage(
             cwd = directory / project
             junit = scratch / "junit.xml"
             suite = f"tests/{category}" if category else "tests"
-            command = pytest.run(cwd, suite, deadline, junit, [*extra, *pytest.coverage(cwd, cobertura)])
+            command = pytest.run(cwd, suite, deadline, junit, [*pytest.coverage(cwd, cobertura), *extra])
             environment = pytest.environment(directory)
             environment[COVERAGE_VARIABLE] = "1"
         else:
@@ -168,6 +168,7 @@ def coverage(
             environment,
             junit,
             scratch,
+            coverage=True,
         )
         if language == "rust" and _execute(nextest.report(profile, cobertura), directory, environment) != 0:
             lane["outcome"] = "failed"
@@ -344,6 +345,8 @@ def _lane(
     environment: dict[str, str] | None,
     junit: Path,
     scratch: Path,
+    *,
+    coverage: bool = False,
 ) -> dict:
     """Execute a lane command and turn its JUnit report into a lane record."""
     started = time.time()
@@ -374,7 +377,7 @@ def _lane(
     text = junit.read_text(encoding="utf-8")
     package = Path(project).name if project != "." else directory.name
     found = report.cases(text, category, language, package)
-    deadlines = {(case.suite, case.name): _deadline(rules, language, case) for case in found}
+    deadlines = {(case.suite, case.name): _deadline(rules, language, case, coverage=coverage) for case in found}
     overruns = [
         f"{case.file}::{case.story}"
         for case in found
@@ -417,14 +420,14 @@ def _lane(
     }
 
 
-def _deadline(rules: policy.Policy, language: str, case: report.Case) -> int:
+def _deadline(rules: policy.Policy, language: str, case: report.Case, *, coverage: bool = False) -> int:
     if language != "rust":
         entry = rules.matched(case.category, language, f"{case.file}::{case.story}")
         if entry is not None:
-            return entry.timeout_seconds
+            return entry.timeout_seconds * (policy.COVERAGE_FACTOR if coverage else 1)
     if case.category not in policy.CATEGORIES:
-        return 0
-    return rules.deadline(case.category)
+        return max(rules.deadline(category, coverage=True) for category in policy.CATEGORIES) if coverage else 0
+    return rules.deadline(case.category, coverage=coverage)
 
 
 def _console() -> dict:

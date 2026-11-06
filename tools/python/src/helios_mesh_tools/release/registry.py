@@ -132,7 +132,7 @@ def crate_published(name: str, version: str | None = None) -> bool:
 
 def python(directory: Path, settings: dict, *, dry_run: bool) -> None:
     """Upload The Release Python Packages: PyPI For GitHub Products, The Project Registry On GitLab."""
-    profile = policy.profile()
+    profile = policy.profile(os.environ.get("PROFILE", "release"))
     selected = sorted(str(path.relative_to(directory)) for path in directory.glob(f"target/package/{profile}/*/python/*") if path.is_file())
     if not selected:
         raise policy.ToolError(f"release:publish:python has no {profile} Python packages")

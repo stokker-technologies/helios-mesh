@@ -212,7 +212,7 @@ the request and follows radio write-binding admission. `--bootloader` enters
 the selected node's USB BOOTSEL mode.
 
 Connection requests include queueing, USB writing and response waiting in their existing deadline.
-A stalled or partially written USB frame terminates the driver; reconnect before issuing another command.
+A stalled or partially written USB frame terminates the driver and its reader, releasing the transport; reconnect before issuing another command.
 GPIO writes and pulses are never replayed automatically after an uncertain acknowledgement.
 Host `tracing` events report the node, request type, remote route, deadline and failure; gateway probe events also name the USB port.
 The application owns subscriber installation and capturing those messages. Serial-open errors include the port in their returned error.

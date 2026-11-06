@@ -171,6 +171,9 @@ async fn stalled_write_expires() {
     assert!(matches!(call.await.unwrap(), Err(Error::Timeout)));
     // Reusing A Partially Written Stream Must Fail Instead Of Replaying The Command.
     assert!(matches!(connection.call(NODE, Duration::from_secs(2), node::Status).await, Err(Error::Connection(_))));
+    // A Failed Driver Releases Both Stream Halves Even While The Failed Handle Is Still Held.
+    let mut remainder = Vec::new();
+    device.read_to_end(&mut remainder).await.unwrap();
 }
 
 #[tokio::test(start_paused = true)]

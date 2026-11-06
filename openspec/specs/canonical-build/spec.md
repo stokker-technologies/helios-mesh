@@ -64,12 +64,12 @@ Every correctness-test hang guard SHALL be at least 30 seconds, including explic
 - **THEN** extraction drains the decompressor output before closing the pipe and requires its successful exit
 - **AND** a corrupt compressed stream still fails rather than ignoring its nonzero status
 
-### Requirement: Serial Local Simulation
+### Requirement: Concurrent Local Simulation
 
-Each local CI simulation SHALL execute one declared job at a time without imposing thread, CPU or memory limits. Independent repository gates MAY run concurrently. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
+Each local CI simulation SHALL execute independent jobs concurrently in dependency order without imposing CPU, memory or job-count limits. One full simulation per repository MAY run at a time. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
 
 #### Scenario: Local Graph Execution
 
 - **WHEN** local simulation validates a candidate
-- **THEN** each job finishes before the next begins, failed prerequisites block their consumers, and independent jobs still execute
+- **THEN** independent jobs execute concurrently and failed prerequisites block their consumers
 - **AND** the simulator applies no resource allocation flags, worker overrides or memory controls

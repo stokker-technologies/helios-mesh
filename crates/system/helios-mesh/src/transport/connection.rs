@@ -145,7 +145,11 @@ impl Connection {
         let (outbound, requests) = mpsc::channel(QUEUE_CAPACITY);
         let (events, inbound) = mpsc::channel(QUEUE_CAPACITY);
         let reader = tokio::spawn(run_reader(FrameReader::new(reader, corrupt_frames), events));
-        let driver = tokio::spawn(run_driver(writer, requests, inbound));
+        let reader_abort = reader.abort_handle();
+        let driver = tokio::spawn(async move {
+            run_driver(writer, requests, inbound).await;
+            reader_abort.abort();
+        });
         Self {
             outbound,
             guard: Arc::new(TaskGuard {
