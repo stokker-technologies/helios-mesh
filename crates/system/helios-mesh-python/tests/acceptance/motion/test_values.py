@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Motion value types and the flat StepperConfig, plus the demoted wire
 escape hatch (helios_mesh.motion.wire)."""
 
@@ -13,6 +14,19 @@ escape hatch (helios_mesh.motion.wire)."""
 
 # Standard Library Imports
 # Third Party Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 import pytest
 
 # Local Imports

@@ -27,6 +27,7 @@ use crate::node::MAX_NODE_LABEL;
 pub const VENDOR_ID: u16 = 0xC0DE;
 pub const PRODUCT_ID: u16 = 0x484E;
 pub const MANUFACTURER: &str = "Helios";
+
 // USB Discovery Identity Is Stable Across The Product Rename.
 pub const PRODUCT_PREFIX: &str = "Helios Node Mesh";
 pub const MAX_PRODUCT: usize = PRODUCT_PREFIX.len() + 1 + MAX_NODE_LABEL;

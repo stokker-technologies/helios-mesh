@@ -5,8 +5,8 @@ Define native CI task taxonomy, artifact ownership, required platform gates and 
 
 ## Requirements
 
-### Requirement: Adopt The Agreed Hub Contract
-The product SHALL migrate its authored tasks and configuration and canonically generated tooling/workflows to the locked Hub CI contracts while preserving required native platform coverage, artifact dependencies and release behavior.
+### Requirement: Adopt The Agreed repository Contract
+The product SHALL migrate its authored tasks and configuration and canonically generated tooling/workflows to the locked repository CI contracts while preserving required native platform coverage, artifact dependencies and release behavior.
 
 #### Scenario: Candidate Delivery
 - **WHEN** complete source passes applicable local proof
@@ -40,5 +40,5 @@ CI MUST install firmware conversion tooling only for entrypoints that need it, w
 
 #### Scenario: Runner Metadata
 
-- **WHEN** Hub renders GitHub CI with literal custom runner labels
+- **WHEN** project-owned GitHub CI declares literal custom runner labels
 - **THEN** actionlint accepts the declared labels through generated native configuration without diagnostic suppression

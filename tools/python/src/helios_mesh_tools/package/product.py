@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Assemble CLI, Firmware And Wheel Packages From The Selected Build."""
 
 # === Imports === #
@@ -22,7 +23,6 @@ from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 # Third Party Imports
-
 # Local Imports
 from .. import temporary
 from ..build import paths
@@ -46,6 +46,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", choices=("dev", "release"), default="dev")
     parser.add_argument("--language", choices=("rust", "python"), required=True)
+    parser.add_argument("--firmware-converter")
     options = parser.parse_args()
     product = paths.output(ROOT, "build", options.profile)
     destination = paths.output(ROOT, "package", options.profile) / options.language
@@ -59,6 +60,18 @@ def main() -> None:
     with temporary.directory() as staging:
         shutil.copy2(product / "bin" / executable, staging / executable)
         if platform.system() == "Linux":
+            if not options.firmware_converter:
+                raise ValueError("Linux firmware packaging requires the pinned converter selection")
+            environment = dict(os.environ)
+            environment.pop("MISE_ENABLE_TOOLS", None)
+            converter = subprocess.check_output(
+                ["mise", "which", "elf2uf2-rs", "--tool", options.firmware_converter],
+                env=environment,
+                text=True,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            ).strip()
+            if not Path(converter).is_file():
+                raise ValueError(f"the prepared firmware converter is missing: {options.firmware_converter}")
             firmware = staging / "firmware"
             firmware.mkdir()
             entries: dict[str, bytes] = {}
@@ -67,7 +80,7 @@ def main() -> None:
                 source = product / "firmware" / f"helios-mesh-node-{node}"
                 image = firmware / f"helios-mesh-node-{node}.uf2"
                 subprocess.run(
-                    ["elf2uf2-rs", str(source), str(image)],
+                    [converter, str(source), str(image)],
                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
                     stdin=sys.stdin,
                     stdout=sys.stdout,

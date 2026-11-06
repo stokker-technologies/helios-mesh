@@ -87,12 +87,24 @@ mod tests {
 
     #[test]
     fn job_retains_cleanup() {
-        let outcome = JobOutcome { result: Err(JobError::Rejected(Rejection::Conflict)), cleanup: Some(Err(Rejection::Unavailable)) };
+        let outcome = JobOutcome {
+            result: Err(JobError::Rejected(Rejection::Conflict)),
+            cleanup: Some(Err(Rejection::Unavailable)),
+        };
         let error = outcome.into_result().unwrap_err();
         assert!(error.source().unwrap().source().is_some());
-        assert!(matches!(error, Error::Job { primary: JobError::Rejected(Rejection::Conflict), cleanup: Some(Rejection::Unavailable) }));
+        assert!(matches!(
+            error,
+            Error::Job {
+                primary: JobError::Rejected(Rejection::Conflict),
+                cleanup: Some(Rejection::Unavailable)
+            }
+        ));
 
-        let cleanup = JobOutcome { result: Ok(()), cleanup: Some(Err(Rejection::Unavailable)) };
+        let cleanup = JobOutcome {
+            result: Ok(()),
+            cleanup: Some(Err(Rejection::Unavailable)),
+        };
         assert!(matches!(cleanup.into_result(), Err(Error::Cleanup(Rejection::Unavailable))));
         assert!(JobOutcome { result: Ok(()), cleanup: Some(Ok(())) }.into_result().is_ok());
     }

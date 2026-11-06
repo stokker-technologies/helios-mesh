@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/test/pytest.py; sha256:f7cfbb505e1d69a1aeca760c7c19291153525480a4965b371b065713e84ced18
 # ***
 #
 # Helios Mesh

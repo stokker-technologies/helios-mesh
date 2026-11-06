@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/ci/summary.py; sha256:9e7bd58ee5e4075b752f6b032c145f9719731a6d32187a125a2bac63ff8b9ded
 # ***
 #
 # Helios Mesh
@@ -85,7 +84,7 @@ def phase(name: str):
     try:
         yield
     finally:
-        if destination := os.environ.get("STKR_CI_PHASE_FILE"):
+        if destination := os.environ.get("BUILD_PHASE_FILE"):
             try:
                 with Path(destination).open("a", encoding="utf-8") as stream:
                     stream.write(json.dumps({"name": name, "seconds": time.monotonic() - started}) + "\n")
@@ -117,5 +116,5 @@ def phases(path: Path) -> dict[str, float]:
 # === Entry Point === #
 
 if __name__ == "__main__":
-    caches = json.loads(os.environ.get("STKR_CACHE_RESTORES", "{}"))
+    caches = json.loads(os.environ.get("CACHE_RESTORES", "{}"))
     render("Cache Summary", None, None, caches={name: {"Restore": status} for name, status in caches.items()})

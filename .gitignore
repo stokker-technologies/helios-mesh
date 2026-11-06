@@ -14,14 +14,15 @@ __pycache__/
 /.stkr/specifications/
 /.stkr/state/
 
-# Hub Machine State
+# Local Machine State
 /.stkr/task/
 /.stkr/tests/
 /.stkr/benchmarks/
 
-# BEGIN Stkr CI
+# BEGIN CI
 /.cache/
-# END Stkr CI
+/.mise/
+# END CI
 
 # OpenSpec Changes And Specs Are Tracked; Uncomment To Keep Them Local.
 # /openspec/

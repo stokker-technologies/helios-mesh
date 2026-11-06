@@ -90,7 +90,13 @@ impl RoundTripWindow {
 
     #[must_use]
     pub const fn new() -> Self {
-        Self { samples: [0; Self::CAPACITY], next: 0, len: 0, sum: 0, last_ms: 0 }
+        Self {
+            samples: [0; Self::CAPACITY],
+            next: 0,
+            len: 0,
+            sum: 0,
+            last_ms: 0,
+        }
     }
 
     pub fn record(&mut self, duration_ms: u32) {
@@ -131,7 +137,11 @@ impl LocalPage {
 impl Snapshot {
     #[must_use]
     pub const fn new(local: LocalPage) -> Self {
-        Self { local, activity: None, nearby: heapless::Vec::new() }
+        Self {
+            local,
+            activity: None,
+            nearby: heapless::Vec::new(),
+        }
     }
 
     #[must_use]
@@ -169,7 +179,11 @@ mod tests {
     use super::*;
 
     fn nearby(id: u32) -> NearbyPage {
-        NearbyPage { id: NodeId(id), label: NodeLabel::new(), last_seen_ms: 0 }
+        NearbyPage {
+            id: NodeId(id),
+            label: NodeLabel::new(),
+            last_seen_ms: 0,
+        }
     }
 
     #[test]

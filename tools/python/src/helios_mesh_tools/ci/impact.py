@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/ci/impact.py; sha256:af4e4a197785d43e9840291d31c7635c52f2238505cb9f2496f8fc1fc145e336
 # ***
 #
 # Helios Mesh
@@ -18,8 +17,8 @@ import subprocess
 from pathlib import Path
 
 # Third Party Imports
-
 # Local Imports
+from ..process import spawn_flags
 
 # Type Checking Imports
 
@@ -42,7 +41,7 @@ def changed_paths(target: str, root: Path | None = None) -> set[str] | None:
         return subprocess.check_output(
             ["git", *arguments],
             cwd=root,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            creationflags=spawn_flags(),
             stderr=subprocess.DEVNULL,
             timeout=30,
         ).decode("utf-8")
@@ -72,22 +71,26 @@ def select(plan: dict, paths: set[str] | None) -> set[str]:
     """Match Every Changed Path And Preserve The Complete Dependency Closure."""
     graph = plan["dependencies"]
     full = set(graph)
-    if not paths or any(_matches(plan["protected"], path) for path in paths):
+    if not paths:
         return full
     selected = set()
     for path in paths:
-        matching = [rule for rule in plan["rules"] if _matches(rule["only"], path) and not _matches(rule["exclude"], path)]
+        matching = [rule for rule in plan["rules"] if _matches(rule["include"], path) and not _matches(rule["exclude"], path)]
         if not matching:
             return full
         for rule in matching:
             selected.update(rule["jobs"])
-    if not selected:
-        return full
+    return close(graph, selected)
+
+
+def close(graph: dict, selected: set[str]) -> set[str]:
+    """Include Every Dependency; Unknown Jobs Conservatively Select The Full Graph."""
+    selected = set(selected)
     pending = list(selected)
     while pending:
         job = pending.pop()
         if job not in graph:
-            return full
+            return set(graph)
         for dependency in graph[job]:
             if dependency not in selected:
                 selected.add(dependency)
@@ -95,18 +98,31 @@ def select(plan: dict, paths: set[str] | None) -> set[str]:
     return selected
 
 
+def scope(plan: dict, selected: set[str], value: str = "") -> set[str]:
+    """Keep Only The Quick Checks And Builds On Dev Pushes; Nightly Owns Packaging."""
+    if value == "build":
+        quick = {job for job in selected if job.startswith("check:") or job in {"build", "build:rust:tests"}}
+        return close(plan["dependencies"], quick)
+    if value:
+        raise ValueError(f"unknown impact scope: {value}")
+    return selected
+
+
 def selection(root: Path, plan: dict, target: str = "origin/dev") -> set[str]:
-    """Resolve Portable Local Impact Without A Hub Installation Or Registration."""
+    """Resolve Portable Local Impact From The Project's Changes."""
     return select(plan, changed_paths(target, root))
 
 
 def main(plan: dict) -> None:
     """Native Providers Supply The Target Context; Missing Context Selects Full Proof."""
-    target = os.environ.get("STKR_IMPACT_TARGET")
+    target = os.environ.get("IMPACT_TARGET")
     paths = changed_paths(target) if target else None
     selected = select(plan, paths)
+    selected = scope(plan, selected, os.environ.get("IMPACT_SCOPE", ""))
     if "document" in plan:
         document = plan["document"]
+        original = [job for job in document.values() if isinstance(job, dict) and "stage" in job]
+        routing = next((job for job in original if job["stage"] == "Check"), original[0] if original else {})
         # Only Native Protected Non-MR Refs May Receive Shared Cache Configuration.
         protected = os.environ.get("CI_COMMIT_REF_PROTECTED") == "true"
         source = os.environ.get("CI_PIPELINE_SOURCE")
@@ -119,8 +135,22 @@ def main(plan: dict) -> None:
         for name in list(document):
             if isinstance(document[name], dict) and "stage" in document[name] and name not in selected:
                 del document[name]
+        if not selected:
+            gate = {
+                "stage": "Check",
+                "before_script": [],
+                "after_script": [],
+                "cache": [],
+                "needs": [],
+                "script": ['echo "No CI Jobs Selected"'],
+            }
+            if tags := routing.get("tags"):
+                gate["tags"] = tags
+            if image := routing.get("image", document.get("default", {}).get("image")):
+                gate["image"] = image
+            document["CI / No Jobs"] = gate
         # Original Event Rules Remain Meaningful Inside The Native Child Pipeline.
-        text = json.dumps(document).replace("CI_PIPELINE_SOURCE", "STKR_PIPELINE_SOURCE")
+        text = json.dumps(document).replace("CI_PIPELINE_SOURCE", "PIPELINE_SOURCE")
         destination = Path("target/ci/impact-child.yml")
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(text + "\n", encoding="utf-8")
@@ -136,7 +166,7 @@ def main(plan: dict) -> None:
 
 
 def _matches(patterns: list[str], path: str) -> bool:
-    # Hub Compiles The Glob Dialect Once For Both Local And Provider Resolution.
+    # Compile The Glob Dialect Once For Both Local And Provider Resolution.
     return any(re.fullmatch(pattern.encode("utf-8"), path.encode("utf-8")) is not None for pattern in patterns)
 
 

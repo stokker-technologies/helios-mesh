@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Position-controlled motion verbs and boot-local stepper configuration."""
 
 # === Imports === #
@@ -13,6 +14,19 @@
 # Standard Library Imports
 # Third Party Imports
 # Local Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 from helios_mesh._native import AxesGuard as AxesGuard
 from helios_mesh._native import Axis as Axis
 from helios_mesh._native import Delta as Delta

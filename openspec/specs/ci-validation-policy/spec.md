@@ -6,11 +6,11 @@ Define native cache isolation, supersession cancellation, release protection and
 ## Requirements
 
 ### Requirement: Adopt Canonical CI Policy
-The product SHALL use safe native PR cache writes, cancellation of superseded ordinary validation with release protection, and a 120-minute ordinary job default.
+The product SHALL restore compatible caches without PR writes, cancel superseded ordinary validation while protecting started publication, and use a 120-minute ordinary job default.
 
 #### Scenario: Repeated Pull Request Commit
 - WHEN a new commit supersedes an ordinary PR candidate
-- THEN validation can cancel the older work and reuse compatible PR-scoped caches without making them visible to trusted base-branch jobs.
+- THEN validation can cancel the older work and restore compatible profile-scoped caches without saving them.
 
 #### Scenario: Release Finalization
 - WHEN a release review merges into dev or a stable release tag runs
@@ -18,4 +18,4 @@ The product SHALL use safe native PR cache writes, cancellation of superseded or
 
 #### Scenario: Routine Job Budget
 - WHEN a job has no justified exceptional timeout
-- THEN it uses the canonical 120-minute default while test-level deadlines remain unchanged.
+- THEN it uses the canonical 120-minute default and doubled hosted-runner correctness-test hang guards while operation deadlines remain unchanged.

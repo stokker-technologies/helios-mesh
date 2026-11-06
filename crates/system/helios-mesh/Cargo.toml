@@ -14,7 +14,7 @@ repository.workspace = true
 
 [features]
 default = ["host"]
-host = ["helios-mesh-protocol/std", "dep:postcard", "dep:serde_json", "dep:thiserror", "dep:tokio", "dep:tokio-serial"]
+host = ["helios-mesh-protocol/std", "dep:postcard", "dep:serde_json", "dep:thiserror", "dep:tokio", "dep:tokio-serial", "dep:tracing"]
 testing = ["host"]
 firmware = [
   "dep:helios-mesh-core",
@@ -39,6 +39,7 @@ helios-mesh-protocol = { workspace = true }
 thiserror = { workspace = true, optional = true }
 
 # Logging
+tracing = { workspace = true, optional = true }
 
 # Utilities
 heapless = { workspace = true }

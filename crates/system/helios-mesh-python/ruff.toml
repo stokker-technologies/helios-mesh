@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/tools/ruff.toml; sha256:f871ea62bc028bdfa646f28bec0a31ed484457a353e97e84f2dba6dd72063819
 # ***
 #
 # Helios Mesh
@@ -9,8 +8,11 @@
 
 # === Formatting === #
 
-# Width 140 matches every Hub-rendered formatter: wide displays are the norm and two files still sit side by side in a
+# Width 140 matches the project formatters: wide displays are the norm and two files still sit side by side in a
 # diff on a 4K display.
 line-length = 140
+# Templates Are Rendered Before Source Formatting
+extend-exclude = ["**/.*/**"]
+force-exclude = true
 # The package's own pyproject.toml keeps every other setting.
 extend = "pyproject.toml"

@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/build/bench.py; sha256:c22146b93ee8182abfc92c40d3f027bd3db8706654a81d08c911e17f396cdfe8
 # ***
 #
 # Helios Mesh
@@ -23,6 +22,7 @@ from pathlib import Path
 # Third Party Imports
 # Local Imports
 from .. import temporary
+from ..process import spawn_flags
 from ..test import archive
 from . import cargo, paths
 
@@ -76,7 +76,7 @@ def build(directory: Path, extra: Sequence[str] = ()) -> Path:
                 command,
                 stdin=sys.stdin,
                 stderr=sys.stderr,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                creationflags=spawn_flags(),
                 cwd=directory,
                 stdout=written,
                 check=True,

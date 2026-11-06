@@ -18,6 +18,7 @@ pub(crate) mod framing;
 /* === Re-Exports === */
 
 pub(crate) use connection::EXTENDED_TIMEOUT;
+
 #[cfg(any(test, feature = "testing"))]
 pub use connection::MAX_IN_FLIGHT;
 pub use connection::{Connection, DEFAULT_TIMEOUT};

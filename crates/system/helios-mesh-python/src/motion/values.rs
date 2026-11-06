@@ -330,7 +330,17 @@ impl PyStepperConfig {
     const fn new(
         steps: u16, microsteps: u8, max_speed: u16, max_acceleration: u16, moving_pwm: u8, holding_pwm: u8, reversed: bool,
     ) -> Self {
-        Self { inner: helios_mesh::StepperConfig { steps, microsteps, reversed, max_speed, max_acceleration, moving_pwm, holding_pwm } }
+        Self {
+            inner: helios_mesh::StepperConfig {
+                steps,
+                microsteps,
+                reversed,
+                max_speed,
+                max_acceleration,
+                moving_pwm,
+                holding_pwm,
+            },
+        }
     }
 
     #[getter]

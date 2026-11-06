@@ -229,7 +229,11 @@ mod tests {
 
     #[test]
     fn accessors_agree_involves() {
-        let event = JournalEvent::RequestRetried { peer: NodeId(42), request_id: RequestId(9), retry: 1 };
+        let event = JournalEvent::RequestRetried {
+            peer: NodeId(42),
+            request_id: RequestId(9),
+            retry: 1,
+        };
         assert_eq!(event.name(), "helios_mesh.request.retried");
         assert_eq!(event.peer(), Some(NodeId(42)));
         assert_eq!(event.request_id(), Some(RequestId(9)));
@@ -237,18 +241,30 @@ mod tests {
         assert_eq!(event.operation(), None);
         assert!(event.involves(NodeId(42)));
 
-        let event = JournalEvent::MotionStopped { channel: ChannelId(2), operation: OperationId(7), interrupted: None };
+        let event = JournalEvent::MotionStopped {
+            channel: ChannelId(2),
+            operation: OperationId(7),
+            interrupted: None,
+        };
         assert_eq!(event.name(), "helios_mesh.motion.stopped");
         assert_eq!(event.peer(), None);
         assert_eq!(event.request_id(), None);
         assert_eq!(event.channel(), Some(ChannelId(2)));
         assert_eq!(event.operation(), Some(OperationId(7)));
 
-        let event = JournalEvent::SatelliteState { name: SatelliteName::Radio, state: SatelliteState::Ready };
+        let event = JournalEvent::SatelliteState {
+            name: SatelliteName::Radio,
+            state: SatelliteState::Ready,
+        };
         assert_eq!(event.name(), "helios_mesh.satellite.state");
         assert_eq!(event.peer(), None);
 
-        let event = JournalEvent::I2cBaudApplied { frequency_hz: 400_000, hcnt: 126, lcnt: 187, spklen: 11 };
+        let event = JournalEvent::I2cBaudApplied {
+            frequency_hz: 400_000,
+            hcnt: 126,
+            lcnt: 187,
+            spklen: 11,
+        };
         assert_eq!(event.name(), "helios_mesh.i2c.baud-applied");
         assert_eq!(event.peer(), None);
         assert_eq!(event.request_id(), None);

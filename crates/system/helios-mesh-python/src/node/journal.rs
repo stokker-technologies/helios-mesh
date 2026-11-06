@@ -60,7 +60,9 @@ pub(crate) struct PyJournalPage {
 impl PyJournalEvent {
     #[staticmethod]
     const fn i2c_baud_applied(frequency_hz: u32, hcnt: u16, lcnt: u16, spklen: u8) -> Self {
-        Self { inner: JournalEvent::I2cBaudApplied { frequency_hz, hcnt, lcnt, spklen } }
+        Self {
+            inner: JournalEvent::I2cBaudApplied { frequency_hz, hcnt, lcnt, spklen },
+        }
     }
 
     #[getter]

@@ -140,7 +140,10 @@ struct BroadcastReply {
 
 impl PeerCursor {
     const fn new() -> Self {
-        Self { session: SessionId::UNKNOWN, event: EventId(0) }
+        Self {
+            session: SessionId::UNKNOWN,
+            event: EventId(0),
+        }
     }
 }
 
@@ -308,7 +311,12 @@ where
             return;
         };
         let mut cursor = PeerCursor { session, event };
-        let route = ExchangeRoute { source: gateway.id, source_session: gateway_session, destination: scheduled.node, request_id };
+        let route = ExchangeRoute {
+            source: gateway.id,
+            source_session: gateway_session,
+            destination: scheduled.node,
+            request_id,
+        };
         let policy = if matches!(scheduled.priority, Priority::Maintenance | Priority::Discovery) {
             self.inner.background
         } else {
@@ -376,7 +384,12 @@ where
     ) -> Option<(NodeDescription, PeerCursor)> {
         let mut cursor = PeerCursor::new();
         let request = Request::Node(wire_node::Request::Describe(wire_node::Describe));
-        let route = ExchangeRoute { source: gateway_id, source_session: gateway_session, destination, request_id };
+        let route = ExchangeRoute {
+            source: gateway_id,
+            source_session: gateway_session,
+            destination,
+            request_id,
+        };
         let (source, exchange) = self.exchange_from(route, request, &mut cursor, policy, diagnostics).await?;
         discovered_description(source, exchange.response).map(|description| (description, cursor))
     }
@@ -436,7 +449,13 @@ where
             let now_ms = Instant::now().as_millis();
             if absorb_broadcast_response(
                 &mut self.inner.core,
-                BroadcastReply { source: incoming.source, source_session: incoming.session, description, event, request_id },
+                BroadcastReply {
+                    source: incoming.source,
+                    source_session: incoming.session,
+                    description,
+                    event,
+                    request_id,
+                },
                 diagnostics,
                 now_ms,
             )
@@ -464,12 +483,20 @@ where
             session: route.source_session,
             destination: route.destination,
             request_id: route.request_id,
-            message: Message::Request { request, acknowledged_session: cursor.session, acknowledged_event: cursor.event },
+            message: Message::Request {
+                request,
+                acknowledged_session: cursor.session,
+                acknowledged_event: cursor.event,
+            },
         };
 
         for attempt in 0..policy.attempts {
             if attempt > 0 {
-                diagnostics.record(JournalEvent::RequestRetried { peer: route.destination, request_id: route.request_id, retry: attempt });
+                diagnostics.record(JournalEvent::RequestRetried {
+                    peer: route.destination,
+                    request_id: route.request_id,
+                    retry: attempt,
+                });
                 Timer::after(policy.delay()).await;
             }
             if inner.link.send(&packet).await.is_err() {
@@ -537,7 +564,12 @@ where
 /* === Private Functions === */
 
 async fn respond<R: Node + 'static>(node: NodeHandle<R>, request_id: RequestId, response: Response) {
-    node.remote_response(ResponseEnvelope { version: PROTOCOL_VERSION, request_id, response }).await;
+    node.remote_response(ResponseEnvelope {
+        version: PROTOCOL_VERSION,
+        request_id,
+        response,
+    })
+    .await;
 }
 
 const fn unreachable_error(registered: bool) -> Error {
@@ -576,7 +608,13 @@ fn observe_event(
 fn absorb_broadcast_response(
     core: &mut GatewayCore, reply: BroadcastReply, diagnostics: &Diagnostics, now_ms: u64,
 ) -> Result<DiscoveryOutcome, self::core::Error> {
-    let BroadcastReply { source, source_session, description, event, request_id } = reply;
+    let BroadcastReply {
+        source,
+        source_session,
+        description,
+        event,
+        request_id,
+    } = reply;
     if core.contains(source) {
         return core.absorb_discovery(description, source_session, EventId(0), request_id, now_ms);
     }
@@ -708,7 +746,11 @@ mod tests {
 
     fn describe(id: u32) -> NodeDescription {
         NodeDescription {
-            info: NodeInfo { node_type: helios_mesh_protocol::nodes::NodeType::Sidecar, id: NodeId(id), firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: helios_mesh_protocol::nodes::NodeType::Sidecar,
+                id: NodeId(id),
+                firmware: FIRMWARE_VERSION,
+            },
 
             satellites: heapless::Vec::new(),
         }
@@ -758,7 +800,11 @@ mod tests {
     fn discovery_accepts_devices() {
         let source = NodeId(123_456);
         let description = NodeDescription {
-            info: NodeInfo { node_type: helios_mesh_protocol::nodes::NodeType::Sidecar, id: source, firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: helios_mesh_protocol::nodes::NodeType::Sidecar,
+                id: source,
+                firmware: FIRMWARE_VERSION,
+            },
 
             satellites: heapless::Vec::new(),
         };
@@ -927,7 +973,13 @@ mod tests {
 
         assert_eq!(
             core.operations().status(node, operation),
-            Some(OperationSnapshot { error: None, cleanup_error: None, id: operation, channel, state: OperationState::Active }),
+            Some(OperationSnapshot {
+                error: None,
+                cleanup_error: None,
+                id: operation,
+                channel,
+                state: OperationState::Active
+            }),
             "a MoveRelative acceptance must populate the cache exactly like MoveTo/SetHome/Stop, \
              so the next status read is a cache hit instead of a live exchange"
         );

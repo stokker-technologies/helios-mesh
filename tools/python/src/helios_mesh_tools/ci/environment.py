@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/ci/environment.py; sha256:3c8784455084f155d3f7f4fd05bf5922a1434db9f8a2bab0f1d5f8a4053ec010
 # ***
 #
 # Helios Mesh
@@ -63,8 +62,10 @@ def read(environment: Path, paths: Path, current: dict[str, str]) -> dict[str, s
             raise ValueError("invalid environment record")
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name) or "\0" in value:
             raise ValueError("invalid environment name or value")
-        if name.upper().startswith(("GITHUB_", "RUNNER_")) or name.upper() == "NODE_OPTIONS":
-            raise ValueError("reserved provider environment variable")
+        # Setup Owns This Cache Identity; It Is Not A Provider Control Variable.
+        image_identity = name.upper() == "RUNNER_IMAGE_ID"
+        if (name.upper().startswith(("GITHUB_", "RUNNER_")) and not image_identity) or name.upper() == "NODE_OPTIONS":
+            raise ValueError(f"reserved provider environment variable: {name}")
         result[name] = value
     additions = [line for line in paths.read_text(encoding="utf-8-sig").split("\n") if line]
     if any("\0" in entry for entry in additions):
@@ -87,15 +88,15 @@ def commands(windows: bool, python: str, helper: str) -> list[str]:
     if windows:
         python, helper = (value.replace("'", "''") for value in (python, helper))
         return [
-            f"$stkrStepEnvironment = & '{python}' '{helper}' --format json",
+            f"$projectStepEnvironment = & '{python}' '{helper}' --format json",
             "if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }",
-            "$stkrStepEnvironment = $stkrStepEnvironment | ConvertFrom-Json -AsHashtable",
-            "foreach ($stkrEntry in $stkrStepEnvironment.GetEnumerator()) { [Environment]::SetEnvironmentVariable($stkrEntry.Key, [string]$stkrEntry.Value, 'Process') }",
+            "$projectStepEnvironment = $projectStepEnvironment | ConvertFrom-Json -AsHashtable",
+            "foreach ($projectEntry in $projectStepEnvironment.GetEnumerator()) { [Environment]::SetEnvironmentVariable($projectEntry.Key, [string]$projectEntry.Value, 'Process') }",
         ]
     python, helper = ("'" + value.replace("'", "'\"'\"'") + "'" for value in (python, helper))
     return [
         f'{python} {helper} --format nul > "$GITHUB_ENV.exports"',
-        "while IFS= read -r -d '' stkrName && IFS= read -r -d '' stkrValue; do export \"$stkrName=$stkrValue\"; done < \"$GITHUB_ENV.exports\"",
+        "while IFS= read -r -d '' projectName && IFS= read -r -d '' projectValue; do export \"${projectName}=${projectValue}\"; done < \"$GITHUB_ENV.exports\"",
     ]
 
 
@@ -110,7 +111,7 @@ if __name__ == "__main__":
     try:
         values = read(Path(os.environ["GITHUB_ENV"]), Path(os.environ["GITHUB_PATH"]), dict(os.environ))
     except (OSError, UnicodeError, ValueError, KeyError) as error:
-        parser.exit(1, f"Step environment import failed: {type(error).__name__}\n")
+        parser.exit(1, f"Step environment import failed: {error}\n")
     if options.format == "json":
         print(json.dumps(values))
     else:

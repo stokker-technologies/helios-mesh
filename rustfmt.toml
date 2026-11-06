@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/tools/rustfmt.toml; sha256:46e8328b7f0402d213094cf0226f2fccd4ef1ad5a870bf4b2cf8d53764ffae7a
 # ***
 #
 # Helios Mesh
@@ -15,3 +14,6 @@
 max_width = 140
 fn_params_layout = "Compressed"
 use_small_heuristics = "Max"
+# Struct literals wider than 40 characters break one field per line, so a literal reads as a record even under the
+# maximum small heuristics.
+struct_lit_width = 40

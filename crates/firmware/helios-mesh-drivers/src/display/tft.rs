@@ -85,7 +85,10 @@ struct NoReset;
 
 impl Band {
     fn new(y: usize) -> Self {
-        Self { y: i32::try_from(y).unwrap_or_default(), pixels: [BACKGROUND; WIDTH * BAND_HEIGHT] }
+        Self {
+            y: i32::try_from(y).unwrap_or_default(),
+            pixels: [BACKGROUND; WIDTH * BAND_HEIGHT],
+        }
     }
 
     fn encode(&self, output: &mut [u8; BAND_BYTES]) {
@@ -163,7 +166,12 @@ where
             defmt::error!("TFT initialization failed; display engine parked");
             core::future::pending().await
         };
-        let panel = TftPanel { display, touch: self.i2c, band: Band::new(0), pixels: [0; BAND_BYTES] };
+        let panel = TftPanel {
+            display,
+            touch: self.i2c,
+            band: Band::new(0),
+            pixels: [0; BAND_BYTES],
+        };
         super::run(panel, snapshots).await
     }
 }
@@ -226,7 +234,12 @@ fn metrics() -> Metrics<Rgb565> {
         band_height: BAND_HEIGHT,
         title_font: &FONT_10X20,
         body_font: &FONT_6X10,
-        palette: Palette { background: BACKGROUND, foreground: FOREGROUND, muted: MUTED, accent: ACCENT },
+        palette: Palette {
+            background: BACKGROUND,
+            foreground: FOREGROUND,
+            muted: MUTED,
+            accent: ACCENT,
+        },
         margin: 10,
         header_height: 40,
         rows_start: 48,
@@ -267,7 +280,10 @@ mod tests {
 
     #[test]
     fn band_encoding_order() {
-        let band = Band { y: 0, pixels: [Rgb565::RED; WIDTH * BAND_HEIGHT] };
+        let band = Band {
+            y: 0,
+            pixels: [Rgb565::RED; WIDTH * BAND_HEIGHT],
+        };
         let mut encoded = [0_u8; BAND_BYTES];
 
         band.encode(&mut encoded);

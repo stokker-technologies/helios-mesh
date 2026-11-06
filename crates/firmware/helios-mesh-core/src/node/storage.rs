@@ -146,7 +146,10 @@ where
             return Ok(false);
         }
 
-        let record = Record { generation: current.map_or(1, |record| record.generation.wrapping_add(1).max(1)), document };
+        let record = Record {
+            generation: current.map_or(1, |record| record.generation.wrapping_add(1).max(1)),
+            document,
+        };
         let target = (slot + 1) % CONFIGURATION_SLOTS;
         let mut bytes = [0xFF; DOCUMENT_BUFFER_SIZE];
         let used = encode(record, &mut bytes)?;

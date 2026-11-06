@@ -6,12 +6,26 @@
 #
 # ***
 
+
 """NodeHandle identity and enum value types follow Python protocols."""
 
 # === Imports === #
 
 # Standard Library Imports
 # Third Party Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 import pytest
 
 # Local Imports

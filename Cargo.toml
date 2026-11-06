@@ -50,6 +50,7 @@ thiserror = { version = "2.0", default-features = false }
 defmt = "1.0"
 defmt-rtt = { version = "1.0" }
 panic-probe = { version = "1.0" }
+tracing = { version = "0.1", default-features = false, features = ["std"] }
 
 # Utilities
 cortex-m-rt = "0.7"
