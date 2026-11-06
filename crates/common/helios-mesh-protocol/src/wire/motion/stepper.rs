@@ -110,12 +110,28 @@ mod tests {
     #[test]
     fn rejects_unsafe_definitions() {
         let valid = StepperConfiguration {
-            mechanics: Mechanics { full_steps: 200, microsteps: Microsteps::Eight, reversed: false },
+            mechanics: Mechanics {
+                full_steps: 200,
+                microsteps: Microsteps::Eight,
+                reversed: false,
+            },
             limits: Limits { speed: 60, acceleration: 180 },
             power: Power { moving: 25, holding: 10 },
         };
         assert!(valid.is_valid());
-        assert!(!StepperConfiguration { limits: Limits { speed: 0, ..valid.limits }, ..valid }.is_valid());
-        assert!(!StepperConfiguration { power: Power { moving: 101, ..valid.power }, ..valid }.is_valid());
+        assert!(
+            !StepperConfiguration {
+                limits: Limits { speed: 0, ..valid.limits },
+                ..valid
+            }
+            .is_valid()
+        );
+        assert!(
+            !StepperConfiguration {
+                power: Power { moving: 101, ..valid.power },
+                ..valid
+            }
+            .is_valid()
+        );
     }
 }

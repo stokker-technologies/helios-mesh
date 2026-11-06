@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Protocol-shaped motion types, demoted here as an escape hatch.
 
 `NodeHandle.configure` takes the flat `helios_mesh.motion.StepperConfig` instead of
@@ -18,6 +19,19 @@ interop use, not because the primary `helios_mesh.motion` surface needs them.
 # Standard Library Imports
 # Third Party Imports
 # Local Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 from helios_mesh._native import Configuration as Configuration
 from helios_mesh._native import Limits as Limits
 from helios_mesh._native import Mechanics as Mechanics

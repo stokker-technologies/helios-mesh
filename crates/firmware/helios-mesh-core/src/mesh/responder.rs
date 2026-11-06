@@ -78,7 +78,12 @@ where
         loop {
             match self.link.receive_timeout(RECEIVE_SLICE).await {
                 Ok(incoming) => {
-                    let Message::Request { request, acknowledged_session, acknowledged_event } = incoming.message else {
+                    let Message::Request {
+                        request,
+                        acknowledged_session,
+                        acknowledged_event,
+                    } = incoming.message
+                    else {
                         continue;
                     };
                     // This node has no concept of "enrolled" -- that is
@@ -123,16 +128,20 @@ where
                         session: session_id,
                         destination: incoming.source,
                         request_id: incoming.request_id,
-                        message: Message::Response { response: reply.response, event: reply.event },
+                        message: Message::Response {
+                            response: reply.response,
+                            event: reply.event,
+                        },
                     };
                     shed_oversized_event(&mut outgoing);
                     if self.link.send(&outgoing).await.is_err() {
                         warn!("radio response failed");
                         continue;
                     }
-                    self.node
-                        .diagnostics()
-                        .record(JournalEvent::MeshResponseSent { peer: outgoing.destination, request_id: outgoing.request_id });
+                    self.node.diagnostics().record(JournalEvent::MeshResponseSent {
+                        peer: outgoing.destination,
+                        request_id: outgoing.request_id,
+                    });
                 }
                 Err(RadioError::Timeout) => {}
                 Err(_) => {
@@ -216,7 +225,11 @@ mod tests {
         use helios_mesh_protocol::node::{AuxGpioMode, ChannelId, EventId, FIRMWARE_VERSION, NodeInfo, NodeStatus, OperationId, RequestId};
         use helios_mesh_protocol::wire::{Event, EventPayload, Response};
         let status = NodeStatus {
-            info: NodeInfo { node_type: helios_mesh_protocol::nodes::NodeType::Sidecar, id: NodeId(566_114), firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: helios_mesh_protocol::nodes::NodeType::Sidecar,
+                id: NodeId(566_114),
+                firmware: FIRMWARE_VERSION,
+            },
             auxiliary_gpio: [AuxGpioMode::HighImpedance; 4],
             auxiliary_gpio_access: [helios_mesh_protocol::node::AuxGpioAccess::NotAllocated; 4],
         };

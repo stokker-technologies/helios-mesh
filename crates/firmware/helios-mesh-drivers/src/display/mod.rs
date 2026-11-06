@@ -332,22 +332,43 @@ fn compose<C: PixelColor>(snapshot: &Snapshot, order: &PageOrder, page: Page, no
         && let Some(nearby) = snapshot.nearby_page(id)
     {
         let mut rows: heapless::Vec<Row, MAX_PAGE_ROWS> = heapless::Vec::new();
-        let _ = rows.push(Row { label: text("Last Seen"), value: age_value(now_ms, nearby.last_seen_ms) });
+        let _ = rows.push(Row {
+            label: text("Last Seen"),
+            value: age_value(now_ms, nearby.last_seen_ms),
+        });
         for row in &nearby.rows {
             let _ = rows.push(row.clone());
         }
-        let _ = rows.push(Row { label: text("Last Request"), value: nearby.activity.request.clone() });
-        let _ = rows.push(Row { label: text("Last Response"), value: nearby.activity.response.clone() });
+        let _ = rows.push(Row {
+            label: text("Last Request"),
+            value: nearby.activity.request.clone(),
+        });
+        let _ = rows.push(Row {
+            label: text("Last Response"),
+            value: nearby.activity.response.clone(),
+        });
         // Rows are pushed in the order they should win when the panel's
         // geometry cannot show them all; the row list is built in full
         // above (never silently dropped by `Vec` capacity) and only then
         // cut to what `metrics` can actually render.
         rows.truncate(budget);
-        return RenderedPage { title: nearby.title.clone(), badge: NEARBY_BADGE, rows, index, count };
+        return RenderedPage {
+            title: nearby.title.clone(),
+            badge: NEARBY_BADGE,
+            rows,
+            index,
+            count,
+        };
     }
     let mut rows: heapless::Vec<Row, MAX_PAGE_ROWS> = heapless::Vec::new();
-    let _ = rows.push(Row { label: text("Last Request"), value: snapshot.activity.request.clone() });
-    let _ = rows.push(Row { label: text("Last Response"), value: snapshot.activity.response.clone() });
+    let _ = rows.push(Row {
+        label: text("Last Request"),
+        value: snapshot.activity.request.clone(),
+    });
+    let _ = rows.push(Row {
+        label: text("Last Response"),
+        value: snapshot.activity.response.clone(),
+    });
     for row in &snapshot.local.rows {
         let _ = rows.push(row.clone());
     }
@@ -355,7 +376,13 @@ fn compose<C: PixelColor>(snapshot: &Snapshot, order: &PageOrder, page: Page, no
     // tail-truncation keeps activity and lets the panel's row budget bound
     // how many trailing status rows are shown.
     rows.truncate(budget);
-    RenderedPage { title: snapshot.local.title.clone(), badge: LOCAL_BADGE, rows, index, count }
+    RenderedPage {
+        title: snapshot.local.title.clone(),
+        badge: LOCAL_BADGE,
+        rows,
+        index,
+        count,
+    }
 }
 
 fn visible_rows<C: PixelColor>(metrics: &Metrics<C>) -> usize {
@@ -480,12 +507,21 @@ mod tests {
     use super::*;
 
     fn nearby(id: u32) -> NearbyPage {
-        NearbyPage { id, title: text("Peer"), rows: heapless::Vec::new(), activity: Activity::default(), last_seen_ms: 0 }
+        NearbyPage {
+            id,
+            title: text("Peer"),
+            rows: heapless::Vec::new(),
+            activity: Activity::default(),
+            last_seen_ms: 0,
+        }
     }
 
     fn snapshot_with_nearby() -> Snapshot {
         let mut snapshot = Snapshot {
-            local: LocalPage { title: text("Local"), rows: heapless::Vec::new() },
+            local: LocalPage {
+                title: text("Local"),
+                rows: heapless::Vec::new(),
+            },
             activity: Activity::default(),
             nearby: heapless::Vec::new(),
         };
@@ -501,7 +537,12 @@ mod tests {
             band_height: 10,
             title_font: &embedded_graphics::mono_font::ascii::FONT_10X20,
             body_font: &embedded_graphics::mono_font::ascii::FONT_6X10,
-            palette: Palette { background: BinaryColor::Off, foreground: BinaryColor::On, muted: BinaryColor::On, accent: BinaryColor::On },
+            palette: Palette {
+                background: BinaryColor::Off,
+                foreground: BinaryColor::On,
+                muted: BinaryColor::On,
+                accent: BinaryColor::On,
+            },
             margin: 10,
             header_height: 40,
             rows_start: 48,
@@ -520,7 +561,12 @@ mod tests {
             band_height: 64,
             title_font: &embedded_graphics::mono_font::ascii::FONT_5X7,
             body_font: &embedded_graphics::mono_font::ascii::FONT_5X7,
-            palette: Palette { background: BinaryColor::Off, foreground: BinaryColor::On, muted: BinaryColor::On, accent: BinaryColor::On },
+            palette: Palette {
+                background: BinaryColor::Off,
+                foreground: BinaryColor::On,
+                muted: BinaryColor::On,
+                accent: BinaryColor::On,
+            },
             margin: 1,
             header_height: 8,
             rows_start: 8,
@@ -566,7 +612,10 @@ mod tests {
     #[test]
     fn local_page_rows() {
         let mut snapshot = snapshot_with_nearby();
-        let _ = snapshot.local.rows.push(Row { label: text("Channels"), value: text("1:Free") });
+        let _ = snapshot.local.rows.push(Row {
+            label: text("Channels"),
+            value: text("1:Free"),
+        });
         let order = PageOrder::new(&snapshot);
         let rendered = compose(&snapshot, &order, Page::Local, 0, &tft_like_metrics());
         assert_eq!(rendered.badge, "Ready");
@@ -580,7 +629,10 @@ mod tests {
     #[test]
     fn row_value_bands() {
         let mut snapshot = snapshot_with_nearby();
-        let _ = snapshot.local.rows.push(Row { label: text("RTT Last / Mean"), value: text("N/A") });
+        let _ = snapshot.local.rows.push(Row {
+            label: text("RTT Last / Mean"),
+            value: text("N/A"),
+        });
         let order = PageOrder::new(&snapshot);
         let metrics = tft_like_metrics();
         let previous = compose(&snapshot, &order, Page::Local, 0, &metrics);

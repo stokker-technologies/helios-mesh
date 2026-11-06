@@ -1,0 +1,11 @@
+# ***
+#
+# Helios Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+[files]
+# Templates Are Rendered Before Source Checks
+extend-exclude = ["**/.*/**"]

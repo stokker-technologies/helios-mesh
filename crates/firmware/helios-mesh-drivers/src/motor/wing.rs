@@ -211,7 +211,10 @@ impl DcPort {
 impl Batch {
     #[must_use]
     pub const fn new() -> Self {
-        Self { dc: [None; 4], steppers: [None; STEPPER_PORTS] }
+        Self {
+            dc: [None; 4],
+            steppers: [None; STEPPER_PORTS],
+        }
     }
 
     pub fn drive_dc(&mut self, port: DcPort, drive: DcDrive) -> Result<(), BatchConflict> {
@@ -256,7 +259,10 @@ impl Default for Batch {
 
 impl Shared {
     const fn new() -> Self {
-        Self { commits: Channel::new(), acks: [Signal::new(), Signal::new()] }
+        Self {
+            commits: Channel::new(),
+            acks: [Signal::new(), Signal::new()],
+        }
     }
 }
 
@@ -308,7 +314,10 @@ where
         let transaction_us = micros(Instant::now().duration_since(transaction_started));
         for (port, action) in pending.iter().enumerate() {
             if action.is_some() {
-                let outcome = result.map(|()| StepTiming { queued_us: queued_us[port], transaction_us });
+                let outcome = result.map(|()| StepTiming {
+                    queued_us: queued_us[port],
+                    transaction_us,
+                });
                 self.shared.acks[port].signal(outcome);
             }
         }
@@ -319,7 +328,14 @@ impl StepperPort {
     async fn commit(&mut self, action: StepperAction) -> Result<StepTiming, OutputUnavailable> {
         let ack = &self.shared.acks[self.slot.index()];
         ack.reset();
-        self.shared.commits.send(Commit { port: self.slot.index(), action, enqueued: Instant::now() }).await;
+        self.shared
+            .commits
+            .send(Commit {
+                port: self.slot.index(),
+                action,
+                enqueued: Instant::now(),
+            })
+            .await;
         ack.wait().await
     }
 }
@@ -394,7 +410,11 @@ where
             i2c: pwm.destroy(),
             pair_modes: [PairMode::Stepper; 2],
             dc: [DcDrive::Coast; 4],
-            steppers: [StepperState { phase: 0, microsteps: Microsteps::Four, duty_percent: 0 }; STEPPER_PORTS],
+            steppers: [StepperState {
+                phase: 0,
+                microsteps: Microsteps::Four,
+                duty_percent: 0,
+            }; STEPPER_PORTS],
             outputs,
             outputs_synchronized: true,
         })
@@ -530,7 +550,10 @@ where
 
 impl Run {
     const fn new() -> Self {
-        Self { data: [0; 1 + BYTES_PER_CHANNEL * 16], length: 0 }
+        Self {
+            data: [0; 1 + BYTES_PER_CHANNEL * 16],
+            length: 0,
+        }
     }
 
     fn encode(&mut self, start: usize, end: usize, desired: &[ChannelOnOffControl; 16]) {
@@ -724,7 +747,15 @@ mod tests {
     #[test]
     fn microstep_midpoint_equally() {
         let mut outputs = [ChannelOnOffControl::default(); 16];
-        apply_stepper(&mut outputs, 0, StepperState { phase: 4, microsteps: Microsteps::Eight, duty_percent: 100 });
+        apply_stepper(
+            &mut outputs,
+            0,
+            StepperState {
+                phase: 4,
+                microsteps: Microsteps::Eight,
+                duty_percent: 100,
+            },
+        );
         assert_eq!(outputs[8].off, 2896);
         assert_eq!(outputs[13].off, 2896);
     }
@@ -815,7 +846,10 @@ mod tests {
     fn steps_commit_acquisition() {
         let writes = Rc::new(RefCell::new(Vec::new()));
         let acquisitions = Rc::new(RefCell::new(0));
-        let i2c = LockCountingI2c { writes: writes.clone(), acquisitions: acquisitions.clone() };
+        let i2c = LockCountingI2c {
+            writes: writes.clone(),
+            acquisitions: acquisitions.clone(),
+        };
         let wing = Box::leak(Box::new(block_on(Wing::connect(i2c)).unwrap()));
         let (mut runner, [mut port_a, _port_b]) = wing.into_steppers();
         let (mode_ack, ()) = block_on(join(port_a.set_mode(Microsteps::Four), runner.service()));

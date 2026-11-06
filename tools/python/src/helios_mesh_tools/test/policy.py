@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/test/policy.py; sha256:fdd254871b9af6a155bb37f00126e41dce9ae6b8c03f01be771b9ec7d864e563
 # ***
 #
 # Helios Mesh
@@ -6,12 +5,11 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 # ***
-"""Testing Policy From `stkr.toml [conventions.testing]` And The Expected Lane Set.
+"""Testing Policy From `[conventions.testing]` And The Expected Lane Set.
 
 Keys, all optional:
 
     [conventions.testing]
-    limits = { unit = 512, integration = 256, acceptance = 128, system = 64 }
     deadlines = { unit = 30, integration = 120, acceptance = 900, system = 900 }
     bench_regression_percent = 20
 
@@ -22,10 +20,7 @@ Keys, all optional:
     timeout_seconds = 300
     reason = "Streams a full capture"
 
-Limits are story counts per layer, enforced by Hub's source inventory. TypeScript and
-JavaScript workspace packages each have their own scope; other tests share the project scope.
-Exceeding one is a curation finding in the
-index, never a failure. Deadlines are the per-story maximum of a lane in seconds. An override
+Deadlines are the per-story maximum of a lane in seconds. An override
 replaces the deadline of the stories it selects: for Rust `select` is a nextest filterset, for
 the other languages a glob over `<file>::<story>`. Acceptance and system lanes receive the whole
 Product and Tests builds of their profile and target, so lanes declare no inputs.
@@ -46,6 +41,7 @@ from typing import Any
 # Third Party Imports
 
 # Local Imports
+from ..policy import ignored
 
 # Type Checking Imports
 
@@ -57,7 +53,6 @@ CATEGORIES = ("unit", "integration", "acceptance", "system")
 BENCH_CATEGORIES = ("unit", "integration", "system")
 LANGUAGES = ("rust", "python", "typescript", "javascript")
 PROFILES = ("dev", "release")
-LIMITS = {"unit": 512, "integration": 256, "acceptance": 128, "system": 64}
 DEADLINES = {"unit": 30, "integration": 120, "acceptance": 900, "system": 900}
 
 # Minimum Correctness-Test Hang Guard; Performance Belongs To Benchmarks.
@@ -85,7 +80,6 @@ class Override:
 
 @dataclass(frozen=True)
 class Policy:
-    limits: dict[str, int]
     deadlines: dict[str, int]
     overrides: tuple[Override, ...]
     bench_regression_percent: float = 20
@@ -109,42 +103,39 @@ class Policy:
 
 
 def root(start: Path | None = None) -> Path:
-    """The project root: the nearest directory holding `stkr.toml`."""
+    """The project root: the nearest directory holding project policy."""
     current = (start or Path.cwd()).resolve()
     for candidate in (current, *current.parents):
-        if (candidate / "stkr.toml").is_file():
+        if (candidate / "tools/project.toml").is_file():
             return candidate
-    raise TestError("no stkr.toml found above the working directory")
+    raise TestError("no project policy file found above the working directory")
 
 
 def load(directory: Path) -> Policy:
-    document = _toml(directory / "stkr.toml")
+    document = _toml(directory / "tools/project.toml")
     testing = document.get("conventions", {}).get("testing", {})
     if not isinstance(testing, dict):
         raise TestError("[conventions.testing] must be a table")
 
-    limits = _numbers(testing.get("limits", {}), "limits", LIMITS, 0)
-    deadlines = _numbers(testing.get("deadlines", {}), "deadlines", DEADLINES, MINIMUM_TIMEOUT)
-    retired = [key for key in ("hosts", "lanes") if key in testing]
-    if retired:
-        raise TestError(
-            f"conventions.testing.{retired[0]} is retired; acceptance and system lanes receive the whole Product and Tests builds"
-        )
+    for key in testing.keys() - {"deadlines", "bench_regression_percent", "overrides"}:
+        ignored(directory, f"conventions.testing.{key}")
+    deadlines = _numbers(directory, testing.get("deadlines", {}), "deadlines", DEADLINES, MINIMUM_TIMEOUT)
 
     overrides = []
     for entry in testing.get("overrides", []):
-        if not isinstance(entry, dict) or set(entry) != OVERRIDE_KEYS:
+        if not isinstance(entry, dict) or not OVERRIDE_KEYS <= set(entry):
             raise TestError("each override declares " + ", ".join(sorted(OVERRIDE_KEYS)))
         if entry["category"] not in CATEGORIES or entry["language"] not in LANGUAGES:
             raise TestError(f"override names an unknown lane: {entry}")
         if not _positive(entry["timeout_seconds"], MINIMUM_TIMEOUT) or not str(entry["reason"]).strip():
             raise TestError(f"override needs a timeout of at least 30 seconds and a reason: {entry}")
-        overrides.append(Override(**entry))
+        for key in entry.keys() - OVERRIDE_KEYS:
+            ignored(directory, f"conventions.testing.overrides.{len(overrides)}.{key}")
+        overrides.append(Override(**{key: entry[key] for key in OVERRIDE_KEYS}))
     threshold = testing.get("bench_regression_percent", 20)
     if isinstance(threshold, bool) or not isinstance(threshold, (int, float)) or not math.isfinite(threshold) or threshold <= 0:
         raise TestError("bench_regression_percent must be finite and positive")
     return Policy(
-        limits,
         deadlines,
         tuple(overrides),
         float(threshold),
@@ -173,9 +164,12 @@ def _toml(path: Path) -> dict[str, Any]:
         raise TestError(f"read {path.name}: {error}") from error
 
 
-def _numbers(value: object, name: str, defaults: dict[str, int], minimum: int) -> dict[str, int]:
-    if not isinstance(value, dict) or not set(value) <= set(defaults):
+def _numbers(directory: Path, value: object, name: str, defaults: dict[str, int], minimum: int) -> dict[str, int]:
+    if not isinstance(value, dict):
         raise TestError(f"conventions.testing.{name} keys are {', '.join(defaults)}")
+    for key in value.keys() - defaults.keys():
+        ignored(directory, f"conventions.testing.{name}.{key}")
+    value = {key: number for key, number in value.items() if key in defaults}
     if not all(_positive(number, minimum) for number in value.values()):
         raise TestError(f"conventions.testing.{name} values must be integers >= {minimum}")
     return {**defaults, **value}

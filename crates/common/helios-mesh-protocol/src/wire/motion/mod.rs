@@ -287,7 +287,13 @@ mod tests {
 
     #[test]
     fn requested_motion_limits() {
-        assert!(Settings { speed: Some(180), acceleration: Some(360) }.is_valid_for(LIMITS));
+        assert!(
+            Settings {
+                speed: Some(180),
+                acceleration: Some(360)
+            }
+            .is_valid_for(LIMITS)
+        );
         assert!(!Settings { speed: Some(0), acceleration: None }.is_valid_for(LIMITS));
         assert!(!Settings { speed: Some(361), acceleration: None }.is_valid_for(LIMITS));
     }
@@ -295,18 +301,27 @@ mod tests {
     #[test]
     fn configurations_define_stepper() {
         let stepper = StepperConfiguration {
-            mechanics: Mechanics { full_steps: 200, microsteps: Microsteps::Eight, reversed: false },
+            mechanics: Mechanics {
+                full_steps: 200,
+                microsteps: Microsteps::Eight,
+                reversed: false,
+            },
             limits: LIMITS,
             power: Power { moving: 25, holding: 10 },
         };
         let empty = Configuration { steppers: heapless::Vec::new() };
         assert!(!empty.is_valid());
-        let pair = Configuration { steppers: heapless::Vec::from_slice(&[stepper; 2]).unwrap() };
+        let pair = Configuration {
+            steppers: heapless::Vec::from_slice(&[stepper; 2]).unwrap(),
+        };
         assert!(pair.is_valid());
         let broken = Configuration {
             steppers: heapless::Vec::from_slice(&[
                 stepper,
-                StepperConfiguration { mechanics: Mechanics { full_steps: 0, ..stepper.mechanics }, ..stepper },
+                StepperConfiguration {
+                    mechanics: Mechanics { full_steps: 0, ..stepper.mechanics },
+                    ..stepper
+                },
             ])
             .unwrap(),
         };

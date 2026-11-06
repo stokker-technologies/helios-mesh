@@ -202,7 +202,16 @@ fn radio_recovery() {
     let signals = registers.borrow().signals.clone();
     let reset = Rc::new(RefCell::new(Vec::new()));
     let interface = Interface::new(Reset(reset.clone()), Input(signals[0].clone()), Input(signals[1].clone()));
-    let driver = Sx127x::new(Bus(registers.clone()), interface, Config { chip: Sx1276, tcxo_used: false, tx_boost: true, rx_boost: false });
+    let driver = Sx127x::new(
+        Bus(registers.clone()),
+        interface,
+        Config {
+            chip: Sx1276,
+            tcxo_used: false,
+            tx_boost: true,
+            rx_boost: false,
+        },
+    );
     let mut radio = block_on(LoRa::new(driver, false, Delay::default())).unwrap();
     let modulation = radio.create_modulation_params(SpreadingFactor::_7, Bandwidth::_250KHz, CodingRate::_4_5, 869_525_000).unwrap();
     let mut tx = radio.create_tx_packet_params(8, false, true, false, &modulation).unwrap();

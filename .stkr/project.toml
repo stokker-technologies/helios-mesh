@@ -1,0 +1,209 @@
+# Project Policy Owned By The Hub
+# Native manifests own package metadata; mise owns executable recipes.
+# Defaults stay implicit. Commented sections do not declare configuration.
+
+# === === Hooks === === #
+
+[hooks]
+step_timeout_seconds = 1200
+
+# === === Conventions === === #
+
+[conventions.rust]
+# The PyO3 Adapter Emits An rlib For Rust Checks And Has No Independent Rust Error API.
+bindings = ["helios-mesh-python"]
+
+[barrels]
+# The Public Prelude Intentionally Collects Imports For Library Consumers.
+exclude = ["crates/system/helios-mesh/src/prelude.rs"]
+
+# === === Templates === === #
+
+[[template]]
+name = "header"
+language = "c-header"
+path = "c/header.h"
+default = true
+snippet = "h"
+
+[[template]]
+name = "module"
+language = "c"
+path = "c/module.c"
+default = true
+snippet = "c"
+
+[[template]]
+name = "package"
+language = "cargo"
+path = "cargo/package.toml"
+default = true
+snippet = "cargo"
+
+[[template]]
+name = "workspace"
+language = "cargo"
+path = "cargo/workspace.toml"
+default = false
+snippet = "cargo-workspace"
+
+[[template]]
+name = "header"
+language = "cpp-header"
+path = "cpp/header.hpp"
+default = true
+snippet = "hpp"
+
+[[template]]
+name = "module"
+language = "cpp"
+path = "cpp/module.cpp"
+default = true
+snippet = "cpp"
+
+[[template]]
+name = "module"
+language = "css"
+path = "css/module.css"
+default = true
+snippet = "css"
+
+[[template]]
+name = "module"
+language = "javascript"
+path = "javascript/module.js"
+default = true
+snippet = "js"
+
+[[template]]
+name = "contributing"
+language = "markdown"
+path = "markdown/contributing.md"
+default = false
+snippet = "md-contributing"
+
+[[template]]
+name = "file"
+language = "markdown"
+path = "markdown/file.md"
+default = true
+snippet = "md"
+
+[[template]]
+name = "readme"
+language = "markdown"
+path = "markdown/readme.md"
+default = false
+snippet = "md-readme"
+
+[[template]]
+name = "module"
+language = "python"
+path = "python/module.py"
+default = true
+snippet = "py"
+
+[[template]]
+name = "module"
+language = "rust"
+path = "rust/module.rs"
+default = true
+snippet = "rs"
+
+[[template]]
+name = "module"
+language = "scss"
+path = "scss/module.scss"
+default = true
+snippet = "scss"
+
+[[template]]
+name = "file"
+language = "toml"
+path = "toml/file.toml"
+default = true
+snippet = "toml"
+
+[[template]]
+name = "project"
+language = "stkr"
+path = "toml/project.toml"
+default = true
+snippet = "stkr"
+
+[[template]]
+name = "component"
+language = "typescriptreact"
+path = "typescript/component.tsx"
+default = true
+snippet = "tsx"
+
+[[template]]
+name = "module"
+language = "typescript"
+path = "typescript/module.ts"
+default = true
+snippet = "ts"
+
+[[template]]
+name = "module"
+language = "yaml"
+path = "yaml/module.yaml"
+default = true
+snippet = "yaml"
+
+# === === PyO3 === === #
+
+[[pyo3.modules]]
+name = "_native"
+crate = "helios-mesh-python"
+module_rename = "_native"
+rust = "crates/system/helios-mesh-python/src"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/_native.pyi"
+import = "helios_mesh._native"
+root = true
+flatten = ["node", "motion", "wire", "gateway", "journal"]
+# Retained on the private native module for cancellation tests.
+renames = { PyPendingProbe = "_PendingProbe" }
+class_modules = { PyUsbDevice = "helios_mesh", PyNodeType = "helios_mesh", PyDiscoveredNode = "helios_mesh", PySidecarNode = "helios_mesh", PyGatewayNode = "helios_mesh.gateway", PyRotatorNode = "helios_mesh" }
+
+[[pyo3.modules]]
+name = "node"
+crate = "helios-mesh-python"
+module_rename = "node"
+rust = "crates/system/helios-mesh-python/src/node"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/node/__init__.pyi"
+import = "helios_mesh.node"
+
+[[pyo3.modules]]
+name = "motion"
+crate = "helios-mesh-python"
+module_rename = "motion"
+rust = "crates/system/helios-mesh-python/src/motion"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/motion/__init__.pyi"
+import = "helios_mesh.motion"
+
+[[pyo3.modules]]
+name = "wire"
+crate = "helios-mesh-python"
+module_rename = "wire"
+rust = "crates/system/helios-mesh-python/src/motion/wire"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/motion/wire/__init__.pyi"
+import = "helios_mesh.motion.wire"
+
+[[pyo3.modules]]
+name = "gateway"
+crate = "helios-mesh-python"
+module_rename = "gateway"
+rust = "crates/system/helios-mesh-python/src/gateway"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/gateway/__init__.pyi"
+import = "helios_mesh.gateway"
+
+[[pyo3.modules]]
+name = "journal"
+crate = "helios-mesh-python"
+module_rename = "journal"
+rust = "crates/system/helios-mesh-python/src/journal"
+stub = "crates/system/helios-mesh-python/python/helios_mesh/journal/__init__.pyi"
+import = "helios_mesh.journal"
+state_exceptions = { PyRecord = "A journal entry is paired with its cursor position and shared source metadata." }

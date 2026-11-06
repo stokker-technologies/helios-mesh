@@ -55,7 +55,11 @@ pub struct Peers<const N: usize = MAX_NEARBY_DEVICES> {
 impl Record {
     #[must_use]
     pub fn sighted(id: NodeId, now_ms: u64) -> Self {
-        Self { id, label: NodeLabel::new(), last_seen_ms: now_ms }
+        Self {
+            id,
+            label: NodeLabel::new(),
+            last_seen_ms: now_ms,
+        }
     }
 }
 

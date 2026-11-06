@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/build/__init__.py; sha256:9f2d6ba8f7f09474c04126794281e542e27f9bd7cc17c101e1dc1888f3de9fb4
 # ***
 #
 # Helios Mesh

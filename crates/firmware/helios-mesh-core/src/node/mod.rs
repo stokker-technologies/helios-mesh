@@ -231,7 +231,10 @@ where
                 role,
                 storage,
                 platform,
-                services: Services { events: Events::new(), peers: Peers::new() },
+                services: Services {
+                    events: Events::new(),
+                    peers: Peers::new(),
+                },
                 replay: ReplayCache::new(),
                 config,
                 coordinator: None,
@@ -418,7 +421,15 @@ where
             let Some(coordinator) = self.inner.coordinator else {
                 return Some(Error::NotFound.into());
             };
-            if self.inner.forwards.insert(Forward { origin: submission.origin, request_id: submission.request_id }).is_err() {
+            if self
+                .inner
+                .forwards
+                .insert(Forward {
+                    origin: submission.origin,
+                    request_id: submission.request_id,
+                })
+                .is_err()
+            {
                 return Some(Error::Busy.into());
             }
             let envelope = RequestEnvelope {
@@ -526,9 +537,18 @@ where
         }
         match origin {
             Origin::Usb => {
-                self.push_usb_response(ResponseEnvelope { version: PROTOCOL_VERSION, request_id, response });
+                self.push_usb_response(ResponseEnvelope {
+                    version: PROTOCOL_VERSION,
+                    request_id,
+                    response,
+                });
             }
-            Origin::Lora { peer, acknowledged_session, acknowledged_event, .. } => {
+            Origin::Lora {
+                peer,
+                acknowledged_session,
+                acknowledged_event,
+                ..
+            } => {
                 let event = attach_event
                     .then(|| {
                         self.inner.services.events.next_after(peer, self.shared.identity.session, acknowledged_session, acknowledged_event)
@@ -614,7 +634,11 @@ where
         let mut snapshot = Snapshot::new(local);
         snapshot.activity = inner.activity;
         for record in inner.services.peers.iter() {
-            snapshot.upsert_nearby(NearbyPage { id: record.id, label: record.label.clone(), last_seen_ms: record.last_seen_ms });
+            snapshot.upsert_nearby(NearbyPage {
+                id: record.id,
+                label: record.label.clone(),
+                last_seen_ms: record.last_seen_ms,
+            });
         }
         self.shared.ui.sender().send(snapshot);
     }
@@ -623,7 +647,11 @@ where
 /* === Public Functions === */
 
 pub(crate) fn node_info<R: Node>(node: NodeId) -> NodeInfo {
-    NodeInfo { node_type: R::NODE_TYPE, id: node, firmware: FIRMWARE_VERSION }
+    NodeInfo {
+        node_type: R::NODE_TYPE,
+        id: node,
+        firmware: FIRMWARE_VERSION,
+    }
 }
 
 pub(crate) fn node_summary<R: Node>(node: NodeId) -> NodeSummary {
@@ -695,7 +723,13 @@ mod tests {
     }
 
     const fn lora_from(peer: NodeId, session: SessionId) -> Origin {
-        Origin::Lora { peer, session, acknowledged_session: SessionId::UNKNOWN, acknowledged_event: EventId(0), broadcast: false }
+        Origin::Lora {
+            peer,
+            session,
+            acknowledged_session: SessionId::UNKNOWN,
+            acknowledged_event: EventId(0),
+            broadcast: false,
+        }
     }
 
     fn gpio_write() -> wire::Request {
@@ -803,7 +837,10 @@ mod tests {
     #[test]
     fn forwards_reject_ids() {
         let mut forwards = Forwards::new();
-        let forward = Forward { origin: Origin::Usb, request_id: RequestId(7) };
+        let forward = Forward {
+            origin: Origin::Usb,
+            request_id: RequestId(7),
+        };
         assert!(forwards.insert(forward).is_ok());
         assert!(forwards.insert(forward).is_err());
         assert!(forwards.remove(RequestId(7)).is_some());
@@ -829,7 +866,12 @@ mod tests {
         }
 
         let mut satellites = heapless::Vec::new();
-        satellites.push(SatelliteReport { name: SatelliteName::MotorWing, state: SatelliteState::Ready }).unwrap();
+        satellites
+            .push(SatelliteReport {
+                name: SatelliteName::MotorWing,
+                state: SatelliteState::Ready,
+            })
+            .unwrap();
         let description = node_description::<TestRole>(NODE, satellites.clone());
         assert_eq!(description.satellites, satellites);
     }
@@ -967,7 +1009,13 @@ mod tests {
     }
 
     fn lora_gpio_write(peer: NodeId, session: SessionId, request_id: RequestId) -> Submission {
-        Submission { origin: lora_from(peer, session), version: PROTOCOL_VERSION, request_id, destination: NODE, request: gpio_write() }
+        Submission {
+            origin: lora_from(peer, session),
+            version: PROTOCOL_VERSION,
+            request_id,
+            destination: NODE,
+            request: gpio_write(),
+        }
     }
 
     fn lora_gpio_pulse(peer: NodeId, session: SessionId, request_id: RequestId) -> Submission {
@@ -984,11 +1032,23 @@ mod tests {
             WedgeFlash,
             ReplayPlatform,
             BootReport::default(),
-            ReplayNode { writes: 0, refusal: Some(wire_node::AuxGpioError::Reserved) },
+            ReplayNode {
+                writes: 0,
+                refusal: Some(wire_node::AuxGpioError::Reserved),
+            },
         )));
         let (mut runner, _handle) = node.split();
         let response = poll_bounded(runner.admit(lora_gpio_write(GATEWAY, SessionId(1), RequestId(1)), 0), 10_000).unwrap();
-        assert_eq!(response, Some(Error::AuxGpio { gpio: AuxGpioId(1), reason: wire_node::AuxGpioError::Reserved }.into()));
+        assert_eq!(
+            response,
+            Some(
+                Error::AuxGpio {
+                    gpio: AuxGpioId(1),
+                    reason: wire_node::AuxGpioError::Reserved
+                }
+                .into()
+            )
+        );
         assert_eq!(runner.inner.role.writes, 0);
     }
 
@@ -1164,20 +1224,30 @@ mod tests {
             WedgeFlash,
             ReplayPlatform,
             BootReport::default(),
-            MiddlewareNode { writes: 0, responses: 0, gateway_request: false },
+            MiddlewareNode {
+                writes: 0,
+                responses: 0,
+                gateway_request: false,
+            },
         )));
         let (mut runner, _handle) = node.split();
         assert!(poll_bounded(runner.handle_submission(lora_gpio_write(GATEWAY, SessionId(1), RequestId(1))), 10_000).is_some());
         runner.shared.mesh_replies.try_receive().unwrap();
         assert_eq!(runner.inner.role.writes, 1);
 
-        let read = Submission { request: wire_node::Poll.into(), ..lora_gpio_write(NodeId(GATEWAY.0 + 1), SessionId(2), RequestId(2)) };
+        let read = Submission {
+            request: wire_node::Poll.into(),
+            ..lora_gpio_write(NodeId(GATEWAY.0 + 1), SessionId(2), RequestId(2))
+        };
         assert!(poll_bounded(runner.handle_submission(read), 10_000).is_some());
         assert_eq!(runner.shared.mesh_replies.try_receive().unwrap().response, Error::BoundElsewhere { gateway: GATEWAY }.into());
         assert_eq!(runner.inner.role.writes, 1);
 
         runner.inner.role.gateway_request = true;
-        let read = Submission { request: wire_node::Poll.into(), ..lora_gpio_write(GATEWAY, SessionId(1), RequestId(3)) };
+        let read = Submission {
+            request: wire_node::Poll.into(),
+            ..lora_gpio_write(GATEWAY, SessionId(1), RequestId(3))
+        };
         assert!(poll_bounded(runner.handle_submission(read), 10_000).is_some());
         assert_eq!(runner.shared.mesh_replies.try_receive().unwrap().response, Error::Unauthorized.into());
         assert_eq!(runner.inner.role.writes, 1);

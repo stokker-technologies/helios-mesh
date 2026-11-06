@@ -127,7 +127,11 @@ mod tests {
 
     fn current_rotator_status() -> NodeStatus {
         NodeStatus {
-            info: NodeInfo { node_type: crate::nodes::NodeType::Sidecar, id: ROTATOR, firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: crate::nodes::NodeType::Sidecar,
+                id: ROTATOR,
+                firmware: FIRMWARE_VERSION,
+            },
             auxiliary_gpio: [AuxGpioMode::HighImpedance; 4],
             auxiliary_gpio_access: [crate::node::AuxGpioAccess::NotAllocated; 4],
         }
@@ -135,10 +139,22 @@ mod tests {
 
     fn current_rotator_satellites() -> heapless::Vec<SatelliteReport, { satellite::MAX_SATELLITES }> {
         heapless::Vec::from_slice(&[
-            SatelliteReport { name: SatelliteName::Radio, state: SatelliteState::Ready },
-            SatelliteReport { name: SatelliteName::DisplayTft, state: SatelliteState::Ready },
-            SatelliteReport { name: SatelliteName::DisplayOled, state: SatelliteState::Absent },
-            SatelliteReport { name: SatelliteName::MotorWing, state: SatelliteState::Absent },
+            SatelliteReport {
+                name: SatelliteName::Radio,
+                state: SatelliteState::Ready,
+            },
+            SatelliteReport {
+                name: SatelliteName::DisplayTft,
+                state: SatelliteState::Ready,
+            },
+            SatelliteReport {
+                name: SatelliteName::DisplayOled,
+                state: SatelliteState::Absent,
+            },
+            SatelliteReport {
+                name: SatelliteName::MotorWing,
+                state: SatelliteState::Absent,
+            },
         ])
         .unwrap()
     }
@@ -187,12 +203,19 @@ mod tests {
             session: SessionId(u16::MAX),
             destination: GATEWAY,
             request_id: RequestId(63),
-            message: Message::Response { response: Response::Node(node::Response::Status(status)), event: Some(pending_event) },
+            message: Message::Response {
+                response: Response::Node(node::Response::Status(status)),
+                event: Some(pending_event),
+            },
         };
 
         let motion_length = encoded_length(&motion);
         let stepper = StepperConfiguration {
-            mechanics: Mechanics { full_steps: 200, microsteps: Microsteps::Eight, reversed: false },
+            mechanics: Mechanics {
+                full_steps: 200,
+                microsteps: Microsteps::Eight,
+                reversed: false,
+            },
             limits: Limits { speed: 60, acceleration: 180 },
             power: Power { moving: 25, holding: 10 },
         };
@@ -203,7 +226,12 @@ mod tests {
             destination: ROTATOR,
             request_id: RequestId(63),
             message: Message::Request {
-                request: Configure { configuration: Configuration { steppers: heapless::Vec::from_slice(&[stepper; 2]).unwrap() } }.into(),
+                request: Configure {
+                    configuration: Configuration {
+                        steppers: heapless::Vec::from_slice(&[stepper; 2]).unwrap(),
+                    },
+                }
+                .into(),
                 acknowledged_session: SessionId(u16::MAX),
                 acknowledged_event: EventId(62),
             },
@@ -260,7 +288,10 @@ mod tests {
             session: SessionId(u16::MAX),
             destination: GATEWAY,
             request_id: RequestId(u32::MAX),
-            message: Message::Response { response: Response::Node(node::Response::Status(current_rotator_status())), event: Some(event) },
+            message: Message::Response {
+                response: Response::Node(node::Response::Status(current_rotator_status())),
+                event: Some(event),
+            },
         };
         let mut buffer = [0_u8; 256];
         let encoded_length = postcard::to_slice(&response, &mut buffer).unwrap().len();
@@ -292,7 +323,11 @@ mod tests {
         // `RECONCILE_AFTER_MS` reconciliation instead of resolving on this
         // exchange -- the hardware regression this test locks shut.
         let status = NodeStatus {
-            info: NodeInfo { node_type: crate::nodes::NodeType::Sidecar, id: ROTATOR, firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: crate::nodes::NodeType::Sidecar,
+                id: ROTATOR,
+                firmware: FIRMWARE_VERSION,
+            },
             auxiliary_gpio: [AuxGpioMode::HighImpedance; 4],
             auxiliary_gpio_access: [crate::node::AuxGpioAccess::NotAllocated; 4],
         };
@@ -325,14 +360,20 @@ mod tests {
             session: SessionId(u16::MAX),
             destination: GATEWAY,
             request_id: RequestId(5_000_000),
-            message: Message::Response { response: Response::Node(node::Response::Status(status)), event: Some(event) },
+            message: Message::Response {
+                response: Response::Node(node::Response::Status(status)),
+                event: Some(event),
+            },
         };
         let mut buffer = [0; 256];
         let pair_length = postcard::to_slice(&envelope, &mut buffer).unwrap().len();
         let Message::Response { response, .. } = envelope.message.clone() else {
             unreachable!();
         };
-        let status_alone = Envelope { message: Message::Response { response, event: None }, ..envelope };
+        let status_alone = Envelope {
+            message: Message::Response { response, event: None },
+            ..envelope
+        };
         let status_length = encoded_length(&status_alone);
         std::println!(
             "realistic_pair_bytes={pair_length} realistic_status_bytes={status_length} pair_headroom_bytes={}",
@@ -359,7 +400,11 @@ mod tests {
         // catalogued satellite and both motion capabilities are represented,
         // the same shape a real rotator's enrollment response carries.
         let description = NodeDescription {
-            info: NodeInfo { node_type: crate::nodes::NodeType::Sidecar, id: ROTATOR, firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: crate::nodes::NodeType::Sidecar,
+                id: ROTATOR,
+                firmware: FIRMWARE_VERSION,
+            },
             satellites: current_rotator_satellites(),
         };
         let envelope = Envelope {
@@ -368,7 +413,10 @@ mod tests {
             session: SessionId(u16::MAX),
             destination: GATEWAY,
             request_id: RequestId(63),
-            message: Message::Response { response: Response::Node(node::Response::Description(description)), event: None },
+            message: Message::Response {
+                response: Response::Node(node::Response::Description(description)),
+                event: None,
+            },
         };
         let length = encoded_length(&envelope);
         std::println!("describe_with_satellites_bytes={length} packet_budget_bytes={MAX_PACKET_SIZE}");
@@ -406,7 +454,12 @@ mod tests {
         let entry = JournalEntry {
             sequence: u32::MAX,
             timestamp_ms: (1_u64 << 42) - 1,
-            event: JournalEvent::I2cBaudApplied { frequency_hz: u32::MAX, hcnt: u16::MAX, lcnt: u16::MAX, spklen: u8::MAX },
+            event: JournalEvent::I2cBaudApplied {
+                frequency_hz: u32::MAX,
+                hcnt: u16::MAX,
+                lcnt: u16::MAX,
+                spklen: u8::MAX,
+            },
         };
         let mut buffer = [0; MAX_PACKET_SIZE];
         let entry_length = postcard::to_slice(&entry, &mut buffer).unwrap().len();
@@ -495,7 +548,11 @@ mod tests {
 
     fn rotator_summary(id: u32) -> NodeSummary {
         NodeSummary {
-            info: NodeInfo { node_type: crate::nodes::NodeType::Sidecar, id: NodeId(id), firmware: FIRMWARE_VERSION },
+            info: NodeInfo {
+                node_type: crate::nodes::NodeType::Sidecar,
+                id: NodeId(id),
+                firmware: FIRMWARE_VERSION,
+            },
             silent_for_s: 0,
         }
     }
@@ -507,7 +564,10 @@ mod tests {
             session: SessionId(u16::MAX),
             destination: ROTATOR,
             request_id: RequestId(63),
-            message: Message::Response { response: Response::Gateway(gateway::Response::Nodes(page)), event: None },
+            message: Message::Response {
+                response: Response::Gateway(gateway::Response::Nodes(page)),
+                event: None,
+            },
         }
     }
 

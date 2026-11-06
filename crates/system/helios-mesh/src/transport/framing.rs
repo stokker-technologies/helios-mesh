@@ -57,7 +57,13 @@ pub struct FrameReader<R> {
 
 impl<R: AsyncRead + Unpin> FrameReader<R> {
     pub fn new(stream: R, corrupt: Arc<AtomicU64>) -> Self {
-        Self { stream, pending: Vec::with_capacity(MAX_FRAME_SIZE), frames: VecDeque::new(), discarding: false, corrupt }
+        Self {
+            stream,
+            pending: Vec::with_capacity(MAX_FRAME_SIZE),
+            frames: VecDeque::new(),
+            discarding: false,
+            corrupt,
+        }
     }
 
     pub async fn next_frame(&mut self) -> io::Result<Option<Vec<u8>>> {

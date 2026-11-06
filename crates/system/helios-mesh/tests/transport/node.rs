@@ -70,7 +70,11 @@ fn roster_page(silent_for_s: u16) -> gateway::NodePage {
 }
 
 fn device(id: u32, name: &str) -> UsbDevice {
-    UsbDevice { id: NodeId(id), label: name.to_owned(), port: format!("/dev/tty.fake-{id}") }
+    UsbDevice {
+        id: NodeId(id),
+        label: name.to_owned(),
+        port: format!("/dev/tty.fake-{id}"),
+    }
 }
 
 fn description(coordinator: bool) -> NodeDescription {
@@ -89,13 +93,22 @@ async fn gpio_pulse_admission() {
             duration_ms: request.duration_ms,
         }
         .into(),
-        Request::Node(node::Request::PulseAuxGpio(request)) => WireError::AuxGpio { gpio: request.gpio, reason: AuxGpioError::Busy }.into(),
+        Request::Node(node::Request::PulseAuxGpio(request)) => WireError::AuxGpio {
+            gpio: request.gpio,
+            reason: AuxGpioError::Busy,
+        }
+        .into(),
         other => panic!("unexpected request: {other:?}"),
     });
     {
         let gateway = testing::gateway(testing::node(connection, NodeId(273_282), true));
-        let helios_mesh::ConnectedNode::Sidecar(sidecar) =
-            gateway.connect_node(NodeSummary { info: testing::info(NODE), silent_for_s: 0 }).await.unwrap()
+        let helios_mesh::ConnectedNode::Sidecar(sidecar) = gateway
+            .connect_node(NodeSummary {
+                info: testing::info(NODE),
+                silent_for_s: 0,
+            })
+            .await
+            .unwrap()
         else {
             panic!("the roster declares a Sidecar");
         };
@@ -105,7 +118,10 @@ async fn gpio_pulse_admission() {
         sidecar.pulse_gpio(AuxGpioId(1), Duration::from_millis(1)).await.unwrap();
         assert!(matches!(
             sidecar.pulse_gpio(AuxGpioId(2), Duration::from_secs(1)).await,
-            Err(Error::AuxGpio { gpio: AuxGpioId(2), reason: AuxGpioError::Busy })
+            Err(Error::AuxGpio {
+                gpio: AuxGpioId(2),
+                reason: AuxGpioError::Busy
+            })
         ));
     }
     let seen = responder.await.unwrap();
@@ -132,7 +148,10 @@ async fn invalid_pulse_transport() {
         {
             assert!(matches!(
                 testing::sidecar(node.clone()).pulse_gpio(AuxGpioId(1), duration).await,
-                Err(Error::AuxGpio { reason: AuxGpioError::InvalidDuration, .. })
+                Err(Error::AuxGpio {
+                    reason: AuxGpioError::InvalidDuration,
+                    ..
+                })
             ));
         }
         for gpio in [AuxGpioId(0), AuxGpioId(5)] {
@@ -152,9 +171,11 @@ async fn mesh_gpio_permissions() {
         Request::Node(node::Request::ConfigureAuxGpio(request)) if request.gpio == AuxGpioId(1) => {
             node::Response::AuxGpioConfigured { gpio: request.gpio, mode: request.mode }.into()
         }
-        Request::Node(node::Request::ConfigureAuxGpio(request)) => {
-            WireError::AuxGpio { gpio: request.gpio, reason: AuxGpioError::Reserved }.into()
+        Request::Node(node::Request::ConfigureAuxGpio(request)) => WireError::AuxGpio {
+            gpio: request.gpio,
+            reason: AuxGpioError::Reserved,
         }
+        .into(),
         Request::Node(node::Request::Status(_)) => {
             let mut status = testing::status(NODE);
             status.auxiliary_gpio_access =
@@ -165,16 +186,28 @@ async fn mesh_gpio_permissions() {
     });
     {
         let gateway = testing::gateway(testing::node(connection, NodeId(273_282), true));
-        let remote = gateway.connect_node(NodeSummary { info: testing::info(NODE), silent_for_s: 0 }).await.unwrap();
+        let remote = gateway
+            .connect_node(NodeSummary {
+                info: testing::info(NODE),
+                silent_for_s: 0,
+            })
+            .await
+            .unwrap();
         assert_eq!(remote.node().status().await.unwrap().auxiliary_gpio_access[1], AuxGpioAccess::Reserved);
         testing::sidecar(remote.node().clone()).set_gpio(AuxGpioId(1), AuxGpioMode::DriveHigh).await.unwrap();
         assert!(matches!(
             testing::sidecar(remote.node().clone()).set_gpio(AuxGpioId(2), AuxGpioMode::DriveLow).await,
-            Err(Error::AuxGpio { gpio: AuxGpioId(2), reason: AuxGpioError::Reserved })
+            Err(Error::AuxGpio {
+                gpio: AuxGpioId(2),
+                reason: AuxGpioError::Reserved
+            })
         ));
         assert!(matches!(
             testing::sidecar(remote.node().clone()).set_gpio(AuxGpioId(0), AuxGpioMode::DriveLow).await,
-            Err(Error::AuxGpio { gpio: AuxGpioId(0), reason: AuxGpioError::InvalidId })
+            Err(Error::AuxGpio {
+                gpio: AuxGpioId(0),
+                reason: AuxGpioError::InvalidId
+            })
         ));
     }
     let seen = responder.await.unwrap();
@@ -289,8 +322,14 @@ async fn settled_trip_fresh() {
         Request::Node(node::Request::OperationStatus(_)) => {
             let elapsed = tokio::time::Instant::now().saturating_duration_since(start);
             let state = if elapsed >= Duration::from_secs(20) { OperationState::Completed } else { OperationState::Active };
-            node::Response::OperationStatus(OperationSnapshot { error: None, cleanup_error: None, id: OPERATION, channel: CHANNEL, state })
-                .into()
+            node::Response::OperationStatus(OperationSnapshot {
+                error: None,
+                cleanup_error: None,
+                id: OPERATION,
+                channel: CHANNEL,
+                state,
+            })
+            .into()
         }
         Request::Gateway(gateway::Request::Nodes(_)) => gateway::Response::Nodes(roster_page(1)).into(),
         other => panic!("unexpected request: {other:?}"),
@@ -323,8 +362,14 @@ async fn settled_never_node() {
         Request::Node(node::Request::OperationStatus(_)) => {
             let elapsed = tokio::time::Instant::now().saturating_duration_since(start);
             let state = if elapsed >= Duration::from_secs(20) { OperationState::Completed } else { OperationState::Active };
-            node::Response::OperationStatus(OperationSnapshot { error: None, cleanup_error: None, id: OPERATION, channel: CHANNEL, state })
-                .into()
+            node::Response::OperationStatus(OperationSnapshot {
+                error: None,
+                cleanup_error: None,
+                id: OPERATION,
+                channel: CHANNEL,
+                state,
+            })
+            .into()
         }
         other => panic!("unexpected request: {other:?}"),
     });

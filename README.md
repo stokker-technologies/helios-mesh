@@ -1,10 +1,10 @@
 # Helios Mesh
 
-[![Release](https://img.shields.io/badge/release-unpublished-lightgrey)](https://github.com/stokker-technologies/helios-mesh/releases)
+[![Release](https://img.shields.io/github/v/release/stokker-technologies/helios-mesh)](https://github.com/stokker-technologies/helios-mesh/releases)
 [![CI](https://github.com/stokker-technologies/helios-mesh/actions/workflows/ci.yml/badge.svg)](https://github.com/stokker-technologies/helios-mesh/actions/workflows/ci.yml)
 [![CI / Nightly](https://github.com/stokker-technologies/helios-mesh/actions/workflows/nightly.yml/badge.svg)](https://github.com/stokker-technologies/helios-mesh/actions/workflows/nightly.yml)
-[![crates.io](https://img.shields.io/badge/crates.io-unpublished-lightgrey)](#quick-start)
-[![PyPI](https://img.shields.io/badge/PyPI-unpublished-lightgrey)](#quick-start)
+[![crates.io](https://img.shields.io/crates/v/helios-mesh)](https://crates.io/crates/helios-mesh)
+[![PyPI](https://img.shields.io/pypi/v/helios-mesh)](https://pypi.org/project/helios-mesh/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
 <img src="https://stokkertechnologies.ch/logo.svg" height="256" alt="Stokker Technologies Mark">
@@ -259,10 +259,11 @@ Native Linux and Windows CI validates host behavior and wheel imports. Linux
 cross-compiles all three firmware images. These checks do not establish
 physical RF or electrical behavior, and macOS is not certified by CI.
 
-The release workflow is prepared for GitHub CLI downloads and a combined
-firmware archive, PyPI wheels, and publishable Rust libraries. First registry
-publication and account setup remain pending; build from source for now.
-Releases start at `0.1.0` and then increment only the patch component.
+Stable releases provide [CLI and firmware downloads](https://github.com/stokker-technologies/helios-mesh/releases),
+[PyPI wheels](https://pypi.org/project/helios-mesh/), and [Rust libraries](https://crates.io/crates/helios-mesh).
+Use `helios-mesh = "0.1"` in Cargo or `uv add helios-mesh` for Python.
+The mutable [nightly prerelease](https://github.com/stokker-technologies/helios-mesh/releases/tag/nightly)
+contains a release-profile build of changed `dev`; its notes record independent suite results.
 
 Follow [issues](https://github.com/stokker-technologies/helios-mesh/issues)
 for development discussions. GitHub is authoritative;

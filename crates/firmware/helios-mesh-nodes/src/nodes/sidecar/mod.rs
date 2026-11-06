@@ -88,7 +88,11 @@ impl Node for Sidecar {
     )]
     async fn pulse_gpio(&mut self, _cx: &mut Context<'_, Self>, request: PulseAuxGpio) -> Result<AuxGpioPulseScheduled, RequestError> {
         let operation = self.channel(request.gpio)?.submit(Pulse::new(request.duration_ms)?)?;
-        Ok(AuxGpioPulseScheduled { gpio: request.gpio, duration_ms: request.duration_ms, operation: operation.id() })
+        Ok(AuxGpioPulseScheduled {
+            gpio: request.gpio,
+            duration_ms: request.duration_ms,
+            operation: operation.id(),
+        })
     }
 }
 

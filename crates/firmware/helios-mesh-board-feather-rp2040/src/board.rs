@@ -174,7 +174,10 @@ impl Board {
         let mut flash = flash::Flash::<_, Blocking, FLASH_SIZE>::new_blocking(peripherals.FLASH);
         let mut unique_id = [0; FLASH_UNIQUE_ID_SIZE];
         defmt::unwrap!(flash.blocking_unique_id(&mut unique_id));
-        let identity = Identity { node: identity::from_hardware_unique_id(&unique_id), session: session_id() };
+        let identity = Identity {
+            node: identity::from_hardware_unique_id(&unique_id),
+            session: session_id(),
+        };
 
         let (led, led_listener) = LED_SIGNALS.split();
         let Pio { mut common, sm0, .. } = Pio::new(peripherals.PIO0, Irqs);
@@ -315,7 +318,12 @@ fn radio(
         inner: Sx127x::new(
             spi.configured_device(chip_select, config),
             interface,
-            sx127x::Config { chip: Sx1276, tcxo_used: false, tx_boost: true, rx_boost: false },
+            sx127x::Config {
+                chip: Sx1276,
+                tcxo_used: false,
+                tx_boost: true,
+                rx_boost: false,
+            },
         ),
     }
 }

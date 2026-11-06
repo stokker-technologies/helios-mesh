@@ -102,7 +102,13 @@ mod tests {
     #[test]
     fn board_grants_once() {
         let hardware = Hardware::new()
-            .auxiliary(AuxGpioId(1), Auxiliary::PushPull { initial: AuxGpioMode::HighImpedance, drive: Drive::Ma2 })
+            .auxiliary(
+                AuxGpioId(1),
+                Auxiliary::PushPull {
+                    initial: AuxGpioMode::HighImpedance,
+                    drive: Drive::Ma2,
+                },
+            )
             .validate()
             .unwrap();
         let mut pins = AuxiliaryGpio::new(hardware, |_| FakePin);

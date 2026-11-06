@@ -1,0 +1,179 @@
+# ***
+#
+# Helios Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+[ci]
+mirror = true
+
+[ci.impact]
+default = "full"
+
+[[ci.impact.rules]]
+exclude = ["docs/examples/**", "docs/tutorials/**", "docs/templates/**", "docs/src/**"]
+jobs = ["check:repository"]
+name = "prose"
+only = ["README.md", "CONTRIBUTING.md", "docs/**/*.md"]
+
+[[ci.impact.rules]]
+jobs = ["check:repository", "package:rust"]
+name = "firmware-license"
+only = ["LICENSE"]
+
+[[ci.jobs]]
+id = "check:python:generated"
+inputs = ["build#product"]
+
+[[ci.jobs]]
+id = "build"
+
+[ci.jobs.outputs]
+product = ["target/build/{profile}/{target}/bin", "target/build/{profile}/{target}/python", "target/build/{profile}/{target}/product"]
+
+[[ci.jobs]]
+id = "build"
+platform = "linux"
+
+[ci.jobs.outputs]
+product = [
+  "target/build/{profile}/{target}/bin",
+  "target/build/{profile}/{target}/python",
+  "target/build/{profile}/{target}/product",
+  "target/build/{profile}/{target}/firmware",
+]
+
+[[ci.jobs]]
+id = "build:rust:tests"
+
+[ci.jobs.outputs]
+tests = ["target/build/{profile}/{target}/tests", "target/build/{profile}/{target}/fixtures"]
+
+[[ci.jobs]]
+id = "test:rust:unit"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:rust:integration"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:rust:acceptance"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:python:acceptance"
+inputs = ["build#product"]
+
+[[ci.jobs]]
+id = "test:rust:coverage"
+inputs = ["build:rust:tests#tests"]
+
+[[ci.jobs]]
+id = "test:python:coverage"
+inputs = ["build#product"]
+
+[[ci.jobs]]
+id = "package:rust"
+inputs = ["build#product"]
+
+[ci.jobs.outputs]
+package = ["target/package/{profile}/{target}/rust"]
+
+[[ci.jobs]]
+bootstrap = ["bash tools/ci/bootstrap-linux.sh"]
+id = "package:rust"
+platform = "linux"
+
+[[ci.jobs]]
+id = "package:python"
+inputs = ["build#product"]
+
+[ci.jobs.outputs]
+package = ["target/package/{profile}/{target}/python"]
+
+[[ci.jobs]]
+id = "release:publish:dry"
+inputs = ["package:rust#package", "package:python#package"]
+
+[[ci.jobs]]
+id = "release:rehearse"
+inputs = ["package:rust#package", "package:python#package"]
+
+[[ci.jobs]]
+id = "release:publish"
+inputs = ["package:rust#package", "package:python#package"]
+
+[languages.python]
+generated = ["crates/system/helios-mesh-python"]
+roots = ["tools/python", "crates/system/helios-mesh-python"]
+
+[languages.rust]
+roots = ["crates"]
+targets = ["thumbv6m-none-eabi"]
+
+[project]
+name = "Helios Mesh"
+platforms = ["linux", "windows"]
+visibility = "public"
+
+[release]
+nightly = true
+crates_bootstrap_secret = "CARGO_REGISTRY_TOKEN"
+lock_commands = [
+  [
+    "cargo",
+    "update",
+    "--workspace",
+  ],
+  [
+    "uv",
+    "lock",
+    "--offline",
+    "--project",
+    "tools/python",
+  ],
+  [
+    "uv",
+    "lock",
+    "--offline",
+    "--project",
+    "crates/system/helios-mesh-python",
+  ],
+]
+package = "helios-mesh-cli"
+product = "helios-mesh"
+provider = "github"
+repository = "stokker-technologies/helios-mesh"
+targets = ["linux-x86_64", "windows-x86_64"]
+tests = ["unit-rust", "integration-rust", "acceptance-rust", "acceptance-python"]
+
+[[release.assets]]
+kind = "tool"
+name = "{product}-{version}-x86_64-unknown-linux-gnu"
+path = "target/package/{profile}/{target}/rust/helios-mesh"
+target = "linux-x86_64"
+
+[[release.assets]]
+kind = "tool"
+name = "{product}-{version}-x86_64-pc-windows-msvc.exe"
+path = "target/package/{profile}/{target}/rust/helios-mesh.exe"
+target = "windows-x86_64"
+
+[[release.assets]]
+kind = "tool"
+name = "{product}-{version}-{target}-firmware-feather-rp2040.zip"
+path = "target/package/{profile}/{target}/rust/firmware/helios-mesh-firmware-feather-rp2040.zip"
+target = "linux-x86_64"
+
+[version]
+files = ["Cargo.toml"]
+value = "0.1.4"
+
+[conventions.testing.deadlines]
+unit = 60
+integration = 240
+acceptance = 1800
+system = 1800

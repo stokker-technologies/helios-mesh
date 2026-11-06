@@ -39,15 +39,6 @@ mod transport;
 #[cfg(feature = "host")]
 pub mod nodes;
 
-#[cfg(feature = "firmware")]
-pub mod __private {
-    #[cfg(target_arch = "arm")]
-    pub use embassy_executor;
-    pub use helios_mesh_core::jobs::ChannelStorage;
-    #[cfg(target_arch = "arm")]
-    pub use static_cell::StaticCell;
-}
-
 /* === Re-Exports === */
 
 pub use helios_mesh_macros::{jobs, node, node_catalog, route};
@@ -123,10 +114,10 @@ pub use helios_mesh_core::node::Origin;
 
 #[cfg(feature = "firmware")]
 pub use helios_mesh_drivers::motor;
-
 pub use helios_mesh_protocol::diagnostics::{
     JOURNAL_PAGE_SIZE, JournalEntry, JournalPage, JournalSummary, NodeDiagnostics, RequestDiagnostics,
 };
+
 #[cfg(not(feature = "host"))]
 pub use helios_mesh_protocol::motion;
 pub use helios_mesh_protocol::motion::{
@@ -179,5 +170,47 @@ pub type Result<T> = core::result::Result<T, Error>;
 /* === Public Functions === */
 
 /* === Private Functions === */
+
+#[cfg(feature = "firmware")]
+pub mod __private {
+    /* === Modules === */
+
+    /* === Re-Exports === */
+
+    #[cfg(target_arch = "arm")]
+    pub use embassy_executor;
+    pub use helios_mesh_core::jobs::ChannelStorage;
+
+    #[cfg(target_arch = "arm")]
+    pub use static_cell::StaticCell;
+
+    /* === Imports === */
+
+    // Standard Library Imports
+
+    // Third Party Imports
+
+    // Local Imports
+
+    /* === Constants === */
+
+    /* === Macros === */
+
+    /* === Type Aliases === */
+
+    /* === Structs === */
+
+    /* === Enums === */
+
+    /* === Traits === */
+
+    /* === Implementations === */
+
+    /* === Public Functions === */
+
+    /* === Private Functions === */
+
+    /* === Tests === */
+}
 
 /* === Tests === */

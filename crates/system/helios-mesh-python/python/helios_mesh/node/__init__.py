@@ -6,6 +6,7 @@
 #
 # ***
 
+
 """Universal node handle, connection doors, and node wire value types."""
 
 # === Imports === #
@@ -13,6 +14,19 @@
 # Standard Library Imports
 # Third Party Imports
 # Local Imports
+# ***
+
+#
+
+# Helios Mesh
+
+#
+
+# SPDX-License-Identifier: Apache-2.0
+
+#
+
+# ***
 from helios_mesh._native import AUX_GPIO_COUNT as AUX_GPIO_COUNT
 from helios_mesh._native import JOURNAL_PAGE_SIZE as JOURNAL_PAGE_SIZE
 from helios_mesh._native import MAX_CHANNELS as MAX_CHANNELS

@@ -69,7 +69,12 @@ pub enum ActivityDirection {
 impl RequestActivity {
     #[must_use]
     pub const fn observed(origin: Origin, request_id: RequestId, destination: NodeId) -> Self {
-        Self { request_id, source: origin, target: Some(destination), state: ActivityState::Pending }
+        Self {
+            request_id,
+            source: origin,
+            target: Some(destination),
+            state: ActivityState::Pending,
+        }
     }
 
     pub fn complete(&mut self, origin: Origin, request_id: RequestId, succeeded: bool) {

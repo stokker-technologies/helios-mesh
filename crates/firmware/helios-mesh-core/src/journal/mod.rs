@@ -47,7 +47,12 @@ pub struct Journal<const N: usize> {
 impl<const N: usize> Journal<N> {
     #[must_use]
     pub const fn new() -> Self {
-        Self { entries: [None; N], next_slot: 0, next_sequence: 1, overwritten: 0 }
+        Self {
+            entries: [None; N],
+            next_slot: 0,
+            next_sequence: 1,
+            overwritten: 0,
+        }
     }
 
     pub fn push(&mut self, timestamp_ms: u64, event: JournalEvent) {
@@ -57,7 +62,11 @@ impl<const N: usize> Journal<N> {
         if self.entries[self.next_slot].is_some() {
             self.overwritten = self.overwritten.saturating_add(1);
         }
-        self.entries[self.next_slot] = Some(JournalEntry { sequence: self.next_sequence, timestamp_ms, event });
+        self.entries[self.next_slot] = Some(JournalEntry {
+            sequence: self.next_sequence,
+            timestamp_ms,
+            event,
+        });
         self.next_slot = (self.next_slot + 1) % N;
         self.next_sequence = self.next_sequence.wrapping_add(1).max(1);
     }
@@ -85,7 +94,10 @@ impl<const N: usize> Journal<N> {
             let _ = entries.push(next);
             cursor = next.sequence;
         }
-        JournalPage { entries, latest_sequence: self.next_sequence.wrapping_sub(1) }
+        JournalPage {
+            entries,
+            latest_sequence: self.next_sequence.wrapping_sub(1),
+        }
     }
 
     #[must_use]
@@ -151,6 +163,9 @@ mod tests {
     }
 
     const fn request(id: u32) -> JournalEvent {
-        JournalEvent::MeshRequestReceived { peer: NodeId(273_282), request_id: RequestId(id) }
+        JournalEvent::MeshRequestReceived {
+            peer: NodeId(273_282),
+            request_id: RequestId(id),
+        }
     }
 }

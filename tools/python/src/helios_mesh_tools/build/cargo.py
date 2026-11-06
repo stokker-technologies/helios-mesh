@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/build/cargo.py; sha256:2f76624cfb83d1088f5602ce03e15b61bdd732548c0c1f8a5c9371af4529f1dc
 # ***
 #
 # Helios Mesh
@@ -12,18 +11,20 @@
 
 # Standard Library Imports
 import argparse
+import contextlib
 import json
 import os
 import subprocess
 import sys
-from collections.abc import Iterator, Mapping, Sequence
+import time
+from collections.abc import Generator, Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
 # Third Party Imports
 # Local Imports
-from ..ci import summary
-from . import paths
+from ..process import spawn_flags
+from . import paths, storage
 
 # Type Checking Imports
 
@@ -39,8 +40,12 @@ from . import paths
 
 
 def clippy(directory: Path, arguments: Sequence[str], *, environment: Mapping[str, str] | None = None) -> None:
+    storage.preflight(directory)
+    # Callers Whose lint:rust Already Covers These Selections Skip The Repeat With CHECK_CLIPPY=1.
+    if os.environ.get("CHECK_CLIPPY") == "1":
+        return
     selected = dict(os.environ if environment is None else environment, CARGO_BUILD_WARNINGS="deny")
-    with summary.phase("Clippy"):
+    with _phase("Clippy"):
         subprocess.run(
             ["cargo", "clippy", *arguments],
             cwd=directory,
@@ -48,7 +53,7 @@ def clippy(directory: Path, arguments: Sequence[str], *, environment: Mapping[st
             stdin=sys.stdin,
             stdout=sys.stdout,
             stderr=sys.stderr,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            creationflags=spawn_flags(),
             check=True,
         )
 
@@ -82,12 +87,12 @@ def archive(directory: Path, profile: str, extra: Sequence[str] = ()) -> Path:
         str(path),
         *extra,
     ]
-    with summary.phase("Compilation And Archive"), path.with_name(reader.MESSAGES).open("w", encoding="utf-8") as output:
+    with _phase("Compilation And Archive"), path.with_name(reader.MESSAGES).open("w", encoding="utf-8") as output:
         result = subprocess.run(
             command,
             stdin=sys.stdin,
             stderr=sys.stderr,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            creationflags=spawn_flags(),
             cwd=directory,
             stdout=output,
             check=False,
@@ -105,11 +110,43 @@ def archive(directory: Path, profile: str, extra: Sequence[str] = ()) -> Path:
     return path
 
 
+def focused(directory: Path, operation: str, arguments: Sequence[str]) -> int:
+    if operation not in ("build", "check", "test", "clippy", "run"):
+        raise ValueError("focused compilation requires build, check, test, clippy or run")
+    profile = None
+    compiler_arguments = list(arguments[: arguments.index("--")]) if "--" in arguments else list(arguments)
+    if any(argument == "--target-dir" or argument.startswith("--target-dir=") for argument in compiler_arguments):
+        raise ValueError("focused tasks use the repository Cargo target")
+    for index, argument in enumerate(compiler_arguments):
+        if argument == "--profile" and index + 1 < len(compiler_arguments):
+            profile = compiler_arguments[index + 1]
+        elif argument.startswith("--profile="):
+            profile = argument.partition("=")[2]
+    if profile is not None and profile not in ("dev", "release", "test", "bench"):
+        raise ValueError("focused compilation requires a canonical Cargo profile")
+    if operation == "test" and ("--release" in compiler_arguments or profile not in (None, "test")):
+        raise ValueError("focused tests use Cargo's default test profile")
+    if operation in ("build", "test", "run"):
+        clippy(directory, [argument for argument in compiler_arguments if argument not in ("--no-run", "--no-fail-fast")])
+    else:
+        storage.preflight(directory)
+    return subprocess.run(
+        ["cargo", operation, *arguments],
+        cwd=directory,
+        env=dict(os.environ, CARGO_BUILD_WARNINGS="deny"),
+        stdin=sys.stdin,
+        stdout=sys.stdout,
+        stderr=sys.stderr,
+        creationflags=spawn_flags(),
+        check=False,
+    ).returncode
+
+
 def record_target(directory: Path, messages: Path, profile: str, native: str | None = None) -> None:
     """Record The Actual Rust Target For Generic And Authored Product Builders."""
     compiler = subprocess.run(
         ["rustc", "-vV"],
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=spawn_flags(),
         cwd=directory,
         capture_output=True,
         text=True,
@@ -147,6 +184,12 @@ def artifacts(directory: Path, messages: Path) -> Iterator[dict[str, Any]]:
 
 
 def main() -> None:
+    if sys.argv[1:2] == ["focused"]:
+        parser = argparse.ArgumentParser(description="Compile An Explicit Local Rust Selection")
+        parser.add_argument("operation", choices=("build", "check", "test", "clippy"))
+        parser.add_argument("arguments", nargs=argparse.REMAINDER)
+        options = parser.parse_args(sys.argv[2:])
+        raise SystemExit(focused(Path.cwd(), options.operation, options.arguments))
     if sys.argv[1:2] == ["archive"]:
         parser = argparse.ArgumentParser(description="Build A Nextest Archive")
         parser.add_argument("--profile", choices=("dev", "release"), default="dev")
@@ -162,6 +205,22 @@ def main() -> None:
 
 
 # === Private Functions === #
+
+
+# Phase Durations Append To BUILD_PHASE_FILE As JSON Lines When A Caller Requests Them.
+@contextlib.contextmanager
+def _phase(name: str) -> Generator[None]:
+    started = time.monotonic()
+    try:
+        yield
+    finally:
+        if destination := os.environ.get("BUILD_PHASE_FILE"):
+            try:
+                with Path(destination).open("a", encoding="utf-8") as stream:
+                    stream.write(json.dumps({"name": name, "seconds": time.monotonic() - started}) + "\n")
+            except OSError:
+                print(f"{name}: phase telemetry unavailable", flush=True)
+
 
 # === Entry Point === #
 

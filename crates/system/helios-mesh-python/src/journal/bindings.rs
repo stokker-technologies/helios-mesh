@@ -130,7 +130,11 @@ impl PyRecord {
     fn new(position: u64, node: &PyNodeId, entry: &PyJournalEntry) -> Self {
         let entry = entry.inner;
         let record = journal::Record::new(position, node.inner, &entry);
-        Self { position: record.position, metadata: Arc::new(record.metadata), inner: entry }
+        Self {
+            position: record.position,
+            metadata: Arc::new(record.metadata),
+            inner: entry,
+        }
     }
 
     #[getter]
@@ -193,7 +197,9 @@ impl PyRecord {
 impl PyCursor {
     #[new]
     fn new() -> Self {
-        Self { inner: Arc::new(Mutex::new(Cursor::new())) }
+        Self {
+            inner: Arc::new(Mutex::new(Cursor::new())),
+        }
     }
 
     #[getter]

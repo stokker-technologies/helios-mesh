@@ -11,31 +11,6 @@
 
 /* === Modules === */
 
-#[cfg(target_arch = "arm")]
-mod resource {
-    use crate::board::I2cBus;
-    type I2cDevice =
-        helios_mesh_drivers::bus::i2c1_baud::PolledI2cDevice<'static, embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex>;
-    pub type MotorWing = helios_mesh_drivers::motor::wing::Wing<I2cDevice>;
-    pub type MotorRunner = helios_mesh_drivers::motor::wing::WingRunner<I2cDevice>;
-    #[derive(Debug, thiserror::Error)]
-    #[error("motor initialization failed: {0}")]
-    pub struct MotorUnavailable(#[source] pub helios_mesh_drivers::Error<<I2cDevice as embedded_hal::i2c::ErrorType>::Error>);
-    pub struct MotorResources {
-        i2c: &'static I2cBus,
-    }
-    impl MotorResources {
-        pub(crate) const fn new(i2c: &'static I2cBus) -> Self {
-            Self { i2c }
-        }
-        pub async fn connect(self) -> crate::Result<MotorWing> {
-            let mut config = embassy_rp::i2c::Config::default();
-            config.frequency = helios_mesh_drivers::motor::wing::MAXIMUM_I2C_FREQUENCY_HZ;
-            MotorWing::connect(self.i2c.polled_device(config)).await.map_err(|error| MotorUnavailable(error).into())
-        }
-    }
-}
-
 /* === Re-Exports === */
 
 #[cfg(target_arch = "arm")]
@@ -86,5 +61,65 @@ impl Motor {
 /* === Public Functions === */
 
 /* === Private Functions === */
+
+#[cfg(target_arch = "arm")]
+mod resource {
+    /* === Modules === */
+
+    /* === Re-Exports === */
+
+    /* === Imports === */
+
+    // Standard Library Imports
+
+    // Third Party Imports
+
+    // Local Imports
+    use crate::board::I2cBus;
+
+    /* === Constants === */
+
+    /* === Macros === */
+
+    /* === Type Aliases === */
+
+    type I2cDevice =
+        helios_mesh_drivers::bus::i2c1_baud::PolledI2cDevice<'static, embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex>;
+    pub type MotorWing = helios_mesh_drivers::motor::wing::Wing<I2cDevice>;
+    pub type MotorRunner = helios_mesh_drivers::motor::wing::WingRunner<I2cDevice>;
+
+    /* === Structs === */
+
+    #[derive(Debug, thiserror::Error)]
+    #[error("motor initialization failed: {0}")]
+    pub struct MotorUnavailable(#[source] pub helios_mesh_drivers::Error<<I2cDevice as embedded_hal::i2c::ErrorType>::Error>);
+
+    pub struct MotorResources {
+        i2c: &'static I2cBus,
+    }
+
+    /* === Enums === */
+
+    /* === Traits === */
+
+    /* === Implementations === */
+
+    impl MotorResources {
+        pub(crate) const fn new(i2c: &'static I2cBus) -> Self {
+            Self { i2c }
+        }
+        pub async fn connect(self) -> crate::Result<MotorWing> {
+            let mut config = embassy_rp::i2c::Config::default();
+            config.frequency = helios_mesh_drivers::motor::wing::MAXIMUM_I2C_FREQUENCY_HZ;
+            MotorWing::connect(self.i2c.polled_device(config)).await.map_err(|error| MotorUnavailable(error).into())
+        }
+    }
+
+    /* === Public Functions === */
+
+    /* === Private Functions === */
+
+    /* === Tests === */
+}
 
 /* === Tests === */

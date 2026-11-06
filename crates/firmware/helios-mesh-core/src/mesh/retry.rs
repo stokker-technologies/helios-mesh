@@ -24,9 +24,16 @@ use embassy_time::Duration;
 
 /* === Constants === */
 
-pub const INTERACTIVE: Policy =
-    Policy { attempts: 3, response_timeout: Duration::from_millis(200), retry_interval: Duration::from_millis(20) };
-pub const BACKGROUND: Policy = Policy { attempts: 1, response_timeout: Duration::from_millis(120), retry_interval: Duration::MIN };
+pub const INTERACTIVE: Policy = Policy {
+    attempts: 3,
+    response_timeout: Duration::from_millis(200),
+    retry_interval: Duration::from_millis(20),
+};
+pub const BACKGROUND: Policy = Policy {
+    attempts: 1,
+    response_timeout: Duration::from_millis(120),
+    retry_interval: Duration::MIN,
+};
 
 /* === Macros === */
 

@@ -54,7 +54,10 @@ impl Config {
     #[must_use]
     pub fn motor(&self, index: usize) -> motor::Config {
         let stepper = self.steppers[index];
-        motor::Config { mechanics: stepper.mechanics, power: stepper.power }
+        motor::Config {
+            mechanics: stepper.mechanics,
+            power: stepper.power,
+        }
     }
 }
 
@@ -82,14 +85,20 @@ mod tests {
 
     fn stepper() -> StepperConfiguration {
         StepperConfiguration {
-            mechanics: Mechanics { full_steps: 200, microsteps: Microsteps::Eight, reversed: false },
+            mechanics: Mechanics {
+                full_steps: 200,
+                microsteps: Microsteps::Eight,
+                reversed: false,
+            },
             limits: Limits { speed: 60, acceleration: 180 },
             power: Power { moving: 25, holding: 10 },
         }
     }
 
     fn configuration(steppers: &[StepperConfiguration]) -> Configuration {
-        Configuration { steppers: heapless::Vec::from_slice(steppers).unwrap() }
+        Configuration {
+            steppers: heapless::Vec::from_slice(steppers).unwrap(),
+        }
     }
 
     #[test]

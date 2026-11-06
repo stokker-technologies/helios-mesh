@@ -76,7 +76,13 @@ struct BusFault;
 
 impl State {
     fn new(pending: bool) -> Self {
-        Self { registers: [0; 256], pending, fail_next: false, acquisitions: 0, writes: Vec::new() }
+        Self {
+            registers: [0; 256],
+            pending,
+            fail_next: false,
+            acquisitions: 0,
+            writes: Vec::new(),
+        }
     }
 
     fn write(&mut self, bytes: &[u8]) {

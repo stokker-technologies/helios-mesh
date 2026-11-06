@@ -118,7 +118,10 @@ mod tests {
     const SESSION: SessionId = SessionId(9);
 
     fn payload(operation: u32) -> EventPayload {
-        EventPayload::Motion(motion::Event::Stopped { channel: ChannelId(1), operation: OperationId(operation) })
+        EventPayload::Motion(motion::Event::Stopped {
+            channel: ChannelId(1),
+            operation: OperationId(operation),
+        })
     }
 
     #[test]
@@ -174,8 +177,15 @@ mod tests {
         let mut events = Events::<2>::new();
         events.queue(PEER, payload(1)).unwrap();
         let second = events.queue(PEER, payload(2)).unwrap();
-        let terminal =
-            events.queue(PEER, EventPayload::Motion(motion::Event::Failed { channel: ChannelId(1), operation: OperationId(3) })).unwrap();
+        let terminal = events
+            .queue(
+                PEER,
+                EventPayload::Motion(motion::Event::Failed {
+                    channel: ChannelId(1),
+                    operation: OperationId(3),
+                }),
+            )
+            .unwrap();
 
         // A terminal completion queued onto an already-full queue is not the
         // one dropped, and is still delivered once the peer catches up.

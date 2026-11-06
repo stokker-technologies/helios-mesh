@@ -16,11 +16,12 @@
 /* === Imports === */
 
 // Standard Library Imports
-// Third Party Imports
 use std::{
     future::Future,
     task::{Context, Waker},
 };
+
+// Third Party Imports
 
 // Local Imports
 use helios_mesh::prelude::*;
@@ -150,6 +151,50 @@ async fn dropping_handle_stream() {
         }
     };
     observed_close.await;
+}
+
+#[tokio::test(start_paused = true)]
+async fn stalled_write_expires() {
+    use std::time::Duration;
+    use tokio::io::AsyncReadExt;
+
+    let (host, mut device) = tokio::io::duplex(1);
+    let (reader, writer) = tokio::io::split(host);
+    let connection = testing::Connection::spawn(reader, writer);
+    let call = {
+        let connection = connection.clone();
+        tokio::spawn(async move { connection.call(NODE, Duration::from_secs(2), node::Identify).await })
+    };
+    let mut first_byte = [0];
+    device.read_exact(&mut first_byte).await.unwrap();
+    tokio::time::advance(Duration::from_secs(3)).await;
+    assert!(matches!(call.await.unwrap(), Err(Error::Timeout)));
+    // Reusing A Partially Written Stream Must Fail Instead Of Replaying The Command.
+    assert!(matches!(connection.call(NODE, Duration::from_secs(2), node::Status).await, Err(Error::Connection(_))));
+    // A Failed Driver Releases Both Stream Halves Even While The Failed Handle Is Still Held.
+    let mut remainder = Vec::new();
+    device.read_to_end(&mut remainder).await.unwrap();
+}
+
+#[tokio::test(start_paused = true)]
+async fn queued_request_expires() {
+    use std::time::Duration;
+
+    let (connection, mut device) = testing::connected();
+    let mut calls = Vec::new();
+    for _ in 0..MAX_IN_FLIGHT {
+        let connection = connection.clone();
+        calls.push(tokio::spawn(async move { connection.call(NODE, Duration::from_secs(10), node::Identify).await }));
+        testing::read_request(&mut device).await;
+    }
+    let queued = tokio::spawn(async move { connection.call(NODE, Duration::from_secs(1), node::Status).await });
+    tokio::task::yield_now().await;
+    tokio::time::advance(Duration::from_secs(2)).await;
+    assert!(matches!(queued.await.unwrap(), Err(Error::Timeout)));
+    for call in calls {
+        call.abort();
+        let _ = call.await;
+    }
 }
 
 /* === Tests === */

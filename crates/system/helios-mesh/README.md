@@ -152,12 +152,9 @@ login. Windows exposes the node as a COM port without an additional driver.
 The Python distribution is named `helios-mesh` and imports as `helios_mesh`.
 Build with `mise run build --profile dev`; `mise run dev:python` installs the
 extension for local development. Wheels are ABI3 packages for each native host.
-The release workflow supports PyPI publication from protected stable tags;
-first-publication account setup and package registration require separate
-maintainer authorization. Before first publication, configure crates.io
-ownership for publishable libraries and the PyPI `helios-mesh` project, then
-GitHub trusted publishing for `ci.yml` and its protected `release` environment.
-No published package is required for source builds.
+Stable releases publish Rust libraries to crates.io, ABI3 wheels to PyPI, and CLI and firmware downloads to GitHub.
+Protected `ci.yml` jobs use trusted publishing in the `release` environment.
+Source builds do not require a published package.
 
 ## Operation Ownership
 
@@ -270,4 +267,8 @@ timestamps between boards. Capture evidence before rebooting.
 the request and follows radio write-binding admission. `--bootloader` enters
 the selected node's USB BOOTSEL mode.
 
-
+Connection requests include queueing, USB writing and response waiting in their existing deadline.
+A stalled or partially written USB frame terminates the driver and its reader, releasing the transport; reconnect before issuing another command.
+GPIO writes and pulses are never replayed automatically after an uncertain acknowledgement.
+Host `tracing` events report the node, request type, remote route, deadline and failure; gateway probe events also name the USB port.
+The application owns subscriber installation and capturing those messages. Serial-open errors include the port in their returned error.

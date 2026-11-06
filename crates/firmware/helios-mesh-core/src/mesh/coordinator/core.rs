@@ -167,7 +167,13 @@ impl<const OPERATIONS: usize> OperationCache<OPERATIONS> {
 
     pub fn accepted(&mut self, node: NodeId, operation: OperationId, channel: ChannelId, now_ms: u64) -> Result<(), Error> {
         if let Some(existing) = self.find_mut(node, operation) {
-            existing.status = OperationSnapshot { error: None, cleanup_error: None, id: operation, channel, state: OperationState::Active };
+            existing.status = OperationSnapshot {
+                error: None,
+                cleanup_error: None,
+                id: operation,
+                channel,
+                state: OperationState::Active,
+            };
             existing.updated_ms = now_ms;
             return Ok(());
         }
@@ -188,7 +194,13 @@ impl<const OPERATIONS: usize> OperationCache<OPERATIONS> {
             .ok_or(Error::OperationRegistryFull)?;
         self.operations[slot] = Some(TrackedOperation {
             node,
-            status: OperationSnapshot { error: None, cleanup_error: None, id: operation, channel, state: OperationState::Active },
+            status: OperationSnapshot {
+                error: None,
+                cleanup_error: None,
+                id: operation,
+                channel,
+                state: OperationState::Active,
+            },
             updated_ms: now_ms,
         });
         Ok(())
@@ -280,7 +292,15 @@ impl<const OPERATIONS: usize> Default for OperationCache<OPERATIONS> {
 impl ScheduledRequest {
     #[must_use]
     pub const fn new(node: NodeId, request: Request, priority: Priority, ready_at_ms: u64, deadline_ms: u64) -> Self {
-        Self { node, request, priority, ready_at_ms, deadline_ms, reply: None, order: 0 }
+        Self {
+            node,
+            request,
+            priority,
+            ready_at_ms,
+            deadline_ms,
+            reply: None,
+            order: 0,
+        }
     }
 
     #[must_use]
@@ -382,7 +402,10 @@ impl<const NODES: usize, const QUEUED: usize> GatewayCore<NODES, QUEUED> {
             let _ = nodes.push(summary);
         }
         let has_more = gateway.info.id.0 > cursor || self.nodes.iter().flatten().any(|record| record.description.info.id.0 > cursor);
-        NodePage { nodes, next_after: has_more.then_some(NodeId(cursor)) }
+        NodePage {
+            nodes,
+            next_after: has_more.then_some(NodeId(cursor)),
+        }
     }
 
     #[must_use]
@@ -639,11 +662,18 @@ mod tests {
     use super::*;
 
     fn info(id: u32) -> NodeInfo {
-        NodeInfo { node_type: helios_mesh_protocol::nodes::NodeType::Sidecar, id: NodeId(id), firmware: FIRMWARE_VERSION }
+        NodeInfo {
+            node_type: helios_mesh_protocol::nodes::NodeType::Sidecar,
+            id: NodeId(id),
+            firmware: FIRMWARE_VERSION,
+        }
     }
 
     fn description(id: u32) -> NodeDescription {
-        NodeDescription { info: info(id), satellites: heapless::Vec::new() }
+        NodeDescription {
+            info: info(id),
+            satellites: heapless::Vec::new(),
+        }
     }
 
     fn poll(node: NodeId, priority: Priority, deadline_ms: u64) -> ScheduledRequest {
@@ -660,7 +690,13 @@ mod tests {
         assert!(cache.has_active(node));
         assert_eq!(
             cache.status(node, operation),
-            Some(OperationSnapshot { error: None, cleanup_error: None, id: operation, channel, state: OperationState::Active })
+            Some(OperationSnapshot {
+                error: None,
+                cleanup_error: None,
+                id: operation,
+                channel,
+                state: OperationState::Active
+            })
         );
         cache.terminal(node, operation, channel, OperationState::Completed, 20);
         assert!(!cache.has_active(node));

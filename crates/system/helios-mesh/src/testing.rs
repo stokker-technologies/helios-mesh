@@ -122,7 +122,11 @@ pub fn status(node: NodeId) -> NodeStatus {
 
 #[must_use]
 pub fn info(node: NodeId) -> NodeInfo {
-    NodeInfo { node_type: helios_mesh_protocol::nodes::NodeType::Sidecar, id: node, firmware: FIRMWARE_VERSION }
+    NodeInfo {
+        node_type: helios_mesh_protocol::nodes::NodeType::Sidecar,
+        id: node,
+        firmware: FIRMWARE_VERSION,
+    }
 }
 
 pub fn respond(

@@ -1,0 +1,13 @@
+# ***
+#
+# Helios Mesh
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+# ***
+
+# Templates Are Rendered Before Source Formatting
+exclude = ["**/.*/**"]
+
+[formatting]
+column_width = 140

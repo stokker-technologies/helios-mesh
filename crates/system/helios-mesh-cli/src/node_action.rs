@@ -165,9 +165,18 @@ mod tests {
     #[test]
     fn satellites_render_compactly() {
         let satellites = [
-            SatelliteReport { name: SatelliteName::Radio, state: SatelliteState::Ready },
-            SatelliteReport { name: SatelliteName::DisplayTft, state: SatelliteState::Faulted },
-            SatelliteReport { name: SatelliteName::MotorWing, state: SatelliteState::Absent },
+            SatelliteReport {
+                name: SatelliteName::Radio,
+                state: SatelliteState::Ready,
+            },
+            SatelliteReport {
+                name: SatelliteName::DisplayTft,
+                state: SatelliteState::Faulted,
+            },
+            SatelliteReport {
+                name: SatelliteName::MotorWing,
+                state: SatelliteState::Absent,
+            },
         ];
 
         assert_eq!(satellite_line(&satellites), "satellites: radio=ready display-tft=faulted motor-wing=absent");

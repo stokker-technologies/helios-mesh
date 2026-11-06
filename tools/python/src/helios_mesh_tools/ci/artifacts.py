@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/ci/artifacts.py; sha256:552fb95e5f7c9b8b7aab45a591699e99276ba78ba2ee6e568a182f3c8639f43b
 # ***
 #
 # Helios Mesh
@@ -23,6 +22,7 @@ from pathlib import Path, PurePosixPath
 # Third Party Imports
 # Local Imports
 from ..build.paths import target
+from ..process import spawn_flags
 
 # Type Checking Imports
 
@@ -76,7 +76,7 @@ def pack(directory: Path, archive: Path, patterns: list[str], profile: str, nati
         stdin=sys.stdin,
         stdout=sys.stdout,
         stderr=sys.stderr,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=spawn_flags(),
         check=True,
     )
 
@@ -88,7 +88,7 @@ def extract(directory: Path, archive: Path) -> None:
     with subprocess.Popen(
         ["zstd", "-dc", str(archive)],
         stdout=subprocess.PIPE,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=spawn_flags(),
     ) as decompressor:
         if decompressor.stdout is None:
             raise RuntimeError("artifact decompressor has no output stream")
@@ -102,6 +102,7 @@ def extract(directory: Path, archive: Path) -> None:
         status = decompressor.wait()
         if status:
             raise subprocess.CalledProcessError(status, "zstd")
+    archive.unlink()
 
 
 def main() -> None:
@@ -136,14 +137,14 @@ def _tar() -> str:
         [found, "--version"],
         capture_output=True,
         text=True,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=spawn_flags(),
         check=True,
     ).stdout
     capabilities = subprocess.run(
         [found, "--help"],
         capture_output=True,
         text=True,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=spawn_flags(),
         check=True,
     ).stdout
     if not version.startswith("tar (GNU tar)") or not all(option in capabilities for option in ("--force-local", "--use-compress-program")):

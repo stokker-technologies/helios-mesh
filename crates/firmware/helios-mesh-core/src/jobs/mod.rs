@@ -120,7 +120,9 @@ impl JobStatus {
             channel,
             state,
             error: match self {
-                Self::Finished(JobOutcome { result: Err(JobError::Rejected(error)), .. }) => Some(error),
+                Self::Finished(JobOutcome {
+                    result: Err(JobError::Rejected(error)), ..
+                }) => Some(error),
                 Self::Finished(JobOutcome { result: Err(JobError::Deadline), .. }) => Some(Error::Unavailable),
                 _ => None,
             },

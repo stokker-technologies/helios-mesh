@@ -245,7 +245,12 @@ impl<J: Job<Resources = R> + 'static, R: 'static, const N: usize, const H: usize
             self.storage.queue.try_send((id, job)).map_err(|_| Error::Busy)?;
             state
                 .records
-                .push(Record { id, status: JobStatus::Queued, cancelled: false, observers: 1 })
+                .push(Record {
+                    id,
+                    status: JobStatus::Queued,
+                    cancelled: false,
+                    observers: 1,
+                })
                 .unwrap_or_else(|_| unreachable!("admission reserved history space"));
             Ok(JobOperation { channel: *self, id })
         })
@@ -336,7 +341,10 @@ impl Record {
 
 impl<J: Job<Resources = R> + 'static, R: 'static, const N: usize, const H: usize> JobOperation<J, R, N, H> {
     pub(super) fn into_child(self) -> Child {
-        let child = Child { control: self.channel.storage, id: self.id };
+        let child = Child {
+            control: self.channel.storage,
+            id: self.id,
+        };
         core::mem::forget(self); // Transfer this observer's ownership to Child::drop.
         child
     }
@@ -446,7 +454,10 @@ impl<J: Job<Resources = R> + 'static, R: 'static, const N: usize, const H: usize
         let outcome = {
             let resource = resources.as_mut().expect("unavailable channel rejects admission");
             if let Err(error) = job.initialize(resource) {
-                JobOutcome { result: Err(JobError::Rejected(error)), cleanup: None }
+                JobOutcome {
+                    result: Err(JobError::Rejected(error)),
+                    cleanup: None,
+                }
             } else if self.cancel.signaled() {
                 cancelled_outcome()
             } else {
@@ -509,7 +520,10 @@ impl<J: Job<Resources = R> + 'static, R: 'static, const N: usize, const H: usize
 /* === Private Functions === */
 
 fn cancelled_outcome() -> JobOutcome {
-    JobOutcome { result: Err(JobError::Cancelled), cleanup: None }
+    JobOutcome {
+        result: Err(JobError::Cancelled),
+        cleanup: None,
+    }
 }
 
 /* === Tests === */

@@ -116,7 +116,12 @@ where
     C: InputPin,
 {
     pub const fn new(i2c: I2C, button_a: A, button_c: C) -> Self {
-        Self { i2c, button_a, button_c, frame: Frame::new() }
+        Self {
+            i2c,
+            button_a,
+            button_c,
+            frame: Frame::new(),
+        }
     }
 
     pub async fn run(mut self, snapshots: SnapshotReceiver) -> ! {
@@ -145,7 +150,12 @@ where
             band_height: HEIGHT,
             title_font: &FONT_5X7,
             body_font: &FONT_5X7,
-            palette: Palette { background: BinaryColor::Off, foreground: BinaryColor::On, muted: BinaryColor::On, accent: BinaryColor::On },
+            palette: Palette {
+                background: BinaryColor::Off,
+                foreground: BinaryColor::On,
+                muted: BinaryColor::On,
+                accent: BinaryColor::On,
+            },
             margin: 1,
             header_height: 8,
             rows_start: 8,

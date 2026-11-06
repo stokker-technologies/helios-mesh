@@ -1,4 +1,3 @@
-# Rendered by stkr project update from templates/python/test/runners.py; sha256:2cca2c871e8c193096e53b7482070d77e80f831aeef642d2eeab49030a28ef1a
 # ***
 #
 # Helios Mesh

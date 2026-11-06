@@ -563,7 +563,7 @@ See [Request Pipeline](#request-pipeline) for ordering.
    takes each resource once. Register the firmware binary and its build artifact.
 5. Add the typed host wrapper to `helios_mesh`, wire it into `ConnectedNode`, then add
    the Python wrapper, exports, and stubs. Closed enums make missing match arms
-   visible during compilation. Register structural catalog paths in `stkr.toml`.
+   visible during compilation. Register structural catalog paths in `tools/project.toml`.
 
 The Rust catalogs contain registrations; behavior lives in added sibling files.
 There are no TOML node, request, response, job, or wing data catalogs. Forks must
