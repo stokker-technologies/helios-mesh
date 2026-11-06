@@ -13,6 +13,7 @@
 
 mod boot;
 mod jobs;
+mod mesh;
 mod scoped;
 
 /* === Re-Exports === */

@@ -812,6 +812,49 @@ Because the journal is RAM-only, **capture it before power-cycling a node**.
 A journal that would have explained a failure is gone the moment the board
 resets -- there is no persistent journal to reconstruct after the fact.
 
+### Multi-Node Bench
+
+Use matching wire-v14 firmware and distinct node IDs. Start with one Gateway and
+one leaf, then repeat with two and three leaves, powering leaves together and
+adding one while traffic is active. First repeat the application's immediate
+`connect` / `remote` / typed-handle conversion, recording elapsed time, destination,
+and the exact error; then alternate read-only `describe` calls across all IDs.
+Repeat after enrollment settles so startup and steady-state failures are distinct.
+
+Capture these commands before rebooting; select the Gateway explicitly when
+several boards are attached over USB:
+
+```sh
+mise run dev:cli -- --device <gateway-id> nodes
+mise run dev:cli -- --device <gateway-id> diagnostics
+mise run dev:cli -- --device <gateway-id> events
+mise run dev:cli -- --device <gateway-id> record gateway.jsonl
+mise run dev:cli -- --device <gateway-id> --node <leaf-id> describe
+```
+
+Stop recording with Ctrl-C. Capture each leaf's `describe`, `diagnostics`, and
+`events` directly over USB (`--device <leaf-id>`) as well, so failed radio reads do
+not hide leaf evidence. Keep firmware revisions, IDs, boot order, board count,
+distances, antennas, and any second Gateway in the report. The 64-entry journals
+wrap quickly: collect leaf evidence promptly and record Gateway events throughout.
+Use one owner per USB port; stop the application before a CLI opens the same port.
+
+Correlate `MeshTransmit`, `RequestRetried`, and `MeshRoundTrip` at the Gateway with
+`MeshRequestReceived` and `MeshResponseSent` at each leaf by peer and request ID.
+A Gateway transmit without a leaf receive narrows the fault to delivery/receive;
+a leaf response without a Gateway round trip narrows it to the return path.
+Local timestamps have different boot origins. Silence alone cannot distinguish
+RF loss, collision, dispatcher delay, and a reset.
+
+Every leaf, including enrolled leaves, replies to broadcast discovery after a
+0-500 ms deterministic jitter that changes with the sweep request ID. The Gateway
+collects for 650 ms; search sweeps are two seconds apart, settling to sixty seconds
+after the thirty-second enrollment window. This is contention avoidance, not
+allocated TDMA slots or carrier sensing. Overlapping transmissions can still lose
+replies. Only the bench can establish collision rates, near/far capture, radio
+turnaround, real dispatcher latency, and whether the reported field refusal has
+the malformed-packet signature. Follow with the existing ten-minute soak below.
+
 ### Flashing Across A Protocol Bump
 
 `mise run build --profile release` produces ELFs; `mise run package --profile release`

@@ -148,6 +148,8 @@ where
             }
 
             match self.receive_window(receive_symbols(remaining)).await {
+                // A Malformed Frame Costs One Packet, Not The Remaining Receive Budget.
+                Err(Error::Packet) => {}
                 Err(Error::Timeout) if Instant::now() < deadline => {}
                 result => return result,
             }
