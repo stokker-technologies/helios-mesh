@@ -184,7 +184,7 @@ env.CARGO_INCREMENTAL = "0"
 usage = 'flag "--profile <profile>" default="dev"'
 run = [
   "uv run --locked --project tools/python python -m helios_mesh_tools.test.archive --profile {{usage.profile}} --install-wheels",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run coverage --language python --profile {{usage.profile}} --project crates/system/helios-mesh-python -- --cov-reset --cov=helios_mesh",
+  "uv run --locked --project tools/python --group test python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.test.run coverage --language python --profile {{usage.profile}} --project crates/system/helios-mesh-python -- --cov-reset --cov=helios_mesh",
 ]
 
 [tasks."test:rust"]
