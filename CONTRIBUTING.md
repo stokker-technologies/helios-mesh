@@ -71,7 +71,7 @@ JUnit reports, including on failure, for seven days.
 Linux and Windows native checks are both required. Hardware tests and
 firmware flashing require an explicit decision and suitable physical setup.
 
-## Tests And Checks
+## Tests and Checks
 
 After source closure, run `mise run check` and targeted deterministic checks of changed paths.
 `mise run test:python:integration` checks repository automation. Use `mise run build:rust:focused -- test <Cargo arguments> -- <test filter>` for focused Rust proof.

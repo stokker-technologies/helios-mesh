@@ -6,7 +6,7 @@ lockfile = true
 # === Tools === #
 
 [tools]
-# Languages And Runtimes
+# Languages and Runtimes
 go = "1.27.3"
 node = "26.11.1"
 python = "3.15.0"
@@ -21,12 +21,12 @@ uv = "0.13.0"
 "github:bnjbvr/cargo-machete" = "0.9.2"
 sccache = "0.19.0"
 
-# Formatting And Linting
+# Formatting and Linting
 "aqua:koalaman/shellcheck" = "0.11.0"
 "go:github.com/rhysd/actionlint/cmd/actionlint" = "v1.7.13-0.20260417151945-fd33e9f582a0"
 taplo = "0.10.0"
 
-# Release And Signing
+# Release and Signing
 git-cliff = "2.14.2"
 
 # Project Statistics
