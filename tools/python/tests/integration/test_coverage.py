@@ -6,14 +6,16 @@
 #
 # ***
 
-"""Prove Explicit Coverage Selection Replaces Default Source Roots."""
+"""Prove Coverage Selection And Preserve Runner Diagnostics."""
 
 # === Imports === #
 
 # Standard Library Imports
-import tempfile
+import io
 import sys
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 from xml.etree import ElementTree
@@ -21,7 +23,7 @@ from xml.etree import ElementTree
 # Third Party Imports
 
 # Local Imports
-from helios_mesh_tools.test import report, run
+from helios_mesh_tools.test import policy, report, run
 
 # Type Checking Imports
 
@@ -35,6 +37,40 @@ from helios_mesh_tools.test import report, run
 
 
 class CoverageTests(unittest.TestCase):
+    def test_runner_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "tools").mkdir()
+            (root / "tools/project.toml").write_text("[conventions.testing]\n")
+            scratch = root / "scratch"
+            scratch.mkdir()
+            command = [sys.executable, "-c", "import sys; print('runner output', flush=True); sys.exit('runner error')"]
+            console = io.StringIO()
+            with (
+                patch.object(sys, "stdin", sys.__stdin__),
+                redirect_stdout(console),
+                self.assertRaisesRegex(policy.TestError, "runner exited 1 without a JUnit report"),
+            ):
+                run._lane(
+                    root,
+                    policy.load(root),
+                    "coverage-python",
+                    "coverage",
+                    "python",
+                    ".",
+                    "dev",
+                    command,
+                    root,
+                    None,
+                    scratch / "store/profile/junit.xml",
+                    scratch,
+                    coverage=True,
+                )
+            transcript = report.location(root, "dev", "coverage-python") / "runner.log"
+            self.assertEqual(transcript.read_text(encoding="utf-8"), console.getvalue())
+            self.assertIn("runner output", console.getvalue())
+            self.assertIn("runner error", console.getvalue())
+
     def test_selected_module(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
