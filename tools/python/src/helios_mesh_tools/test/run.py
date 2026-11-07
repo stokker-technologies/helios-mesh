@@ -349,8 +349,9 @@ def _lane(
     coverage: bool = False,
 ) -> dict:
     """Execute a lane command and turn its JUnit report into a lane record."""
+    junit.parent.mkdir(parents=True, exist_ok=True)
     started = time.time()
-    status = _execute(command, cwd, environment)
+    status = _execute(command, cwd, environment, output=junit.parent / "runner.log")
     seconds = time.time() - started
     destination = report.location(directory, profile, key)
     if (
@@ -371,7 +372,7 @@ def _lane(
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(evidence, target)
     if not junit.is_file():
-        raise policy.TestError(f"{key}: the runner exited {status} without a JUnit report")
+        raise policy.TestError(f"{key}: the runner exited {status} without a JUnit report; see {destination / 'runner.log'}")
 
     # Stories, Deadlines And Liveness Overruns
     text = junit.read_text(encoding="utf-8")
@@ -446,8 +447,22 @@ def _console() -> dict:
     }
 
 
-def _execute(command: Sequence[str], cwd: Path, environment: dict[str, str] | None) -> int:
+def _execute(command: Sequence[str], cwd: Path, environment: dict[str, str] | None, *, output: Path | None = None) -> int:
     try:
+        if output is not None:
+            console = _console()
+            console.update(stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            with (
+                output.open("w", encoding="utf-8") as transcript,
+                subprocess.Popen(
+                    list(command), cwd=cwd, env=environment, text=True, encoding="utf-8", errors="replace", **console
+                ) as process,
+            ):
+                assert process.stdout is not None
+                for line in process.stdout:
+                    transcript.write(line)
+                    print(line, end="", flush=True)
+                return process.wait()
         return subprocess.run(list(command), cwd=cwd, env=environment, check=False, **_console()).returncode
     except OSError as error:
         raise policy.TestError(f"{command[0]} is unavailable: {error}") from error
