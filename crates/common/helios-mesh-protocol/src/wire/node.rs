@@ -337,6 +337,12 @@ impl NodeInfo {
     }
 }
 
+impl fmt::Display for FirmwareVersion {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(formatter, "{}.{}.{}", self.major, self.minor, self.patch)
+    }
+}
+
 impl fmt::Display for NodeId {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(formatter)
@@ -412,6 +418,15 @@ mod tests {
             }
             .into()
         );
+    }
+
+    #[test]
+    fn firmware_version_display() {
+        use core::fmt::Write;
+
+        let mut text = heapless::String::<8>::new();
+        write!(text, "{}", FirmwareVersion { major: 1, minor: 4, patch: 2 }).unwrap();
+        assert_eq!(text, "1.4.2");
     }
 
     #[test]

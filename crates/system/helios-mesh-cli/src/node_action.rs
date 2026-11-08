@@ -44,14 +44,7 @@ use helios_mesh::{
 /* === Public Functions === */
 
 pub(crate) fn print_info(info: &NodeInfo) {
-    println!(
-        "node={:06} name={:?} firmware={}.{}.{}",
-        info.id.0,
-        info.label(),
-        info.firmware.major,
-        info.firmware.minor,
-        info.firmware.patch
-    );
+    println!("node={:06} name={:?} firmware={}", info.id.0, info.label(), info.firmware);
 }
 
 pub(crate) async fn describe(node: &NodeHandle) -> Result<()> {
