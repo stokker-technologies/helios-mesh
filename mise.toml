@@ -252,13 +252,6 @@ run_windows = "uv run --locked --project tools/python python -m helios_mesh_tool
 
 # === CI === #
 
-[tasks."ci:simulate"]
-description = "Simulate The Declared CI Graph Locally"
-usage = '''flag "--pipeline <kind>" default=pr
-flag "--platform <platform>"
-flag "--executor <executor>"'''
-run = "uv run --locked --project tools/python python -m helios_mesh_tools.ci.simulate {% if usage.pipeline %}--pipeline {{usage.pipeline}}{% endif %} {% if usage.platform %}--platform {{usage.platform}}{% endif %} {% if usage.executor %}--executor {{usage.executor}}{% endif %}"
-
 # === Release === #
 
 [tasks."release:nightly"]
