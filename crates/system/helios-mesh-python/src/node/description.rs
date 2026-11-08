@@ -74,7 +74,7 @@ impl PyFirmwareVersion {
     }
 
     fn __str__(&self) -> String {
-        format!("{}.{}.{}", self.inner.major, self.inner.minor, self.inner.patch)
+        self.inner.to_string()
     }
 
     fn __repr__(&self) -> String {
@@ -125,14 +125,7 @@ impl PyNodeInfo {
     }
 
     fn __repr__(&self) -> String {
-        format!(
-            "NodeInfo(id=NodeId({}), label={:?}, firmware={}.{}.{})",
-            self.inner.id.0,
-            self.inner.label(),
-            self.inner.firmware.major,
-            self.inner.firmware.minor,
-            self.inner.firmware.patch,
-        )
+        format!("NodeInfo(id=NodeId({}), label={:?}, firmware={})", self.inner.id.0, self.inner.label(), self.inner.firmware)
     }
 }
 
