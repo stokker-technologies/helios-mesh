@@ -87,7 +87,7 @@ run_windows = "powershell -NoProfile -Command \"$files = @(git ls-files -- '*.to
 
 [tasks.lint]
 description = "Lint Every Language"
-depends = ["lint:python"]
+depends = ["lint:python", "lint:rust"]
 
 [tasks."lint:python"]
 description = "Lint Python"
@@ -96,6 +96,10 @@ run = [
   'uv run --locked --project tools/python ty check tools/python',
   'uv run --locked --project tools/python --group test basedpyright --project crates/system/helios-mesh-python/pyproject.toml',
 ]
+
+[tasks."lint:rust"]
+description = "Lint Rust"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.lint.rust"
 
 # === Check === #
 

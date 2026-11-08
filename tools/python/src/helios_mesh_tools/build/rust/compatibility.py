@@ -44,7 +44,8 @@ def main() -> None:
         ["--package", "helios-mesh-nodes", "--bins", "--target", "thumbv6m-none-eabi", "--all-features"],
     ]
     for configuration in configurations:
-        cargo.clippy(ROOT, ["--locked", "--profile", compiler_profile, *configuration])
+        if cargo.focused(ROOT, "check", ["--locked", "--profile", compiler_profile, *configuration]):
+            raise SystemExit("compatibility: a feature combination failed to compile")
 
 
 # === Private Functions === #
