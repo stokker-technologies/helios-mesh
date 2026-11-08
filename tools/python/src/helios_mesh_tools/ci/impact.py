@@ -75,7 +75,9 @@ def select(plan: dict, paths: set[str] | None) -> set[str]:
         return full
     selected = set()
     for path in paths:
-        matching = [rule for rule in plan["rules"] if _matches(rule["include"], path) and not _matches(rule["exclude"], path)]
+        if _matches(plan["protected"], path):
+            return full
+        matching = [rule for rule in plan["rules"] if _matches(rule["only"], path) and not _matches(rule["exclude"], path)]
         if not matching:
             return full
         for rule in matching:
