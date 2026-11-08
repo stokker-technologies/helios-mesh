@@ -3,6 +3,7 @@
 Helios Mesh is a Stokker Technologies Rust and RP2040 firmware project.
 
 - Use repository mise tasks and preserve project-owned automation.
+- Run targeted tasks locally; hosted CI and Nightly provide full validation.
 - Preserve the host contracts in `crates/system/helios-mesh/README.md` and the hardware,
   wiring, and firmware contracts in `crates/firmware/helios-mesh-board-feather-rp2040/README.md`.
 - Preserve wire version 14 and its encoding. Protocol changes require an explicit

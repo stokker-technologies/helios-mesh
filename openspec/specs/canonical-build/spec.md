@@ -64,12 +64,12 @@ Every correctness-test hang guard SHALL be at least 30 seconds, including explic
 - **THEN** extraction drains the decompressor output before closing the pipe and requires its successful exit
 - **AND** a corrupt compressed stream still fails rather than ignoring its nonzero status
 
-### Requirement: Concurrent Local Simulation
+### Requirement: Hosted Full Validation
 
-Each local CI simulation SHALL execute independent jobs concurrently in dependency order without imposing CPU, memory or job-count limits. One full simulation per repository MAY run at a time. Declared platform coverage, artifact dependencies and failure propagation SHALL remain unchanged.
+Contributors SHALL run targeted tasks locally. Hosted CI and Nightly SHALL provide full validation on Linux and Windows.
 
-#### Scenario: Local Graph Execution
+#### Scenario: Candidate Validation
 
-- **WHEN** local simulation validates a candidate
-- **THEN** independent jobs execute concurrently and failed prerequisites block their consumers
-- **AND** the simulator applies no resource allocation flags, worker overrides or memory controls
+- **WHEN** a contributor validates a candidate
+- **THEN** targeted local tasks prove changed behavior
+- **AND** hosted CI and Nightly execute the full declared job graph on the configured native platforms

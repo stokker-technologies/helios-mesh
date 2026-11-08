@@ -75,7 +75,7 @@ firmware flashing require an explicit decision and suitable physical setup.
 
 After source closure, run `mise run check` and targeted deterministic checks of changed paths.
 `mise run test:python:integration` checks repository automation. Use `mise run build:rust:focused -- test <Cargo arguments> -- <test filter>` for focused Rust proof.
-Full local CI simulation is optional unless explicitly required by a release gate; hosted Linux and Windows proof remains authoritative for stable publication.
+Run targeted tasks locally; hosted CI and Nightly provide full validation on Linux and Windows.
 Compile and test tasks may run concurrently and use a capped shared sccache; each checkout retains its own `target/`. No workstation build lock is held.
 
 - [Host Contracts](crates/system/helios-mesh/README.md) — discovery, typed Rust/Python APIs, transport, and operation ownership.
