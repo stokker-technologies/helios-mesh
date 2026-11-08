@@ -1756,6 +1756,7 @@ def docker(
             )
         }
         child.update(
+            MISE_TRUSTED_CONFIG_PATHS="/workspace",
             MISE_DATA_DIR="/cache/mise",
             MISE_CACHE_DIR="/cache/mise-cache",
             MISE_DOWNLOADS_DIR="/cache/downloads",
@@ -1796,7 +1797,9 @@ def docker(
         subprocess.run(
             ["docker", "cp", str(Path(__file__).with_name("environment.py")), name + ":/ci-environment.py"], check=True, capture_output=True
         )
-        status = stream(["docker", "start", "--attach", name], workspace, None, f"unix/{job['key']}", log, job["minutes"] * 60, result)
+        # Docker May Resolve Through A Host Mise Shim Before Entering The Container.
+        host = dict(os.environ, MISE_TRUSTED_CONFIG_PATHS=str(workspace))
+        status = stream(["docker", "start", "--attach", name], workspace, host, f"unix/{job['key']}", log, job["minutes"] * 60, result)
         if status == 0:
             archive = workspace / "simulation-output.tar"
             subprocess.run(
