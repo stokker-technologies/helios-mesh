@@ -2,7 +2,7 @@ name: CI / Nightly
 run-name: Nightly / Validation
 'on':
   schedule:
-  - cron: 0 0 * * *
+  - cron: 0 */4 * * *
   workflow_dispatch: {}
 permissions:
   contents: read
