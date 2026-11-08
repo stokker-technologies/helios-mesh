@@ -10,8 +10,8 @@ After [Quick Start](README.md#quick-start), choose a repository task:
 | Command | Purpose |
 | --- | --- |
 | `mise run check` | Check repository configuration, formatting, dependency hygiene, Python lints and types, and workflow syntax |
-| `mise run build --profile dev` | Build shipping binaries, wheels, and Linux firmware with matching Clippy |
-| `mise run build:rust:tests --profile dev` | Run canonical matched Clippy and build the independent Rust test archive |
+| `mise run build --profile dev` | Build shipping binaries, wheels, and Linux firmware |
+| `mise run build:rust:tests --profile dev` | Build the independent Rust test archive |
 | `mise run check:python:generated --profile dev` | Verify the built wheel against Python stubs |
 | `mise run test` | Run Rust unit, integration, acceptance, and Python acceptance lanes |
 | `mise run package --profile dev` | Assemble existing CLI, wheel, and firmware artifacts |
@@ -41,14 +41,14 @@ console behavior.
 
 Every GitHub CI job uses a platform-matching GitHub-hosted runner. Separate
 Product and Tests Build jobs run in parallel, with independent canonical feature
-sets. Each compilation follows Clippy with matching packages, features, target
-and profile. Tests Build needs no Product outputs; test lanes receive the
-matching archive and Product artifacts they require. Package consumes Product
+sets. Build, test and focused tasks only compile; Clippy runs only in
+`mise run lint:rust`, which Check / Rust calls. Tests Build needs no Product
+outputs; test lanes receive the matching archive and Product artifacts they require. Package consumes Product
 independently of Tests. Linux Product also
 cross-compiles all three shipped RP2040 firmware images.
 
 Product uses Cargo's default `dev` or `release` profile, Bench uses default
-`bench`, and Tests and their matching Clippy use default unoptimized `test`
+`bench`, and Tests use default unoptimized `test`
 in both graph profiles. The requested graph profile still names the artifacts
 and reports. Workspace and package compiler-profile overrides are absent.
 

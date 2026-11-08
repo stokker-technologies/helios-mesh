@@ -20,7 +20,7 @@ from pathlib import Path
 # Third Party Imports
 # Local Imports
 from .. import nextest, policy
-from ...build import cargo, paths
+from ...build import paths, storage
 
 # Type Checking Imports
 
@@ -47,7 +47,7 @@ def main() -> None:
 def execute(profile: str) -> None:
     compiler_profile = "test"
     arguments = ["--locked", "--package", "helios-mesh", "--test", "transport", "--features", "testing"]
-    cargo.clippy(ROOT, [*arguments, "--profile", compiler_profile])
+    storage.preflight(ROOT)
     output = paths.output(ROOT, "tests", profile) / "extended-rust"
     output.mkdir(parents=True, exist_ok=True)
     configuration = output / "nextest.toml"

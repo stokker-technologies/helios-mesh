@@ -17,7 +17,7 @@ import os
 import subprocess
 import sys
 import time
-from collections.abc import Generator, Iterator, Mapping, Sequence
+from collections.abc import Generator, Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -39,17 +39,14 @@ from . import paths, storage
 # === Public Functions === #
 
 
-def clippy(directory: Path, arguments: Sequence[str], *, environment: Mapping[str, str] | None = None) -> None:
+def clippy(directory: Path, arguments: Sequence[str]) -> None:
+    """Lint One Selection For lint:rust; Build, Test And Focused Tasks Never Call It."""
     storage.preflight(directory)
-    # Callers Whose lint:rust Already Covers These Selections Skip The Repeat With CHECK_CLIPPY=1.
-    if os.environ.get("CHECK_CLIPPY") == "1":
-        return
-    selected = dict(os.environ if environment is None else environment, CARGO_BUILD_WARNINGS="deny")
     with _phase("Clippy"):
         subprocess.run(
             ["cargo", "clippy", *arguments],
             cwd=directory,
-            env=selected,
+            env=dict(os.environ, CARGO_BUILD_WARNINGS="deny"),
             stdin=sys.stdin,
             stdout=sys.stdout,
             stderr=sys.stderr,
@@ -68,10 +65,7 @@ def archive(directory: Path, profile: str, extra: Sequence[str] = ()) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.unlink(missing_ok=True)
     compiler_profile = "test"
-    clippy(
-        directory,
-        ["--locked", "--workspace", "--tests", "--profile", compiler_profile, *extra],
-    )
+    storage.preflight(directory)
     command = [
         "cargo",
         "nextest",
@@ -111,8 +105,8 @@ def archive(directory: Path, profile: str, extra: Sequence[str] = ()) -> Path:
 
 
 def focused(directory: Path, operation: str, arguments: Sequence[str]) -> int:
-    if operation not in ("build", "check", "test", "clippy", "run"):
-        raise ValueError("focused compilation requires build, check, test, clippy or run")
+    if operation not in ("build", "check", "test", "run"):
+        raise ValueError("focused compilation requires build, check, test or run")
     profile = None
     compiler_arguments = list(arguments[: arguments.index("--")]) if "--" in arguments else list(arguments)
     if any(argument == "--target-dir" or argument.startswith("--target-dir=") for argument in compiler_arguments):
@@ -126,10 +120,7 @@ def focused(directory: Path, operation: str, arguments: Sequence[str]) -> int:
         raise ValueError("focused compilation requires a canonical Cargo profile")
     if operation == "test" and ("--release" in compiler_arguments or profile not in (None, "test")):
         raise ValueError("focused tests use Cargo's default test profile")
-    if operation in ("build", "test", "run"):
-        clippy(directory, [argument for argument in compiler_arguments if argument not in ("--no-run", "--no-fail-fast")])
-    else:
-        storage.preflight(directory)
+    storage.preflight(directory)
     return subprocess.run(
         ["cargo", operation, *arguments],
         cwd=directory,
@@ -186,7 +177,7 @@ def artifacts(directory: Path, messages: Path) -> Iterator[dict[str, Any]]:
 def main() -> None:
     if sys.argv[1:2] == ["focused"]:
         parser = argparse.ArgumentParser(description="Compile An Explicit Local Rust Selection")
-        parser.add_argument("operation", choices=("build", "check", "test", "clippy"))
+        parser.add_argument("operation", choices=("build", "check", "test"))
         parser.add_argument("arguments", nargs=argparse.REMAINDER)
         options = parser.parse_args(sys.argv[2:])
         raise SystemExit(focused(Path.cwd(), options.operation, options.arguments))
@@ -197,11 +188,7 @@ def main() -> None:
         extra = extra[1:] if extra[:1] == ["--"] else extra
         archive(Path.cwd(), options.profile, extra)
         return
-    parser = argparse.ArgumentParser(description="Validate A Declared Cargo Target In Build")
-    parser.add_argument("arguments", nargs=argparse.REMAINDER)
-    options = parser.parse_args()
-    arguments = options.arguments[1:] if options.arguments[:1] == ["--"] else options.arguments
-    clippy(Path.cwd(), arguments)
+    raise SystemExit("cargo: choose the focused or archive command")
 
 
 # === Private Functions === #

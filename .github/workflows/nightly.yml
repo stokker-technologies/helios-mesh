@@ -147,7 +147,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: rust,github:bnjbvr/cargo-machete
+      MISE_ENABLE_TOOLS: python,rust,uv,github:bnjbvr/cargo-machete
       COMPILER_CACHE_BACKEND: disk
       COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
@@ -172,6 +172,7 @@ jobs:
         bootstrap: '[]'
         free-disk: 'true'
     - run: mise run check:rust
+    - run: mise run lint:rust
     - uses: ./.github/actions/save-caches
       if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
       with:

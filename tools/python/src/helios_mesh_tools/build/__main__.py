@@ -18,13 +18,12 @@ import platform
 import shutil
 import subprocess
 import sys
-import tomllib
 from pathlib import Path
 
 # Third Party Imports
 # Local Imports
 from .. import temporary
-from . import cargo, paths
+from . import cargo, paths, storage
 
 # Type Checking Imports
 
@@ -52,6 +51,7 @@ def main() -> None:
         parser.error("hardware diagnostics use the development profile")
 
     environment = dict(os.environ, CARGO_BUILD_WARNINGS="deny")
+    storage.preflight(ROOT)
 
     destination = paths.output(ROOT, "build", profile)
     messages = destination / "product/compiler.json"
@@ -63,7 +63,6 @@ def main() -> None:
         "--package",
         "helios-mesh-cli",
     ]
-    cargo.clippy(ROOT, arguments, environment=environment)
     command = ["cargo", "build", *arguments, "--message-format=json-render-diagnostics"]
     with messages.open("w", encoding="utf-8") as output:
         subprocess.run(
@@ -103,12 +102,6 @@ def main() -> None:
         "--out",
         str(wheels),
     ]
-    with (ROOT / "crates/system/helios-mesh-python/pyproject.toml").open("rb") as source:
-        features = tomllib.load(source)["tool"]["maturin"]["features"]
-    arguments = ["--locked", "--profile", profile, "--manifest-path", "crates/system/helios-mesh-python/Cargo.toml", "--lib"]
-    if features:
-        arguments.extend(("--features", ",".join(features)))
-    cargo.clippy(ROOT, arguments, environment=environment)
     subprocess.run(
         command,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
@@ -134,7 +127,6 @@ def main() -> None:
         ]
         if options.hardware_unknown:
             arguments[-1] = "firmware,hardware-unknown"
-        cargo.clippy(ROOT, arguments, environment=environment)
         command = ["cargo", "build", *arguments]
         subprocess.run(
             command,
