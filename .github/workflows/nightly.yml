@@ -12,24 +12,41 @@ env:
   CARGO_INCREMENTAL: '0'
   CARGO_HOME: ${{ github.workspace }}/.cache/cargo
   UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+concurrency:
+  group: nightly
+  cancel-in-progress: false
 jobs:
   freshness:
     name: Plan / Freshness
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     outputs:
       build: ${{ steps.freshness.outputs.build }}
     steps:
     - id: freshness
+      name: Skip an Unchanged or Duplicate Nightly
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-      run: 'build=true
-
+      run: |-
+        build=true
         published="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/nightly" --jq .object.sha 2>/dev/null || true)"
-
-        if [ "$published" = "$GITHUB_SHA" ]; then build=false; fi
-
-        echo "build=$build" >> "$GITHUB_OUTPUT"'
+        if [ "$published" = "$GITHUB_SHA" ]; then
+          build=false
+          echo "::notice::dev $GITHUB_SHA is already the published nightly; skipping the run"
+        fi
+        for status in in_progress queued; do
+          duplicate="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/workflows/nightly.yml/runs?head_sha=$GITHUB_SHA&status=$status" \
+            --jq ".workflow_runs[] | select(.id != $GITHUB_RUN_ID) | .html_url")"
+          if [ -n "$duplicate" ]; then
+            build=false
+            echo "::notice::dev $GITHUB_SHA has a $status Nightly; deferring to $duplicate"
+            break
+          fi
+        done
+        echo "build=$build" >> "$GITHUB_OUTPUT"
   source:
     name: Check / Repository
     runs-on: ubuntu-latest
@@ -84,8 +101,8 @@ jobs:
     needs:
     - freshness
     concurrency:
-      group: nightly-source
-      cancel-in-progress: true
+      group: nightly-source-${{ github.run_id }}
+      cancel-in-progress: false
   check_python:
     name: Check / Python
     runs-on: ubuntu-latest
@@ -140,8 +157,8 @@ jobs:
     needs:
     - freshness
     concurrency:
-      group: nightly-check_python
-      cancel-in-progress: true
+      group: nightly-check_python-${{ github.run_id }}
+      cancel-in-progress: false
   check_rust:
     name: Check / Rust (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
@@ -205,8 +222,8 @@ jobs:
     needs:
     - freshness
     concurrency:
-      group: nightly-check_rust-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-check_rust-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   build:
     name: Build / Product (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
@@ -290,8 +307,8 @@ jobs:
     needs:
     - freshness
     concurrency:
-      group: nightly-build-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-build-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   build_tests:
     name: Build / Tests (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
@@ -366,8 +383,8 @@ jobs:
     needs:
     - freshness
     concurrency:
-      group: nightly-build_tests-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-build_tests-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   generated:
     name: ${{ matrix.display }}
     runs-on: ${{ matrix.runner }}
@@ -440,8 +457,8 @@ jobs:
     - build
     if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
     concurrency:
-      group: nightly-generated-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-generated-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   publish:
     name: Nightly / Publish
     runs-on: ubuntu-latest
@@ -530,7 +547,7 @@ jobs:
       contents: write
       actions: read
     concurrency:
-      group: nightly-publication
+      group: nightly-publication-${{ github.run_id }}
       cancel-in-progress: false
   report:
     name: Nightly / Report
@@ -658,8 +675,8 @@ jobs:
     - freshness
     if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
     concurrency:
-      group: nightly-package_rust-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-package_rust-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   package_python:
     name: ${{ matrix.display }}
     runs-on: ${{ matrix.runner }}
@@ -742,8 +759,8 @@ jobs:
     - freshness
     if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
     concurrency:
-      group: nightly-package_python-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-package_python-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   coverage_rust:
     name: Test / Rust / Coverage
     runs-on: ubuntu-latest
@@ -814,8 +831,8 @@ jobs:
     - build
     - build_tests
     concurrency:
-      group: nightly-coverage_rust
-      cancel-in-progress: true
+      group: nightly-coverage_rust-${{ github.run_id }}
+      cancel-in-progress: false
   coverage_python:
     name: Test / Python / Coverage
     runs-on: ubuntu-latest
@@ -876,8 +893,8 @@ jobs:
     needs:
     - build
     concurrency:
-      group: nightly-coverage_python
-      cancel-in-progress: true
+      group: nightly-coverage_python-${{ github.run_id }}
+      cancel-in-progress: false
   tests_rust:
     name: Validate / ${{ matrix.display }} / Rust (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
@@ -974,8 +991,8 @@ jobs:
     - build_tests
     if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
     concurrency:
-      group: nightly-tests_rust-${{ matrix.platform }}-${{ matrix.layer }}
-      cancel-in-progress: true
+      group: nightly-tests_rust-${{ matrix.platform }}-${{ matrix.layer }}-${{ github.run_id }}
+      cancel-in-progress: false
   tests_python:
     name: ${{ matrix.display }}
     runs-on: ${{ matrix.runner }}
@@ -1054,8 +1071,8 @@ jobs:
     - build
     if: github.ref == 'refs/heads/dev' && needs.freshness.outputs.build == 'true'
     concurrency:
-      group: nightly-tests_python-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-tests_python-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
   tests_tooling:
     name: ${{ matrix.display }}
     runs-on: ${{ matrix.runner }}
@@ -1126,5 +1143,5 @@ jobs:
     needs:
     - freshness
     concurrency:
-      group: nightly-tests_tooling-${{ matrix.platform }}
-      cancel-in-progress: true
+      group: nightly-tests_tooling-${{ matrix.platform }}-${{ github.run_id }}
+      cancel-in-progress: false
