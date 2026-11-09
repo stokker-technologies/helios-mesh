@@ -78,7 +78,8 @@ mise run dev:cli -- --node <sidecar-id> status
 mise run dev:cli -- --node <sidecar-id> gpio-pulse 1 1000
 ```
 
-The Sidecar times the pulse locally and drives the pin low during cleanup.
+The Sidecar times an active-low pulse locally: it drives the pin low for the
+duration, then cleanup releases it to high impedance with a pulled-up high idle.
 Once admitted, the job continues if the host disconnects. GPIO 1 is D11 on
 the built-in Sidecar image; check the
 [hardware and GPIO limits](crates/firmware/helios-mesh-board-feather-rp2040/README.md#hardware-and-gpio-safety)

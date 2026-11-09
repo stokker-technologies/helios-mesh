@@ -48,7 +48,7 @@ mod usb;
 /* === Re-Exports === */
 
 pub use error::{Error, Result};
-pub use hardware::{Auxiliary, Drive, Hardware, HardwareError, ValidatedHardware};
+pub use hardware::{Auxiliary, Drive, Hardware, HardwareError, Pull, ValidatedHardware};
 pub use wings::Wing;
 
 #[cfg(target_arch = "arm")]

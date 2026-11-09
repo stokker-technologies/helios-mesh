@@ -20,7 +20,7 @@
 // Third Party Imports
 
 // Local Imports
-use helios_mesh::{Job, JobContext, JobError, RequestError, AuxiliaryPin, AuxGpioMode, Duration};
+use helios_mesh::{AuxiliaryPin, Duration, Job, JobContext, JobError, RequestError};
 
 /* === Constants === */
 
@@ -30,7 +30,9 @@ use helios_mesh::{Job, JobContext, JobError, RequestError, AuxiliaryPin, AuxGpio
 
 /* === Structs === */
 
-pub struct Pulse { duration_ms: u32 }
+pub struct Pulse {
+    duration_ms: u32,
+}
 
 /* === Enums === */
 
@@ -39,8 +41,10 @@ pub struct Pulse { duration_ms: u32 }
 /* === Implementations === */
 
 impl Pulse {
-        pub fn new(duration_ms: u32) -> Result<Self, RequestError> {
-        if !(1..=60_000).contains(&duration_ms) { return Err(RequestError::InvalidInput); }
+    pub fn new(duration_ms: u32) -> Result<Self, RequestError> {
+        if !(1..=60_000).contains(&duration_ms) {
+            return Err(RequestError::InvalidInput);
+        }
         Ok(Self { duration_ms })
     }
 }
@@ -53,13 +57,17 @@ impl Job for Pulse {
     }
 
     async fn run(&mut self, pin: &mut AuxiliaryPin, cx: &mut JobContext) -> Result<(), RequestError> {
-        pin.set(AuxGpioMode::DriveHigh)?;
+        let (active, _) = pin.allocation().pulse_modes();
+        pin.set(active)?;
         cx.sleep(Duration::from_millis(u64::from(self.duration_ms))).await;
         Ok(())
     }
 
-    fn cleanup(&mut self, pin: &mut AuxiliaryPin, _outcome: &Result<(), JobError>) -> impl core::future::Future<Output = Result<(), RequestError>> {
-        core::future::poll_fn(|_| core::task::Poll::Ready(pin.set(AuxGpioMode::DriveLow)))
+    fn cleanup(
+        &mut self, pin: &mut AuxiliaryPin, _outcome: &Result<(), JobError>,
+    ) -> impl core::future::Future<Output = Result<(), RequestError>> {
+        let (_, idle) = pin.allocation().pulse_modes();
+        core::future::poll_fn(move |_| core::task::Poll::Ready(pin.set(idle)))
     }
 }
 

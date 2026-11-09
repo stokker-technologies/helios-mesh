@@ -140,9 +140,13 @@ fn idle(pin: Peri<'static, impl Pin>, number: u8, plan: &ValidatedHardware) -> M
     pin.set_as_input();
     pin.set_drive_strength(embassy_rp::gpio::Drive::_2mA);
     pin.set_pull(Pull::None);
-    if plan.idle(number) == Idle::PullUp {
-        pin.set_high();
-        pin.set_pull(Pull::Up);
+    match plan.idle(number) {
+        Idle::PullUp => {
+            pin.set_high();
+            pin.set_pull(Pull::Up);
+        }
+        Idle::PullDown => pin.set_pull(Pull::Down),
+        Idle::HighImpedance => {}
     }
     ManuallyDrop::new(pin)
 }

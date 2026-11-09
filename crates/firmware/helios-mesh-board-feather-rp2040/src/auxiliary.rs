@@ -20,7 +20,7 @@
 // Third Party Imports
 
 // Local Imports
-use crate::hardware::{AUXILIARY_PINS, ValidatedHardware, authorize};
+use crate::hardware::{AUXILIARY_PINS, Auxiliary, Drive, Pull, ValidatedHardware, authorize};
 use helios_mesh_protocol::node::{AuxGpioAccess, AuxGpioError, AuxGpioId, AuxGpioMode};
 
 /* === Constants === */
@@ -36,6 +36,7 @@ pub(crate) struct AuxiliaryGpio<P> {
     modes: [AuxGpioMode; 4],
     access: [AuxGpioAccess; 4],
     claimed: [bool; 4],
+    allocations: [Option<Auxiliary>; 4],
 }
 
 /* === Enums === */
@@ -43,6 +44,7 @@ pub(crate) struct AuxiliaryGpio<P> {
 /* === Traits === */
 
 pub(crate) trait Pin {
+    fn configure(&mut self, drive: Drive, pull: Pull);
     fn set_mode(&mut self, mode: AuxGpioMode);
 }
 
@@ -52,15 +54,30 @@ impl<P: Pin> AuxiliaryGpio<P> {
     pub(crate) fn new(hardware: ValidatedHardware, mut claim: impl FnMut(u8) -> P) -> Self {
         let access = hardware.auxiliary_access();
         let modes = core::array::from_fn(|index| hardware.initial(index));
+        let allocations = hardware.hardware.auxiliary_allocations();
         let pins = core::array::from_fn(|index| match access[index] {
             AuxGpioAccess::InputOnly | AuxGpioAccess::PushPull => {
                 let mut pin = claim(AUXILIARY_PINS[index]);
+                let (drive, pull) = match allocations[index] {
+                    Some(Auxiliary::PushPull { drive, pull, .. }) => (drive, pull),
+                    _ => (Drive::Ma2, Pull::None),
+                };
+                pin.configure(drive, pull);
                 pin.set_mode(modes[index]);
                 Some(pin)
             }
             AuxGpioAccess::NotAllocated | AuxGpioAccess::Reserved => None,
         });
-        Self { pins, modes, access, claimed: [false; 4] }
+        Self {
+            pins,
+            modes,
+            access,
+            claimed: [false; 4],
+            allocations,
+        }
+    }
+    pub(crate) fn allocation(&self, id: AuxGpioId) -> Auxiliary {
+        self.allocations[usize::from(id.0 - 1)].expect("allocated pad ownership")
     }
     pub(crate) fn configure(&mut self, id: AuxGpioId, mode: AuxGpioMode) -> Result<(), AuxGpioError> {
         let index = authorize(self.access, id, mode)?;
@@ -97,6 +114,7 @@ mod tests {
     use crate::{Auxiliary, Drive, Hardware};
     struct FakePin;
     impl Pin for FakePin {
+        fn configure(&mut self, _: Drive, _: Pull) {}
         fn set_mode(&mut self, _: AuxGpioMode) {}
     }
     #[test]
@@ -107,6 +125,7 @@ mod tests {
                 Auxiliary::PushPull {
                     initial: AuxGpioMode::HighImpedance,
                     drive: Drive::Ma2,
+                    pull: Pull::None,
                 },
             )
             .validate()
@@ -127,6 +146,7 @@ mod tests {
         use core::cell::Cell;
         struct Spy<'a>(&'a Cell<usize>);
         impl Pin for Spy<'_> {
+            fn configure(&mut self, _: Drive, _: Pull) {}
             fn set_mode(&mut self, _: AuxGpioMode) {
                 self.0.set(self.0.get() + 1);
             }
@@ -146,5 +166,65 @@ mod tests {
         assert_eq!(pins.claim(AuxGpioId(1)), Err(AuxGpioError::Reserved));
         assert_eq!(changes.get(), 1);
         assert_eq!(pins.modes(), [AuxGpioMode::HighImpedance; 4]);
+    }
+}
+
+#[cfg(test)]
+mod pulse_tests {
+    use super::*;
+    use crate::Hardware;
+    use core::cell::RefCell;
+
+    #[derive(Default)]
+    struct State {
+        electrical: Option<(Drive, Pull)>,
+        modes: [Option<AuxGpioMode>; 3],
+        changes: usize,
+    }
+
+    struct Spy<'a>(&'a RefCell<State>);
+
+    impl Pin for Spy<'_> {
+        fn configure(&mut self, drive: Drive, pull: Pull) {
+            self.0.borrow_mut().electrical = Some((drive, pull));
+        }
+        fn set_mode(&mut self, mode: AuxGpioMode) {
+            let mut state = self.0.borrow_mut();
+            let index = state.changes;
+            state.modes[index] = Some(mode);
+            state.changes += 1;
+        }
+    }
+
+    #[test]
+    fn allocation_configures_pad_and_pulse_transitions() {
+        for pull in [Pull::Up, Pull::None, Pull::Down] {
+            let state = RefCell::new(State::default());
+            let allocation = Auxiliary::PushPull {
+                initial: AuxGpioMode::HighImpedance,
+                drive: Drive::Ma12,
+                pull,
+            };
+            let hardware = Hardware::new().auxiliary(AuxGpioId(1), allocation).validate().unwrap();
+            let expected_idle = match pull {
+                Pull::Up => crate::hardware::Idle::PullUp,
+                Pull::Down => crate::hardware::Idle::PullDown,
+                Pull::None => crate::hardware::Idle::HighImpedance,
+            };
+            assert_eq!(hardware.idle(11), expected_idle);
+            let mut pins = AuxiliaryGpio::new(hardware, |_| Spy(&state));
+            pins.claim(AuxGpioId(1)).unwrap();
+            let (active, idle) = pins.allocation(AuxGpioId(1)).pulse_modes();
+            pins.configure(AuxGpioId(1), active).unwrap();
+            pins.configure(AuxGpioId(1), idle).unwrap();
+            let state = state.borrow();
+            assert_eq!(state.electrical, Some((Drive::Ma12, pull)));
+            let expected = match pull {
+                Pull::Up => [AuxGpioMode::HighImpedance, AuxGpioMode::DriveLow, AuxGpioMode::HighImpedance],
+                Pull::None | Pull::Down => [AuxGpioMode::HighImpedance, AuxGpioMode::DriveHigh, AuxGpioMode::DriveLow],
+            };
+            assert_eq!(state.modes, expected.map(Some));
+            assert_eq!(state.changes, 3);
+        }
     }
 }

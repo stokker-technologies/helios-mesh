@@ -69,13 +69,23 @@ pub(crate) struct Reservation {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Drive {
     Ma2,
+    Ma4,
+    Ma8,
+    Ma12,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Pull {
+    None,
+    Up,
+    Down,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Auxiliary {
     InputOnly,
 
-    PushPull { initial: AuxGpioMode, drive: Drive },
+    PushPull { initial: AuxGpioMode, drive: Drive, pull: Pull },
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, thiserror::Error)]
@@ -104,11 +114,22 @@ pub enum HardwareError {
 pub(crate) enum Idle {
     HighImpedance,
     PullUp,
+    PullDown,
 }
 
 /* === Traits === */
 
 /* === Implementations === */
+
+impl Auxiliary {
+    #[must_use]
+    pub const fn pulse_modes(self) -> (AuxGpioMode, AuxGpioMode) {
+        match self {
+            Self::PushPull { pull: Pull::Up, .. } => (AuxGpioMode::DriveLow, AuxGpioMode::HighImpedance),
+            _ => (AuxGpioMode::DriveHigh, AuxGpioMode::DriveLow),
+        }
+    }
+}
 
 impl Default for Hardware {
     fn default() -> Self {
@@ -117,6 +138,11 @@ impl Default for Hardware {
 }
 
 impl Hardware {
+    #[cfg(any(target_arch = "arm", test))]
+    pub(crate) const fn auxiliary_allocations(&self) -> [Option<Auxiliary>; 4] {
+        self.auxiliary
+    }
+
     #[must_use]
     pub const fn new() -> Self {
         Self {
@@ -200,7 +226,12 @@ impl Hardware {
                 access[index] = AuxGpioAccess::Reserved;
             }
             if let Some(allocation) = self.auxiliary[index] {
-                reservation.pin(pin, Idle::HighImpedance)?;
+                let idle = match allocation {
+                    Auxiliary::PushPull { pull: Pull::Up, .. } => Idle::PullUp,
+                    Auxiliary::PushPull { pull: Pull::Down, .. } => Idle::PullDown,
+                    _ => Idle::HighImpedance,
+                };
+                reservation.pin(pin, idle)?;
                 access[index] = match allocation {
                     Auxiliary::InputOnly => AuxGpioAccess::InputOnly,
                     Auxiliary::PushPull { .. } => AuxGpioAccess::PushPull,
@@ -322,6 +353,7 @@ mod tests {
         Auxiliary::PushPull {
             initial: AuxGpioMode::HighImpedance,
             drive: Drive::Ma2,
+            pull: Pull::None,
         }
     }
 
