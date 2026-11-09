@@ -72,6 +72,11 @@ impl State {
 }
 
 impl AuxiliaryPin {
+    #[must_use]
+    pub fn allocation(&self) -> crate::Auxiliary {
+        self.state.with(|pins| pins.allocation(self.id))
+    }
+
     pub fn set(&mut self, mode: AuxGpioMode) -> Result<(), Error> {
         self.state.with(|pins| pins.configure(self.id, mode)).map_err(|reason| Error::AuxGpio { gpio: self.id, reason })
     }

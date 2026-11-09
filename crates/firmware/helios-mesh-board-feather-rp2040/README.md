@@ -9,16 +9,17 @@ stack or prove that its other pins are compatible.
 
 ### Built-In Images
 
-| Image                             | Declared hardware                 | Auxiliary outputs          |
-| --------------------------------- | --------------------------------- | -------------------------- |
-| Gateway                           | Onboard radio, TFT FeatherWing V2 | None                       |
-| Rotator                           | Onboard radio, Motor FeatherWing  | None                       |
-| Sidecar                           | Onboard radio, OLED FeatherWing   | GPIO 1 = D11, GPIO 2 = D12 |
-| Any image with `hardware-unknown` | USB diagnostics only              | None                       |
+| Image | Declared Hardware | Auxiliary Outputs | Drive | Pull | Idle Level | Pulse Polarity |
+| --- | --- | --- | --- | --- | --- | --- |
+| Gateway | Onboard radio, TFT FeatherWing V2 | None | — | — | — | — |
+| Rotator | Onboard radio, Motor FeatherWing | None | — | — | — | — |
+| Sidecar | Onboard radio, OLED FeatherWing | GPIO 1 = D11, GPIO 2 = D12 | 12 mA | Up | High (high impedance with pull-up) | Active low, then release |
+| Any image with `hardware-unknown` | USB diagnostics only | None | — | — | — | — |
 
-Sidecar's two pins start high impedance with no pulls. Commands can select
-high impedance, push-pull high or push-pull low. Output drive strength is 2 mA;
-this setting is not an overcurrent cutoff. IDs 3 and 4 address D24 and D25 but
+Sidecar's two pins start high impedance with pull-ups. Commands can select
+high impedance, push-pull high or push-pull low while retaining the pull-up.
+Output drive strength is the RP2040 maximum of 12 mA; this setting is not an
+overcurrent cutoff. IDs 3 and 4 address D24 and D25 but
 are not allocated by any built-in image. Gateway and Rotator reject every
 auxiliary GPIO command. A node's status reports `auxiliary_gpio_access`
 separately from `auxiliary_gpio`, so an unavailable pin is never presented as
@@ -58,7 +59,8 @@ let hardware = board::Hardware::new()
     .tft(board::wings::TftV2::standard())
     .auxiliary(AuxGpioId(1), board::Auxiliary::PushPull {
         initial: AuxGpioMode::HighImpedance,
-        drive: board::Drive::Ma2,
+        drive: board::Drive::Ma12,
+        pull: board::Pull::Up,
     })
     .validate()?;
 ```
@@ -101,7 +103,9 @@ unchanged, including a high-impedance request to a reserved pin.
 #### Firmware-Timed Pulses
 
 `SidecarNode::pulse_gpio` queues a job on the selected pin's independent worker.
-The job drives high, awaits its local timer, then cleanup drives low. Admission
+The job reads the pin allocation: with `Pull::Up` it drives low, awaits its
+local timer, then cleanup releases to high impedance with a pulled-up high
+idle. With `Pull::None` or `Pull::Down`, it drives high then cleanup drives low. Admission
 returns an operation handle; `completed()` waits through cleanup. Closing the
 host or losing radio communication does not cancel the job.
 
@@ -123,8 +127,9 @@ Durations must be whole milliseconds from 1 through 60,000. A pin token comes
 only from `Board::take_auxiliary`, once, after wiring validation. Every drive
 still checks the board's allocation. A mode change while the worker holds the
 pin returns `Busy`; additional pulses can queue up to the worker's fixed bound.
-The other pin remains independently controllable. After a pulse the pin stays
-low, including cancellation cleanup; it does not restore the earlier mode.
+The other pin remains independently controllable. After a pulse, including
+cancellation cleanup, the Sidecar pin returns to its pulled-up high-impedance
+idle; it does not restore the earlier mode.
 
 A replayed radio request returns its original operation ID without scheduling
 another pulse. A host timeout leaves admission uncertain: a new request ID

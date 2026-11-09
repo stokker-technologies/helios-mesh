@@ -69,14 +69,16 @@ async fn main(spawner: Spawner) {
                 AuxGpioId(1),
                 board::Auxiliary::PushPull {
                     initial: AuxGpioMode::HighImpedance,
-                    drive: board::Drive::Ma2,
+                    drive: board::Drive::Ma12,
+                    pull: board::Pull::Up,
                 },
             )
             .auxiliary(
                 AuxGpioId(2),
                 board::Auxiliary::PushPull {
                     initial: AuxGpioMode::HighImpedance,
-                    drive: board::Drive::Ma2,
+                    drive: board::Drive::Ma12,
+                    pull: board::Pull::Up,
                 },
             )
     };
