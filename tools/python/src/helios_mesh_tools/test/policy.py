@@ -39,7 +39,6 @@ from pathlib import Path
 from typing import Any
 
 # Third Party Imports
-
 # Local Imports
 from ..policy import ignored
 
