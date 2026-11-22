@@ -16,7 +16,10 @@ import copy
 import email.message
 import hashlib
 import io
+import json
 import os
+import runpy
+import subprocess
 import tempfile
 import unittest
 import urllib.error
@@ -42,6 +45,71 @@ LATER = "c" * 40
 # === Types === #
 
 # === Classes === #
+
+
+class FreshnessTests(unittest.TestCase):
+    def test_only_a_complete_published_current_nightly_is_fresh(self):
+        action = runpy.run_path(str(ROOT / ".github/actions/nightly-freshness/run.py"))
+        release: dict = {
+            "draft": False,
+            "prerelease": True,
+            "body": f"[`{NEW[:8]}`](https://github.com/owner/repo/commit/{NEW})",
+            "assets": [
+                {"name": name, "state": "uploaded", "size": 1}
+                for name in (
+                    "CHANGELOG.md",
+                    "SHA256SUMS",
+                    "helios_mesh-0.1.5-cp310-abi3-manylinux_2_39_x86_64.whl",
+                    "helios_mesh-0.1.5-cp310-abi3-win_amd64.whl",
+                )
+            ],
+        }
+        self.assertTrue(action["fresh"](release, NEW, NEW))
+        self.assertFalse(action["fresh"](release, OLD, NEW))
+        for changes in ({"draft": True}, {"prerelease": False}, {"body": ""}, {"assets": release["assets"][:-1]}):
+            self.assertFalse(action["fresh"]({**release, **changes}, NEW, NEW))
+        for state, size in (("new", 1), ("uploaded", 0)):
+            incomplete = copy.deepcopy(release)
+            incomplete["assets"][-1].update(state=state, size=size)
+            self.assertFalse(action["fresh"](incomplete, NEW, NEW))
+        mismatched = copy.deepcopy(release)
+        mismatched["assets"][-1]["name"] = "helios_mesh-0.1.4-cp310-abi3-win_amd64.whl"
+        self.assertFalse(action["fresh"](mismatched, NEW, NEW))
+
+    def test_missing_release_builds_and_api_errors_fail(self):
+        action = runpy.run_path(str(ROOT / ".github/actions/nightly-freshness/run.py"))
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        output = Path(temporary.name) / "output"
+        environment = {"GITHUB_REPOSITORY": "owner/repo", "GITHUB_SHA": NEW, "GITHUB_OUTPUT": str(output)}
+        self.enterContext(patch.dict(os.environ, environment))
+        command = self.enterContext(patch.object(subprocess, "run"))
+        command.return_value = subprocess.CompletedProcess([], 1, "", "gh: Not Found (HTTP 404)")
+        action["main"]()
+        self.assertEqual(output.read_text(), "build=true\n")
+        command.assert_called_once()
+        command.return_value = subprocess.CompletedProcess([], 1, "", "gh: Forbidden (HTTP 403)")
+        with self.assertRaises(RuntimeError):
+            action["main"]()
+
+    def test_stale_release_builds_without_querying_queued_runs(self):
+        action = runpy.run_path(str(ROOT / ".github/actions/nightly-freshness/run.py"))
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        output = Path(temporary.name) / "output"
+        environment = {"GITHUB_REPOSITORY": "owner/repo", "GITHUB_SHA": NEW, "GITHUB_OUTPUT": str(output)}
+        self.enterContext(patch.dict(os.environ, environment))
+        command = self.enterContext(patch.object(subprocess, "run"))
+        command.side_effect = [
+            subprocess.CompletedProcess([], 0, json.dumps({"draft": False, "prerelease": True, "body": "", "assets": []}), ""),
+            subprocess.CompletedProcess([], 0, json.dumps({"sha": OLD}), ""),
+        ]
+        action["main"]()
+        self.assertEqual(output.read_text(), "build=true\n")
+        self.assertEqual(
+            [call.args[0][-1] for call in command.call_args_list],
+            ["repos/owner/repo/releases/tags/nightly", "repos/owner/repo/commits/nightly"],
+        )
 
 
 class ChannelTests(unittest.TestCase):
