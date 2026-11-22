@@ -480,8 +480,7 @@ def tag(directory: Path, settings: dict) -> None:
         registry.create_tag(settings, name, sha)
     if registry.remote_tag(settings, name) != sha:
         raise policy.ToolError(f"{name} was not created at {sha}")
-    if _task_defined(directory, "release:publish:rust"):
-        policy.execute(directory, ["mise", "run", "release:publish:rust"])
+    registry.publish_crates(directory)
     # main is the last released commit: a fast-forward to the tag, never a merge or a force.
     _run(directory, ["git", "push", remote, f"{sha}:refs/heads/main"], token)
     print(f"{name}: tagged at {sha}; main fast-forwarded")
