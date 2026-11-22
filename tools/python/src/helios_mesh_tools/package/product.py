@@ -135,8 +135,10 @@ def binary_bytes(source: Path, name: str) -> bytes:
         stream = archive.extractfile(matches[0])
         if stream is None:
             raise policy.ToolError("tool archive binary has no file content")
-        with stream:
+        try:
             return stream.read()
+        finally:
+            stream.close()
 
 
 def verify(directory: Path, profile: str, target: str, root: Path | None = None) -> None:
@@ -257,7 +259,7 @@ def main() -> None:
                 ["mise", "which", "elf2uf2-rs", "--tool", options.firmware_converter],
                 env=environment,
                 text=True,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                creationflags=spawn_flags(),
             ).strip()
             if not Path(converter).is_file():
                 raise ValueError(f"the prepared firmware converter is missing: {options.firmware_converter}")
@@ -270,7 +272,7 @@ def main() -> None:
                 image = firmware / f"helios-mesh-node-{node}.uf2"
                 subprocess.run(
                     [converter, str(source), str(image)],
-                    creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                    creationflags=spawn_flags(),
                     stdin=sys.stdin,
                     stdout=sys.stdout,
                     stderr=sys.stderr,
@@ -297,13 +299,16 @@ def main() -> None:
                 "https://github.com/stokker-technologies/helios-mesh/blob/dev/"
                 "crates/firmware/helios-mesh-board-feather-rp2040/README.md\n"
             ).encode()
-            with ZipFile(firmware / "helios-mesh-firmware-feather-rp2040.zip", "w") as packaged:
+            packaged = ZipFile(firmware / "helios-mesh-firmware-feather-rp2040.zip", "w")
+            try:
                 for name, content in sorted(entries.items()):
                     info = ZipInfo(name)
                     info.create_system = 3
                     info.external_attr = 0o100644 << 16
                     info.compress_type = ZIP_DEFLATED
                     packaged.writestr(info, content)
+            finally:
+                packaged.close()
         paths.replace(ROOT, staging, destination, origin=staging)
 
 
