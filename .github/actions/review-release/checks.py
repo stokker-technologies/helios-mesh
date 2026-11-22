@@ -128,26 +128,4 @@ if __name__ == "__main__":
     if sha != expected:
         raise ValueError("release checkout differs from target revision")
 
-    def protected_pages(endpoint, key=None):
-        result = review["pages"](endpoint, key)
-        if endpoint == "rules/branches/main":
-            classic = review["request"](
-                "branches/main/protection/required_status_checks"
-            )
-            result.append(
-                {
-                    "type": "required_status_checks",
-                    "parameters": {
-                        "required_status_checks": [
-                            {
-                                "context": check["context"],
-                                "integration_id": check.get("app_id"),
-                            }
-                            for check in classic.get("checks", [])
-                        ]
-                    },
-                }
-            )
-        return result
-
-    wait(sha, protected_pages)
+    wait(sha, review["pages"])
