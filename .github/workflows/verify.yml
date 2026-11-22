@@ -35,10 +35,6 @@ jobs:
       COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
       SCCACHE_CACHE_SIZE: 8G
-      PROFILE: release
-      RELEASE_BUILD_RUN_ID: ${{ needs.review.outputs.run }}
-      RELEASE_BUILD_SHA: ${{ needs.review.outputs.sha }}
-      RELEASE_BUILD_VERSION: ${{ needs.review.outputs.version }}
     steps:
     - name: Configure Checkout Git
       run: git config --global core.longpaths true

@@ -357,9 +357,8 @@ def main() -> None:
                 origin=scratch,
             )
         return
-    else:
-        kind = {"typescript": "web", "native": "bin"}[options.language]
-        source = paths.output(directory, "build", options.profile, options.target) / kind
+    kind = {"typescript": "web", "native": "bin"}[options.language]
+    source = paths.output(directory, "build", options.profile, options.target) / kind
     paths.replace(directory, source, destination / options.language)
 
 

@@ -508,7 +508,7 @@ def release_review(settings: dict, sha: str, branch: str) -> dict | None:
 
 
 def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
-    """The Release Review Head Passed Its Rehearsal And Its Tree Is Exactly The Merged Tree."""
+    """Require Green Review Evidence, The Same Tree And Rehearsal Of The Merged Revision."""
     head = review["head"]
     if settings["provider"] == "github":
         evidence = runpy.run_path(str(directory / ".github/actions/review-release/run.py"))
