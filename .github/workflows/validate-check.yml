@@ -75,17 +75,17 @@ jobs:
       matrix:
         include:
         - work: Repository
-          platform: linux
+          platform: unix
           runner: ubuntu-latest
           tools: go,python,uv,aqua:koalaman/shellcheck,go:github.com/rhysd/actionlint/cmd/actionlint,taplo
           command: mise run check:repository
         - work: Python
-          platform: linux
+          platform: unix
           runner: ubuntu-latest
           tools: node,python,uv
           command: mise run check:python
         - work: Rust
-          platform: linux
+          platform: unix
           runner: ubuntu-latest
           tools: python,rust,uv,github:bnjbvr/cargo-machete
           command: 'mise run check:rust

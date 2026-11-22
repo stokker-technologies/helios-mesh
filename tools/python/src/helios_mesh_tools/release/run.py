@@ -606,8 +606,7 @@ def _tag_event(directory: Path, settings: dict, sha: str) -> None:
         workflow = f"{settings['repository']}/.github/workflows/{RELEASE_WORKFLOW}@refs/heads/dev"
         if (
             os.environ.get("GITHUB_EVENT_NAME") not in {"push", "workflow_dispatch"}
-            or
-            os.environ.get("GITHUB_REF") != "refs/heads/dev"
+            or os.environ.get("GITHUB_REF") != "refs/heads/dev"
             or os.environ.get("GITHUB_SHA") != sha
             or os.environ.get("GITHUB_WORKFLOW_REF") != workflow
         ):

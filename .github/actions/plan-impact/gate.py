@@ -26,7 +26,9 @@ def validate(results):
         raise ValueError("impact planning failed")
     if any(job["result"] not in ("success", "skipped") for job in results.values()):
         raise ValueError("selected CI jobs failed")
-    selected = json.loads(results.get("impact", {}).get("outputs", {}).get("jobs", "[]"))
+    selected = json.loads(
+        results.get("impact", {}).get("outputs", {}).get("jobs", "[]")
+    )
     for name in selected:
         if results.get(name, {}).get("result") != "success":
             raise ValueError(f"run the selected CI job successfully: {name}")

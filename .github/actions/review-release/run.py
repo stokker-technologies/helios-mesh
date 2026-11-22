@@ -24,7 +24,9 @@ from helios_mesh_tools.release import policy, registry
 
 # === Constants === #
 
-spawn_flags = runpy.run_path(str(Path(__file__).resolve().parents[1] / "process.py"))["spawn_flags"]
+spawn_flags = runpy.run_path(str(Path(__file__).resolve().parents[1] / "process.py"))[
+    "spawn_flags"
+]
 
 OID = re.compile(r"[0-9a-f]{40}(?:[0-9a-f]{24})?")
 
@@ -40,7 +42,10 @@ class ProviderRedirect(urllib.request.HTTPRedirectHandler):
         destination = urllib.parse.urlsplit(newurl)
         if destination.scheme != "https":
             raise ValueError("insecure artifact redirect")
-        if redirected is not None and (origin.scheme, origin.netloc) != (destination.scheme, destination.netloc):
+        if redirected is not None and (origin.scheme, origin.netloc) != (
+            destination.scheme,
+            destination.netloc,
+        ):
             redirected.remove_header("PRIVATE-TOKEN")
         return redirected
 
@@ -49,19 +54,32 @@ class ProviderRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def command(*args):
-    return subprocess.run(args, check=True, capture_output=True, text=True, timeout=120, creationflags=spawn_flags()).stdout.strip()
+    return subprocess.run(
+        args,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        creationflags=spawn_flags(),
+    ).stdout.strip()
 
 
 def request(endpoint, *, binary=False):
     if os.environ.get("GITHUB_ACTIONS"):
-        return json.loads(command("gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/{endpoint}"))
+        return json.loads(
+            command("gh", "api", f"repos/{os.environ['GITHUB_REPOSITORY']}/{endpoint}")
+        )
     token = os.environ["RELEASE_TOKEN"]
     if not token:
         raise ValueError("provider token unavailable")
     base = os.environ["CI_API_V4_URL"]
     project = urllib.parse.quote(os.environ["CI_PROJECT_ID"], safe="")
-    native = urllib.request.Request(f"{base}/projects/{project}/{endpoint}", headers={"PRIVATE-TOKEN": token})
-    with urllib.request.build_opener(ProviderRedirect()).open(native, timeout=60) as response:
+    native = urllib.request.Request(
+        f"{base}/projects/{project}/{endpoint}", headers={"PRIVATE-TOKEN": token}
+    )
+    with urllib.request.build_opener(ProviderRedirect()).open(
+        native, timeout=60
+    ) as response:
         data = response.read()
     return data if binary else json.loads(data)
 
@@ -83,7 +101,9 @@ def pages(endpoint, key=None):
 def same_tree(head, tree):
     if not isinstance(head, str) or OID.fullmatch(head) is None:
         return False
-    command("git", "fetch", "--quiet", "--no-tags", "--no-write-fetch-head", "origin", head)
+    command(
+        "git", "fetch", "--quiet", "--no-tags", "--no-write-fetch-head", "origin", head
+    )
     return command("git", "rev-parse", "--verify", head + "^{tree}") == tree
 
 
@@ -102,7 +122,8 @@ def github_review_run(run, review):
         and run.get("event") == "pull_request"
         and run.get("head_branch") == review["head"]["ref"]
         and run.get("head_repository", {}).get("id") == repository
-        and run.get("repository", {}).get("id") == review.get("base", {}).get("repo", {}).get("id")
+        and run.get("repository", {}).get("id")
+        == review.get("base", {}).get("repo", {}).get("id")
         and isinstance(run.get("repository", {}).get("id"), int)
     )
 
@@ -111,13 +132,19 @@ def github_validation_run(runs, jobs_for):
     for run in sorted(runs, key=lambda item: item["id"], reverse=True):
         if run.get("display_title") in ("CI / Closed Review", "CI / Draft Review"):
             continue
-        if run.get("display_title") != "CI / Validation" or run.get("status") != "completed" or run.get("conclusion") != "success":
+        if (
+            run.get("display_title") != "CI / Validation"
+            or run.get("status") != "completed"
+            or run.get("conclusion") != "success"
+        ):
             raise ValueError("review run is not green validation")
         jobs = jobs_for(run["id"])
-        gates = [job for job in jobs if job.get("name") == "CI / Required"]
+        gates = [job for job in jobs if job.get("name") == "Check / CI / Required"]
         if len(gates) != 1 or gates[0].get("conclusion") != "success":
             raise ValueError("review required gate is not green")
-        if not jobs or any(job.get("conclusion") not in ("success", "skipped") for job in jobs):
+        if not jobs or any(
+            job.get("conclusion") not in ("success", "skipped") for job in jobs
+        ):
             raise ValueError("review jobs are not green")
         return run, jobs
     raise ValueError("review has no validation run")
@@ -133,7 +160,9 @@ def lookup():
         reviews = [
             review
             for review in pages(f"commits/{sha}/pulls")
-            if review.get("merged_at") and review.get("merge_commit_sha") == sha and review.get("base", {}).get("ref") == "dev"
+            if review.get("merged_at")
+            and review.get("merge_commit_sha") == sha
+            and review.get("base", {}).get("ref") == "dev"
         ]
     else:
         reviews = [
@@ -150,31 +179,61 @@ def lookup():
     branch = review["head"]["ref"] if github else review["source_branch"]
     if not same_tree(head, tree):
         raise ValueError("review tree differs")
-    profile = "release" if branch.startswith("release/v") and os.environ.get("REVIEW_RELEASE") == "true" else "dev"
-    tag = os.environ.get("GITHUB_REF", "").startswith("refs/tags/") or bool(os.environ.get("CI_COMMIT_TAG"))
+    profile = (
+        "release"
+        if branch.startswith("release/v") and os.environ.get("REVIEW_RELEASE") == "true"
+        else "dev"
+    )
+    tag = os.environ.get("GITHUB_REF", "").startswith("refs/tags/") or bool(
+        os.environ.get("CI_COMMIT_TAG")
+    )
     if tag and profile != "release":
         raise ValueError("tag requires release-profile evidence")
     required = json.loads(os.environ.get("REVIEW_PACKAGES", "[]"))
-    preparation = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch" if github else os.environ.get("CI_PIPELINE_SOURCE") == "web"
+    preparation = (
+        os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+        if github
+        else os.environ.get("CI_PIPELINE_SOURCE") == "web"
+    )
     if tag or preparation:
         required += json.loads(os.environ.get("REVIEW_BUILDS", "[]"))
     if github:
-        runs = pages(f"actions/workflows/ci.yml/runs?event=pull_request&head_sha={head}", "workflow_runs")
+        runs = pages(
+            f"actions/workflows/ci.yml/runs?event=pull_request&head_sha={head}",
+            "workflow_runs",
+        )
         runs = [run for run in runs if github_review_run(run, review)]
-        run, jobs = github_validation_run(runs, lambda identifier: pages(f"actions/runs/{identifier}/jobs?filter=latest", "jobs"))
+        run, jobs = github_validation_run(
+            runs,
+            lambda identifier: pages(
+                f"actions/runs/{identifier}/jobs?filter=latest", "jobs"
+            ),
+        )
         artifacts = pages(f"actions/runs/{run['id']}/artifacts", "artifacts")
         for name in required:
-            matches = [artifact for artifact in artifacts if artifact.get("name") == name.replace("PROFILE", profile)]
+            matches = [
+                artifact
+                for artifact in artifacts
+                if artifact.get("name") == name.replace("PROFILE", profile)
+            ]
             if len(matches) != 1 or matches[0].get("expired") is not False:
                 raise ValueError("review package unavailable")
     else:
         review = request(f"merge_requests/{review['iid']}")
         run = review["head_pipeline"]
-        if run.get("sha") != head or run.get("status") != "success" or run.get("source") != "merge_request_event":
+        if (
+            run.get("sha") != head
+            or run.get("status") != "success"
+            or run.get("source") != "merge_request_event"
+        ):
             raise ValueError("review pipeline is not green")
         jobs = pages(f"pipelines/{run['id']}/jobs?include_retried=false")
         if any(job.get("name") == "Plan / Impact" for job in jobs):
-            bridges = [bridge for bridge in pages(f"pipelines/{run['id']}/bridges") if bridge.get("name") == "CI / Required"]
+            bridges = [
+                bridge
+                for bridge in pages(f"pipelines/{run['id']}/bridges")
+                if bridge.get("name") == "Check / CI / Required"
+            ]
             if len(bridges) != 1 or bridges[0].get("status") != "success":
                 raise ValueError("review child gate is not green")
             child = bridges[0].get("downstream_pipeline")
@@ -184,14 +243,22 @@ def lookup():
                 or child.get("status") != "success"
                 or not isinstance(child.get("id"), int)
             ):
-                raise ValueError("review child pipeline is not green for this exact revision")
+                raise ValueError(
+                    "review child pipeline is not green for this exact revision"
+                )
             run = child
             jobs = pages(f"pipelines/{run['id']}/jobs?include_retried=false")
-        if not jobs or any(job.get("status") not in ("success", "skipped", "manual") for job in jobs):
+        if not jobs or any(
+            job.get("status") not in ("success", "skipped", "manual") for job in jobs
+        ):
             raise ValueError("review jobs are not green")
         for name in required:
             matches = [job for job in jobs if job.get("name") == name]
-            if len(matches) != 1 or matches[0].get("status") != "success" or not matches[0].get("artifacts_file", {}).get("filename"):
+            if (
+                len(matches) != 1
+                or matches[0].get("status") != "success"
+                or not matches[0].get("artifacts_file", {}).get("filename")
+            ):
                 raise ValueError("review package unavailable")
             expiry = matches[0].get("artifacts_expire_at")
             if expiry and datetime.fromisoformat(expiry) <= datetime.now(UTC):
@@ -200,14 +267,27 @@ def lookup():
         raise ValueError("invalid review run ID")
     if tag and github:
         registry.rehearsal(policy.policy(Path.cwd(), "release"), sha)
-    if tag and not github and not any(
-        job.get("name", "").endswith("Release / Rehearsal") and job.get("status") == "success" for job in jobs
+    if (
+        tag
+        and not github
+        and not any(
+            job.get("name", "").endswith("Release / Rehearsal")
+            and job.get("status") == "success"
+            for job in jobs
+        )
     ):
         raise ValueError("release review has no successful rehearsal")
-    protected = os.environ.get("GITHUB_REF_PROTECTED") == "true" or os.environ.get("CI_COMMIT_REF_PROTECTED") == "true"
+    protected = (
+        os.environ.get("GITHUB_REF_PROTECTED") == "true"
+        or os.environ.get("CI_COMMIT_REF_PROTECTED") == "true"
+    )
     if tag and not protected:
         raise ValueError("release tag must be protected")
-    version = branch.removeprefix("release/") if profile == "release" else f"dev.{run['id']}+{head[:8]}"
+    version = (
+        branch.removeprefix("release/")
+        if profile == "release"
+        else f"dev.{run['id']}+{head[:8]}"
+    )
     if re.fullmatch(r"(?:v\d+\.\d+\.\d+|dev\.\d+\+[0-9a-f]{8})", version) is None:
         raise ValueError("invalid review version")
     return {
@@ -227,15 +307,24 @@ def restore():
     if not run.isdecimal():
         raise ValueError("invalid review pipeline")
     jobs = pages(f"pipelines/{run}/jobs?include_retried=false")
-    for name in json.loads(os.environ["REVIEW_PACKAGES"]) + json.loads(os.environ.get("REVIEW_BUILDS", "[]")):
-        matches = [job for job in jobs if job.get("name") == name and job.get("status") == "success"]
+    for name in json.loads(os.environ["REVIEW_PACKAGES"]) + json.loads(
+        os.environ.get("REVIEW_BUILDS", "[]")
+    ):
+        matches = [
+            job
+            for job in jobs
+            if job.get("name") == name and job.get("status") == "success"
+        ]
         if len(matches) != 1:
             raise ValueError("review package producer unavailable")
         data = request(f"jobs/{matches[0]['id']}/artifacts", binary=True)
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             for member in archive.infolist():
                 path = Path(member.filename)
-                parent = member.is_dir() and member.filename in ("target/", "target/package/")
+                parent = member.is_dir() and member.filename in (
+                    "target/",
+                    "target/package/",
+                )
                 if (
                     path.is_absolute()
                     or ".." in path.parts
@@ -243,7 +332,9 @@ def restore():
                     or (member.external_attr >> 16) & 0o170000 == 0o120000
                 ):
                     raise ValueError("unsafe package archive path")
-                if not parent and not member.filename.startswith(("target/package/", "target/ci/")):
+                if not parent and not member.filename.startswith(
+                    ("target/package/", "target/ci/")
+                ):
                     raise ValueError("unexpected package archive path")
             archive.extractall()
     print(f"Reusing packages from review pipeline {run}")
@@ -271,19 +362,27 @@ if __name__ == "__main__":
                 result = lookup()
             except Exception as error:
                 if os.environ.get("REVIEW_REQUIRED") == "true":
-                    raise ValueError("required release review evidence unavailable") from error
+                    raise ValueError(
+                        "required release review evidence unavailable"
+                    ) from error
                 # Never print provider responses, commands or credentials on lookup failure.
-                print(f"Review evidence unavailable ({type(error).__name__}); running the full pipeline")
+                print(
+                    f"Review evidence unavailable ({type(error).__name__}); running the full pipeline"
+                )
             if not os.environ.get("GITHUB_ACTIONS"):
                 version = (
                     os.environ.get("CI_COMMIT_TAG")
                     or f"dev.{os.environ.get('CI_PIPELINE_ID', '')}+{os.environ.get('CI_COMMIT_SHORT_SHA', '')}"
                 )
-                result["DEPLOY_EXPECTED_VERSION"] = result.get("review_version") or version
+                result["DEPLOY_EXPECTED_VERSION"] = (
+                    result.get("review_version") or version
+                )
             output = os.environ.get("GITHUB_OUTPUT", "target/ci/validated.env")
             Path(output).parent.mkdir(parents=True, exist_ok=True)
             with open(output, "a", encoding="utf-8", newline="\n") as stream:
-                stream.write("".join(f"{key}={value}\n" for key, value in result.items()))
+                stream.write(
+                    "".join(f"{key}={value}\n" for key, value in result.items())
+                )
             print(f"validated={result['validated']} review_run={result['review_run']}")
     finally:
         print("::endgroup::", flush=True)

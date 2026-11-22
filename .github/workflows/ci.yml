@@ -56,7 +56,7 @@ jobs:
       profile: ${{ startsWith(github.head_ref, 'release/v') && 'release' || 'dev' }}
     if: '!cancelled() && needs.impact.result == ''success'' && contains(fromJSON(needs.impact.outputs.jobs), ''build_tests'')'
   generated:
-    name: Check / Bindings / Generated
+    name: Check / Bindings / Python / Generated
     uses: ./.github/workflows/validate-check-generated.yml
     needs:
     - impact
@@ -90,7 +90,7 @@ jobs:
     if: '!cancelled() && needs.impact.result == ''success'' && contains(fromJSON(needs.impact.outputs.jobs), ''test'') && needs.build_product.result
       == ''success'' && needs.build_tests.result == ''success'''
   required:
-    name: CI / Required
+    name: Check / CI / Required
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: always()

@@ -21,7 +21,7 @@ env:
   CARGO_BUILD_JOBS: '6'
 jobs:
   generated:
-    name: ${{ matrix.display }}
+    name: Check / Bindings / Python / Generated (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
@@ -81,9 +81,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
-          display: Validate / Generated
         - platform: windows
           runner: windows-latest
-          display: Validate / Generated (windows)

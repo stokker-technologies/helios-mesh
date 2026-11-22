@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   freshness:
-    name: Plan / Freshness
+    name: Check / Nightly / Freshness
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -59,7 +59,7 @@ jobs:
       profile: release
     if: needs.freshness.outputs.build == 'true'
   generated:
-    name: Check / Bindings / Generated
+    name: Check / Bindings / Python / Generated
     uses: ./.github/workflows/validate-check-generated.yml
     needs:
     - freshness

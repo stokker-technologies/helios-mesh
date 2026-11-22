@@ -21,7 +21,7 @@ env:
   CARGO_BUILD_JOBS: '6'
 jobs:
   tests_rust:
-    name: Validate / ${{ matrix.display }} / Rust (${{ matrix.platform }})
+    name: Test / Library / ${{ matrix.display }} (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
@@ -87,15 +87,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
           layer: unit
           display: Unit
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
           layer: integration
           display: Integration
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
           layer: acceptance
           display: Acceptance
@@ -112,7 +112,7 @@ jobs:
           layer: acceptance
           display: Acceptance
   tests_python:
-    name: ${{ matrix.display }}
+    name: Test / Bindings / Python (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
@@ -178,14 +178,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
-          display: Validate / Acceptance / Python
         - platform: windows
           runner: windows-latest
-          display: Validate / Acceptance / Python (windows)
   tests_tooling:
-    name: ${{ matrix.display }}
+    name: Test / Tooling / Python (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
@@ -244,9 +242,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
-          display: Validate / Integration / Python
         - platform: windows
           runner: windows-latest
-          display: Validate / Integration / Python (windows)

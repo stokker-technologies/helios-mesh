@@ -21,11 +21,11 @@ env:
   CARGO_BUILD_JOBS: '6'
 jobs:
   package_rust:
-    name: Package / Rust (${{ matrix.platform }})
+    name: Package / Product (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: ${{ matrix.platform == 'linux' && 'python,rust,sccache,uv' || 'python,uv' }}
+      MISE_ENABLE_TOOLS: ${{ matrix.platform == 'unix' && 'python,rust,sccache,uv' || 'python,uv' }}
       COMPILER_CACHE_BACKEND: disk
       COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
@@ -101,12 +101,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
         - platform: windows
           runner: windows-latest
   package_python:
-    name: ${{ matrix.display }}
+    name: Package / Bindings / Python (${{ matrix.platform }})
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
@@ -176,9 +176,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
-          display: Package / Python
         - platform: windows
           runner: windows-latest
-          display: Package / Python (windows)

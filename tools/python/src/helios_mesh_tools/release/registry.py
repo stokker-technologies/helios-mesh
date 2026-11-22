@@ -533,7 +533,9 @@ def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
         raise policy.ToolError(f"release MR !{review['number']} has no pipeline for its head {head}")
     pipeline_jobs = pages(settings, f"pipelines/{pipeline['id']}/jobs?include_retried=false")
     if any(job.get("name") == "Plan / Impact" for job in pipeline_jobs):
-        bridges = [bridge for bridge in pages(settings, f"pipelines/{pipeline['id']}/bridges") if bridge.get("name") == "CI / Required"]
+        bridges = [
+            bridge for bridge in pages(settings, f"pipelines/{pipeline['id']}/bridges") if bridge.get("name") == "Check / CI / Required"
+        ]
         if len(bridges) != 1 or bridges[0].get("status") != "success":
             raise policy.ToolError("release review child gate is not green")
         child = bridges[0].get("downstream_pipeline")
@@ -556,7 +558,8 @@ def rehearsal(settings: dict, sha: str) -> None:
     """Require The Release Flow's Rehearsal On The Exact Merged Revision."""
     runs = pages(settings, f"actions/workflows/release.yml/runs?branch=dev&head_sha={sha}", "workflow_runs")
     candidates = [
-        item for item in runs
+        item
+        for item in runs
         if item.get("head_sha") == sha and item.get("head_branch") == "dev" and item.get("event") in {"push", "workflow_dispatch"}
     ]
     if not candidates:

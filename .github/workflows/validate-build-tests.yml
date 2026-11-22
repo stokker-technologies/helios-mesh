@@ -86,7 +86,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - platform: linux
+        - platform: unix
           runner: ubuntu-latest
         - platform: windows
           runner: windows-latest

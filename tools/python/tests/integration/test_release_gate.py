@@ -59,7 +59,7 @@ class ReleaseGateTests(unittest.TestCase):
         run = {"id": 8, "head_sha": sha, "head_branch": "dev", "event": "push", "status": "in_progress", "check_suite_id": 9}
         gate = {
             "id": 10,
-            "name": "CI / Required",
+            "name": "Check / CI / Required",
             "app": {"slug": "github-actions", "id": 1},
             "check_suite": {"id": 9},
             "status": "completed",
