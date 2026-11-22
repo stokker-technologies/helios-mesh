@@ -28,19 +28,29 @@ def green(sha: str, pages) -> bool:
     """Select The Latest Dev Push And Its Required Gate, Never A Prior Run Or PR."""
     if re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", sha) is None:
         raise ValueError("invalid target revision")
-    runs = pages(f"actions/workflows/ci.yml/runs?branch=dev&event=push&head_sha={sha}", "workflow_runs")
-    runs = [run for run in runs if run.get("head_sha") == sha and run.get("event") == "push" and run.get("head_branch") == "dev"]
+    runs = pages(
+        f"actions/workflows/ci.yml/runs?branch=dev&event=push&head_sha={sha}",
+        "workflow_runs",
+    )
+    runs = [
+        run
+        for run in runs
+        if run.get("head_sha") == sha
+        and run.get("event") == "push"
+        and run.get("head_branch") == "dev"
+    ]
     if not runs:
         return False
     run = max(runs, key=lambda item: item["id"])
-    # Tag Shares This Workflow; The Required Validation Gate Must Finish Before Tag Can Start.
+    # Release Waits For This Exact Dev Commit's Aggregate Validation Gate.
     if run.get("status") == "completed" and run.get("conclusion") != "success":
         raise ValueError("target commit CI failed")
 
     checks = pages(f"commits/{sha}/check-runs?filter=latest", "check_runs")
     gates = [
-        check for check in checks
-        if check.get("name") == "CI / Required"
+        check
+        for check in checks
+        if check.get("name") == "Check / CI / Required"
         and check.get("app", {}).get("slug") == "github-actions"
         and check.get("check_suite", {}).get("id") == run["check_suite_id"]
     ]
@@ -51,27 +61,47 @@ def green(sha: str, pages) -> bool:
 
     # Honor Additional Required Contexts In The Owner's Main Ruleset.
     rules = pages("rules/branches/main")
-    required = [context for rule in rules if rule.get("type") == "required_status_checks"
-                for context in rule["parameters"]["required_status_checks"]]
+    required = [
+        context
+        for rule in rules
+        if rule.get("type") == "required_status_checks"
+        for context in rule["parameters"]["required_status_checks"]
+    ]
     statuses = pages(f"commits/{sha}/statuses")
     for context in required:
-        matches = [check for check in checks if check.get("name") == context["context"]
-                   and (not context.get("integration_id") or check.get("app", {}).get("id") == context["integration_id"])]
+        matches = [
+            check
+            for check in checks
+            if check.get("name") == context["context"]
+            and (
+                not context.get("integration_id")
+                or check.get("app", {}).get("id") == context["integration_id"]
+            )
+        ]
         if matches:
             check = max(matches, key=lambda item: item["id"])
             if check.get("status") != "completed":
                 return False
             if check.get("conclusion") != "success":
-                raise ValueError("target commit required check failed: " + context["context"])
+                raise ValueError(
+                    "target commit required check failed: " + context["context"]
+                )
             continue
-        legacy = [status for status in statuses if status.get("context") == context["context"] and not context.get("integration_id")]
+        legacy = [
+            status
+            for status in statuses
+            if status.get("context") == context["context"]
+            and not context.get("integration_id")
+        ]
         if not legacy:
             return False
         status = max(legacy, key=lambda item: item["id"])
         if status.get("state") == "pending":
             return False
         if status.get("state") != "success":
-            raise ValueError("target commit required status failed: " + context["context"])
+            raise ValueError(
+                "target commit required status failed: " + context["context"]
+            )
     return True
 
 
@@ -79,7 +109,9 @@ def wait(sha: str, pages, *, sleep=time.sleep, clock=time.monotonic) -> None:
     deadline = clock() + 1800
     while not green(sha, pages):
         if clock() >= deadline:
-            raise ValueError("target commit required CI is missing or pending; rerun Release after CI succeeds")
+            raise ValueError(
+                "target commit required CI is missing or pending; rerun Release after CI succeeds"
+            )
         print("Waiting For Target Commit CI", flush=True)
         sleep(10)
     print(f"Required CI Is Green For {sha}", flush=True)
@@ -95,17 +127,27 @@ if __name__ == "__main__":
     expected = os.environ["RELEASE_TARGET_SHA"]
     if sha != expected:
         raise ValueError("release checkout differs from target revision")
+
     def protected_pages(endpoint, key=None):
         result = review["pages"](endpoint, key)
         if endpoint == "rules/branches/main":
-            classic = review["request"]("branches/main/protection/required_status_checks")
-            result.append({
-                "type": "required_status_checks",
-                "parameters": {"required_status_checks": [
-                    {"context": check["context"], "integration_id": check.get("app_id")}
-                    for check in classic.get("checks", [])
-                ]},
-            })
+            classic = review["request"](
+                "branches/main/protection/required_status_checks"
+            )
+            result.append(
+                {
+                    "type": "required_status_checks",
+                    "parameters": {
+                        "required_status_checks": [
+                            {
+                                "context": check["context"],
+                                "integration_id": check.get("app_id"),
+                            }
+                            for check in classic.get("checks", [])
+                        ]
+                    },
+                }
+            )
         return result
 
     wait(sha, protected_pages)

@@ -508,7 +508,7 @@ def release_review(settings: dict, sha: str, branch: str) -> dict | None:
 
 
 def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
-    """The Release Review Head Passed Its Rehearsal And Its Tree Is Exactly The Merged Tree."""
+    """Require Green Review Evidence, The Same Tree And Rehearsal Of The Merged Revision."""
     head = review["head"]
     if settings["provider"] == "github":
         evidence = runpy.run_path(str(directory / ".github/actions/review-release/run.py"))
@@ -518,13 +518,12 @@ def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
             if not isinstance(pull, dict) or pull.get("number") != review["number"] or pull.get("head", {}).get("sha") != head:
                 raise ValueError("review identity or head differs")
             candidates = [run for run in runs if evidence["github_review_run"](run, pull)]
-            _, jobs = evidence["github_validation_run"](
+            evidence["github_validation_run"](
                 candidates, lambda identifier: pages(settings, f"actions/runs/{identifier}/jobs?filter=latest", "jobs")
             )
         except (KeyError, TypeError, ValueError) as error:
             raise policy.ToolError(f"release PR #{review['number']} head {head} has no green validation: {error}") from error
-        if not any(job.get("name") == REHEARSAL_CHECK and job.get("conclusion") == "success" for job in jobs):
-            raise policy.ToolError(f"release PR #{review['number']} head {head} has no successful {REHEARSAL_CHECK} check")
+        rehearsal(settings, sha)
         _same_tree(directory, head, sha)
         return
     # The merge request's latest pipeline ran on its head; its rehearsal job must have succeeded there.
@@ -534,7 +533,9 @@ def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
         raise policy.ToolError(f"release MR !{review['number']} has no pipeline for its head {head}")
     pipeline_jobs = pages(settings, f"pipelines/{pipeline['id']}/jobs?include_retried=false")
     if any(job.get("name") == "Plan / Impact" for job in pipeline_jobs):
-        bridges = [bridge for bridge in pages(settings, f"pipelines/{pipeline['id']}/bridges") if bridge.get("name") == "CI / Required"]
+        bridges = [
+            bridge for bridge in pages(settings, f"pipelines/{pipeline['id']}/bridges") if bridge.get("name") == "Check / CI / Required"
+        ]
         if len(bridges) != 1 or bridges[0].get("status") != "success":
             raise policy.ToolError("release review child gate is not green")
         child = bridges[0].get("downstream_pipeline")
@@ -551,6 +552,23 @@ def rehearsed(directory: Path, settings: dict, review: dict, sha: str) -> None:
     if not jobs or any(job.get("status") != "success" for job in jobs):
         raise policy.ToolError(f"release MR !{review['number']} pipeline {pipeline['id']} has no successful {GITLAB_REHEARSAL_JOB} job")
     _same_tree(directory, head, sha)
+
+
+def rehearsal(settings: dict, sha: str) -> None:
+    """Require The Release Flow's Rehearsal On The Exact Merged Revision."""
+    runs = pages(settings, f"actions/workflows/release.yml/runs?branch=dev&head_sha={sha}", "workflow_runs")
+    candidates = [
+        item
+        for item in runs
+        if item.get("head_sha") == sha and item.get("head_branch") == "dev" and item.get("event") in {"push", "workflow_dispatch"}
+    ]
+    if not candidates:
+        raise policy.ToolError("run Release / Rehearsal on the merged release revision before tagging or publishing")
+    selected = max(candidates, key=lambda item: item["id"])
+    jobs = pages(settings, f"actions/runs/{selected['id']}/jobs?filter=latest", "jobs")
+    matches = [item for item in jobs if item.get("name") == REHEARSAL_CHECK]
+    if len(matches) != 1 or matches[0].get("conclusion") != "success":
+        raise policy.ToolError("complete Release / Rehearsal on the merged release revision before tagging or publishing")
 
 
 def oidc_claims(url: str, token: str) -> dict:

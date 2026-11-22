@@ -95,10 +95,6 @@ inputs = ["build#product"]
 package = ["target/package/{profile}/{target}/python"]
 
 [[ci.jobs]]
-id = "release:publish:dry"
-inputs = ["package:rust#package", "package:python#package"]
-
-[[ci.jobs]]
 id = "release:rehearse"
 inputs = ["package:rust#package", "package:python#package"]
 

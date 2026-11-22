@@ -10,7 +10,7 @@ inputs:
     required: false
     default: ""
   scope:
-    description: Limit Selection To Checks And Product And Tests Compilation
+    description: Limit Selection To Quick Checks And Product Compilation
     required: false
     default: ""
 outputs:

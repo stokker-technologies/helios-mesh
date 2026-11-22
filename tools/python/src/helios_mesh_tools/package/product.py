@@ -43,19 +43,33 @@ ROOT = Path(__file__).resolve().parents[5]
 # === Public Functions === #
 
 
-def wheel(directory: Path, selected: str, version: str) -> Path:
-    """Require One CPython 3.10+ Stable-ABI Wheel For The Selected Platform."""
-    wheels = sorted(directory.glob("*.whl"))
-    if len(wheels) != 1:
-        raise ValueError(f"run the matching Product Build to produce exactly one wheel for {selected}: {directory}")
-    source = wheels[0]
-    platform_tag = {
+def wheel_inventory(names: list[str], targets: list[str], version: str | None = None) -> dict[str, str]:
+    """Require Exactly One Stable-ABI Wheel Per Target At One Shared Version."""
+    wheels = [name for name in names if name.endswith(".whl")]
+    if len(wheels) != len(targets):
+        raise ValueError("run the matching Product Builds to produce exactly one wheel per target")
+    if version is None:
+        version = wheels[0].split("-")[1] if wheels and "-" in wheels[0] else ""
+    platform_tags = {
         "linux-x86_64": r"manylinux_2_[0-9]+_x86_64(?:\.manylinux2014_x86_64)?",
         "windows-x86_64": "win_amd64",
-    }[selected]
-    pattern = rf"helios_mesh-{re.escape(version)}-cp310-abi3-{platform_tag}\.whl"
-    if source.is_symlink() or re.fullmatch(pattern, source.name) is None:
-        raise ValueError(f"rebuild the Python wheel for {selected} with CPython 3.10+ ABI3 and a portable platform tag: {source.name}")
+    }
+    result = {}
+    for selected in targets:
+        pattern = rf"helios_mesh-{re.escape(version)}-cp310-abi3-{platform_tags[selected]}\.whl"
+        matches = [name for name in wheels if re.fullmatch(pattern, name)]
+        if len(matches) != 1:
+            raise ValueError(f"rebuild the Python wheel for {selected} with CPython 3.10+ ABI3 and a portable platform tag")
+        result[selected] = matches[0]
+    return result
+
+
+def wheel(directory: Path, selected: str, version: str) -> Path:
+    """Resolve The Matching Build's Wheel Using The Shared Inventory Contract."""
+    inventory = wheel_inventory([path.name for path in directory.glob("*.whl")], [selected], version)
+    source = directory / inventory[selected]
+    if source.is_symlink():
+        raise ValueError(f"rebuild the Python wheel as a regular file: {source}")
     return source
 
 

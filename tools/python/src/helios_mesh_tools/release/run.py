@@ -51,21 +51,19 @@ STATE = "published.json"
 ASSETS = "target/release-assets"
 SHARED = "any"
 # Both Registry Identities Belong To The Protected Native Release Workflow.
-RELEASE_WORKFLOW = "ci.yml"
+RELEASE_WORKFLOW = "release.yml"
 VERBS = [
     "prepare",
     "review",
-    "dry",
-    "crates-dry",
     "rehearse",
     "identity",
     "tag",
     "crates",
     "publish",
     "python",
-    "python-dry",
     "finalize",
     "verify",
+    "verify-nightly",
     "guard",
     "assets",
     "stage",
@@ -294,7 +292,7 @@ def review(directory: Path, settings: dict) -> None:
     registry.arm_auto_merge(settings, branch, title)
 
 
-def dry(
+def stage_packages(
     directory: Path,
     settings: dict,
     *,
@@ -410,9 +408,9 @@ def finalize(directory: Path, settings: dict) -> None:
         raise policy.ToolError("release links differ from upload.json")
 
 
-def verify(directory: Path, settings: dict) -> None:
+def verify(directory: Path, settings: dict, *, tag: str | None = None) -> None:
     """After Publication: Download Every Published Asset, Match SHA256SUMS And Signatures, Install On This Platform."""
-    tag = release_tag(directory)
+    tag = release_tag(directory) if tag is None else tag
     sha = _revision(directory)
     if registry.remote_tag(settings, tag) != sha:
         raise policy.ToolError(f"{tag} does not identify the checked-out revision")
@@ -420,7 +418,7 @@ def verify(directory: Path, settings: dict) -> None:
     quoted = _quote(tag)
     if settings["provider"] == "github":
         remote = registry.document(settings, "releases/tags/" + quoted)
-        if not isinstance(remote, dict) or remote.get("draft") or remote.get("prerelease"):
+        if not isinstance(remote, dict) or remote.get("draft") or bool(remote.get("prerelease")) != (tag == "nightly"):
             raise policy.ToolError("release is not published")
         downloads = {item["name"]: f"releases/assets/{item['id']}" for item in registry.pages(settings, f"releases/{remote['id']}/assets")}
     else:
@@ -431,6 +429,7 @@ def verify(directory: Path, settings: dict) -> None:
         downloads = {item["name"]: prefix + _quote(item["name"]) for item in remote["assets"]["links"]}
     if set(downloads) != set(inventory):
         raise policy.ToolError("published downloads differ from upload.json")
+    product.wheel_inventory(list(downloads), settings["targets"], release_tag(directory)[1:])
     with temporary.directory() as root:
         for name, item in inventory.items():
             data = registry.verify_download(settings, downloads[name], item)
@@ -450,13 +449,11 @@ def crates(directory: Path, settings: dict) -> None:
 def tag(directory: Path, settings: dict) -> None:
     """Tag An Exactly Rehearsed Merged Release Review, Then Fast-Forward main."""
     sha = _revision(directory)
-    event = _tag_event(directory, settings, sha)
+    _tag_event(directory, settings, sha)
     pins.check(directory)
     review = registry.release_review(settings, sha, registry.RELEASE_BRANCH + release_tag(directory))
     if review is None:
         raise policy.ToolError("the revision has no merged release review")
-    if event is not None and (review["number"] != event["number"] or review["head"] != event["head"]["sha"]):
-        raise policy.ToolError("the merged release review differs from the GitHub event")
     name = release_tag(directory)
     existing = registry.remote_tag(settings, name)
     if existing and existing != sha:
@@ -466,7 +463,7 @@ def tag(directory: Path, settings: dict) -> None:
         registry.rehearsed(directory, settings, review, sha)
     else:
         registry._same_tree(directory, review["head"], sha)
-        print("note: this product renders no rehearsal; Release / Dry verified the review")
+        print("note: this product renders no rehearsal; CI verified the review")
     token = os.environ.get("RELEASE_TOKEN", "")
     if not token:
         raise policy.ToolError("tagging requires the workflow-triggering RELEASE_TOKEN secret")
@@ -515,7 +512,7 @@ def rehearse(directory: Path, settings: dict, *, target: str | None = None, prof
     with policy.credential_free(settings, profile=profile):
         _refuse_overrides(directory)
         revision = _revision(directory) if stage_only else None
-        dry(directory, settings, profile=profile, require_all=True, source_revision=revision, targets=targets)
+        stage_packages(directory, settings, profile=profile, require_all=True, source_revision=revision, targets=targets)
         if not stage_only and _task_defined(directory, "release:publish:rust"):
             registry.rehearse_crates(directory, skip_published=False)
         if not stage_only and _task_defined(directory, "release:publish:python"):
@@ -535,14 +532,14 @@ def identity(directory: Path, settings: dict) -> None:
     environment = claims.get("environment") or "(none)"
     caller = registry.workflow_filename(claims.get("workflow_ref", ""))
     called = registry.workflow_filename(claims.get("job_workflow_ref") or claims.get("workflow_ref", ""))
-    # Both registries execute in release.yml; PyPI uses job_workflow_ref when present.
+    # Crates Use The Release Caller; PyPI Uses The Reusable Publication Workflow.
     print(
         f"crates.io Trusted Publisher: repository {repository}, workflow {caller}, environment {environment} (workflow_ref {claims.get('workflow_ref')})"
     )
     print(
         f"PyPI Trusted Publisher: repository {repository}, workflow {called}, environment {environment} (job_workflow_ref {claims.get('job_workflow_ref')})"
     )
-    for registry_name, actual, expected in [("crates.io", caller, RELEASE_WORKFLOW), ("PyPI", called, RELEASE_WORKFLOW)]:
+    for registry_name, actual, expected in [("crates.io", caller, RELEASE_WORKFLOW), ("PyPI", called, "publish.yml")]:
         if actual != expected:
             print(f"warning: {registry_name} sees workflow {actual}, but the rendered guidance names {expected}")
 
@@ -569,19 +566,17 @@ def run(directory: Path, verb: str, *, target: str | None = None, profile: str |
     operations = {
         "prepare": prepare,
         "review": review,
-        "dry": dry,
         "rehearse": lambda directory, settings: rehearse(
             directory, settings, target=target, profile=profile or "release", stage_only=stage_only
         ),
         "identity": identity,
-        "crates-dry": lambda directory, settings: registry.rehearse_crates(directory, skip_published=False),
         "tag": tag,
         "crates": crates,
         "publish": publish,
         "python": lambda directory, settings: registry.python(directory, settings, dry_run=False),
-        "python-dry": lambda directory, settings: registry.python(directory, settings, dry_run=True),
         "finalize": finalize,
         "verify": verify,
+        "verify-nightly": lambda directory, settings: verify(directory, settings, tag="nightly"),
         "guard": lambda directory, settings: registry.require_tag(directory, release_tag(directory)),
         "assets": lambda directory, settings: print(
             json.dumps(assets(directory, settings, native_target(settings), release_tag(directory), signed=True), indent=2)
@@ -606,15 +601,16 @@ def _checksums(path: Path, inventory: dict) -> None:
         raise policy.ToolError("SHA256SUMS differs from upload.json")
 
 
-def _tag_event(directory: Path, settings: dict, sha: str) -> dict | None:
-    if settings["provider"] == "github" and os.environ.get("GITHUB_EVENT_NAME") == "push":
-        workflow = f"{settings['repository']}/.github/workflows/ci.yml@refs/heads/dev"
+def _tag_event(directory: Path, settings: dict, sha: str) -> None:
+    if settings["provider"] == "github":
+        workflow = f"{settings['repository']}/.github/workflows/{RELEASE_WORKFLOW}@refs/heads/dev"
         if (
-            os.environ.get("GITHUB_REF") != "refs/heads/dev"
+            os.environ.get("GITHUB_EVENT_NAME") not in {"push", "workflow_dispatch"}
+            or os.environ.get("GITHUB_REF") != "refs/heads/dev"
             or os.environ.get("GITHUB_SHA") != sha
             or os.environ.get("GITHUB_WORKFLOW_REF") != workflow
         ):
-            raise policy.ToolError("tagging requires the exact dev push in ci.yml")
+            raise policy.ToolError("run Release / Tag on the exact merged dev revision in release.yml")
         subject = policy.execute(directory, ["git", "log", "-1", "--format=%s"], capture=True).strip()
         if subject != f"chore(release): prepare {release_tag(directory)}":
             raise policy.ToolError("tagging requires the merged release preparation commit")
@@ -624,28 +620,7 @@ def _tag_event(directory: Path, settings: dict, sha: str) -> dict | None:
         if source != "web" or os.environ.get("CI_COMMIT_BRANCH") != "dev" or os.environ.get("CI_COMMIT_SHA") != sha:
             raise policy.ToolError("GitLab tagging requires a web-started dev release pipeline at the checkout revision")
         return None
-    if (
-        os.environ.get("GITHUB_EVENT_NAME") != "pull_request"
-        or os.environ.get("GITHUB_REF") != "refs/heads/dev"
-        or os.environ.get("GITHUB_SHA") != sha
-    ):
-        raise policy.ToolError("GitHub tagging requires a closed, merged release PR into dev at the checkout revision")
-    workflow = f"{settings['repository']}/.github/workflows/{RELEASE_WORKFLOW}@"
-    if not os.environ.get("GITHUB_WORKFLOW_REF", "").startswith(workflow):
-        raise policy.ToolError("GitHub tagging runs only in ci.yml")
-    event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8"))
-    review = event.get("pull_request", {})
-    if (
-        event.get("action") != "closed"
-        or review.get("merged") is not True
-        or review.get("merge_commit_sha") != sha
-        or type(review.get("number")) is not int
-        or review.get("base", {}).get("ref") != "dev"
-        or review.get("head", {}).get("ref") != registry.RELEASE_BRANCH + release_tag(directory)
-        or any(review.get(side, {}).get("repo", {}).get("full_name") != settings["repository"] for side in ("base", "head"))
-    ):
-        raise policy.ToolError("GitHub event is not the merged release review for this version and revision")
-    return review
+    raise policy.ToolError("declare a supported release provider")
 
 
 def _commit_review(directory: Path, settings: dict, branch: str, title: str) -> None:

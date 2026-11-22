@@ -100,10 +100,9 @@ def regular(root: Path, relative: str) -> Path:
 def assemble(directory: Path, language: str, profile: str, target: str, staging: Path) -> None:
     build = paths.output(directory, "build", profile, target)
     substitutions = {"profile": profile, "target": target, "version": policy.config(directory).get("version", {}).get("value")}
-    if language in {"python", "typescript"}:
-        source = build / {"python": "python", "typescript": "web"}[language]
-        canonical = policy.config(directory).get("languages", {}).get("python", {}).get("build_target") == "any"
-        if (target != "any" or language == "python" and canonical) and not source.is_dir():
+    if language == "typescript":
+        source = build / "web"
+        if target != "any" and not source.is_dir():
             raise policy.ToolError(f"missing Product Build input: {source}")
         for entry in source.rglob("*"):
             if entry.is_symlink():
@@ -297,7 +296,7 @@ def installed(directory: Path, settings: dict, root: Path, target: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Assemble Existing Build Outputs")
-    parser.add_argument("language", choices=("rust", "python", "typescript", "native"))
+    parser.add_argument("language", choices=("rust", "typescript", "native"))
     parser.add_argument("--profile", choices=("dev", "release"), default="dev")
     parser.add_argument("--target")
     options = parser.parse_args()
@@ -308,8 +307,7 @@ def main() -> None:
     target = options.target or paths.target()
     language = "rust" if options.language == "native" else options.language
     products = definitions(directory, options.profile, target)
-    canonical = policy.config(directory).get("languages", {}).get("python", {}).get("build_target") == "any"
-    if target == "any" and not any(item["language"] == language for item in products) and not (language == "python" and canonical):
+    if target == "any" and not any(item["language"] == language for item in products):
         with temporary.directory() as staging:
             paths.replace(directory, staging, destination / language, origin=staging)
         return
@@ -359,9 +357,8 @@ def main() -> None:
                 origin=scratch,
             )
         return
-    else:
-        kind = {"python": "python", "typescript": "web", "native": "bin"}[options.language]
-        source = paths.output(directory, "build", options.profile, options.target) / kind
+    kind = {"typescript": "web", "native": "bin"}[options.language]
+    source = paths.output(directory, "build", options.profile, options.target) / kind
     paths.replace(directory, source, destination / options.language)
 
 

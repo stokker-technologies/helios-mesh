@@ -13,13 +13,13 @@
 # Standard Library Imports
 import json
 import os
-import re
 import subprocess
 from pathlib import Path
 
 # Third Party Imports
 
 # Local Imports
+from helios_mesh_tools.package.product import wheel_inventory
 
 # Type Checking Imports
 
@@ -46,23 +46,11 @@ def fresh(release: dict, tagged: str, sha: str) -> bool:
     }
     if not {"CHANGELOG.md", "SHA256SUMS"} <= assets:
         return False
-    wheels = {name for name in assets if name.endswith(".whl")}
-    linux = {
-        name
-        for name in wheels
-        if re.fullmatch(
-            r"helios_mesh-[^-]+-cp310-abi3-manylinux_2_[0-9]+_x86_64(?:\.manylinux2014_x86_64)?\.whl",
-            name,
-        )
-    }
-    windows = {
-        name
-        for name in wheels
-        if re.fullmatch(r"helios_mesh-[^-]+-cp310-abi3-win_amd64\.whl", name)
-    }
-    if len(wheels) != 2 or len(linux) != 1 or len(windows) != 1:
+    try:
+        wheel_inventory(sorted(assets), ["linux-x86_64", "windows-x86_64"])
+    except ValueError:
         return False
-    return next(iter(linux)).split("-")[1] == next(iter(windows)).split("-")[1]
+    return True
 
 
 def main() -> None:
