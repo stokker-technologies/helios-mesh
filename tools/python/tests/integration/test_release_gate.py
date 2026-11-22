@@ -16,6 +16,7 @@ import json
 import os
 import runpy
 import struct
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -24,7 +25,7 @@ from unittest.mock import patch
 # Third Party Imports
 
 # Local Imports
-from helios_mesh_tools import policy
+from helios_mesh_tools import policy, release
 from helios_mesh_tools.build import paths
 from helios_mesh_tools.release import registry
 from helios_mesh_tools.release.run import native_target
@@ -51,15 +52,14 @@ class ReleaseGateTests(unittest.TestCase):
             ("Windows", "AMD64", targets[1]),
             ("Darwin", "arm64", targets[2]),
         ):
-            with (
-                self.subTest(system=system),
-                patch.object(paths.platform, "system", return_value=system),
-                patch.object(paths.platform, "machine", return_value=machine),
-            ):
+            with self.subTest(system=system):
+                self.enterContext(patch.object(paths.platform, "system", return_value=system))
+                self.enterContext(patch.object(paths.platform, "machine", return_value=machine))
                 self.assertEqual(native_target({"targets": targets}), expected)
                 with self.assertRaises(policy.ToolError):
                     native_target({"targets": []})
-        with patch.object(paths.platform, "system", return_value="unknown"), self.assertRaises(ValueError):
+        self.enterContext(patch.object(paths.platform, "system", return_value="unknown"))
+        with self.assertRaises(ValueError):
             native_target({"targets": targets})
 
     def test_screenshot_contract(self) -> None:
@@ -108,9 +108,9 @@ class ReleaseGateTests(unittest.TestCase):
         execute = self.enterContext(patch.object(registry.policy, "execute"))
         registry.python(root, {"provider": "github"}, dry_run=True)
         self.assertEqual(Path(execute.call_args.args[1][-1]), Path("target/package/dev/native/python/example.whl"))
-        with patch.dict(os.environ, {"RELEASE_PROFILE": "release"}):
-            registry.python(root, {"provider": "github"}, dry_run=True)
-            self.assertEqual(Path(execute.call_args.args[1][-1]), Path("target/package/release/native/python/example.whl"))
+        self.enterContext(patch.dict(os.environ, {"RELEASE_PROFILE": "release"}))
+        registry.python(root, {"provider": "github"}, dry_run=True)
+        self.assertEqual(Path(execute.call_args.args[1][-1]), Path("target/package/release/native/python/example.whl"))
 
     def test_exact_gate(self) -> None:
         guard = runpy.run_path(str(ROOT / ".github/actions/review-release/checks.py"))
@@ -154,6 +154,70 @@ class ReleaseGateTests(unittest.TestCase):
             guard["green"](sha, pages)
         native["conclusion"] = "success"
         self.assertTrue(guard["green"](sha, pages))
+
+
+class ReleaseTagTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.directory = ROOT
+        self.sha = "a" * 40
+        self.events = []
+        self.enterContext(patch.dict(os.environ, {"RELEASE_TOKEN": "token", "CARGO_REGISTRY_TOKEN": "registry-token"}, clear=True))
+        self.enterContext(patch.object(release.run, "_revision", return_value=self.sha))
+        self.enterContext(patch.object(release.run, "_tag_event"))
+        self.enterContext(patch.object(release.run.pins, "check"))
+        self.enterContext(patch.object(registry, "release_review", return_value={"head": self.sha}))
+        self.enterContext(patch.object(release.run, "release_tag", return_value="v0.1.5"))
+        self.enterContext(patch.object(release.run, "_task_defined", return_value=True))
+        self.enterContext(patch.object(registry, "rehearsed"))
+        self.enterContext(patch.object(release.run, "_push_remote", return_value="origin"))
+        self.enterContext(patch.object(release.run, "_run", side_effect=lambda directory, command, token: self.events.append(command)))
+        self.ancestry = self.enterContext(patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)))
+        self.remote_tag = self.enterContext(patch.object(registry, "remote_tag", side_effect=[None, self.sha]))
+        self.create_tag = self.enterContext(patch.object(registry, "create_tag", side_effect=lambda *args: self.events.append("tag")))
+        self.publish = self.enterContext(
+            patch.object(registry, "publish_crates", side_effect=lambda directory: self.events.append("crates"))
+        )
+        self.delete_branch = self.enterContext(patch.object(registry, "delete_branch", return_value=False))
+
+    def test_tag_publication(self) -> None:
+        release.run.tag(self.directory, {})
+        self.assertEqual(
+            self.events,
+            [
+                ["git", "fetch", "--quiet", "origin", "refs/heads/main"],
+                "tag",
+                "crates",
+                ["git", "push", "origin", f"{self.sha}:refs/heads/main"],
+            ],
+        )
+        self.create_tag.assert_called_once_with({}, "v0.1.5", self.sha)
+        self.publish.assert_called_once_with(self.directory)
+        self.delete_branch.assert_called_once_with({}, "release/v0.1.5")
+
+    def test_resume_publication(self) -> None:
+        self.remote_tag.side_effect = [self.sha, self.sha]
+        release.run.tag(self.directory, {})
+        self.create_tag.assert_not_called()
+        self.publish.assert_called_once_with(self.directory)
+        self.assertEqual(self.events[-2:], ["crates", ["git", "push", "origin", f"{self.sha}:refs/heads/main"]])
+
+    def test_publication_failure(self) -> None:
+        failure = policy.ToolError("cargo publish failed")
+        self.publish.side_effect = failure
+        with self.assertRaises(policy.ToolError) as raised:
+            release.run.tag(self.directory, {})
+        self.assertIs(raised.exception, failure)
+        self.publish.assert_called_once_with(self.directory)
+        self.assertEqual(self.events, [["git", "fetch", "--quiet", "origin", "refs/heads/main"], "tag"])
+        self.delete_branch.assert_not_called()
+
+    def test_main_divergence(self) -> None:
+        self.ancestry.return_value = subprocess.CompletedProcess([], 1)
+        with self.assertRaises(policy.ToolError):
+            release.run.tag(self.directory, {})
+        self.create_tag.assert_not_called()
+        self.publish.assert_not_called()
+        self.delete_branch.assert_not_called()
 
 
 # === Public Functions === #
