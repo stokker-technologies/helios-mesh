@@ -256,6 +256,10 @@ run_windows = "uv run --locked --project tools/python python -m helios_mesh_tool
 
 # === CI === #
 
+[tasks."ci:nightly-report"]
+description = "Append Nightly Suite Results"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.ci.nightly"
+
 # === Release === #
 
 [tasks."release:nightly"]
@@ -273,15 +277,6 @@ run = [{ task = "release:publish:assets" }, { task = "release:publish:python" },
 [tasks."release:publish:assets"]
 description = "Draft The Release With Its Signed Assets"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run publish"
-
-[tasks."release:publish:dry"]
-description = "Dry-Run Every Publication"
-run = [
-  "uv run --locked --project tools/python python -m helios_mesh_tools.release.version check",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.release.run dry",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.build.cache -- python -m helios_mesh_tools.release.run crates-dry",
-  "uv run --locked --project tools/python python -m helios_mesh_tools.release.run python-dry",
-]
 
 [tasks."release:publish:finalize"]
 description = "Publish The Drafted Release"
@@ -310,6 +305,10 @@ run = "uv run --locked --project tools/python python -m helios_mesh_tools.build.
 [tasks."release:verify"]
 description = "Verify Published Release Assets"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run verify"
+
+[tasks."release:verify:nightly"]
+description = "Verify Published Nightly Assets"
+run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run verify-nightly"
 
 # === Clean === #
 

@@ -1,0 +1,358 @@
+name: Release
+'on':
+  push:
+    branches:
+    - dev
+    tags:
+    - v*
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Release Operation
+        type: choice
+        options:
+        - prepare
+        - tag
+        default: prepare
+permissions:
+  contents: read
+env:
+  PROFILE: release
+  MISE_LOCKED: '1'
+  CARGO_INCREMENTAL: '0'
+  CARGO_HOME: ${{ github.workspace }}/.cache/cargo
+  UV_CACHE_DIR: ${{ github.workspace }}/.cache/uv
+  CARGO_BUILD_JOBS: '6'
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  prepare:
+    name: Release / Prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python,rust,uv,git-cliff
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - run: mise run release:prepare
+      env:
+        RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    - run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.release.run review
+      env:
+        RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    environment: release
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'prepare' && github.ref == 'refs/heads/dev'
+  review:
+    name: Review / Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - id: review
+      uses: ./.github/actions/review-release
+      with:
+        required: 'true'
+        release: 'true'
+        packages: '["package-rust-PROFILE-linux", "package-rust-PROFILE-windows", "package-python-PROFILE-linux", "package-python-PROFILE-windows"]'
+      env:
+        GH_TOKEN: ${{ github.token }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    outputs:
+      run: ${{ steps.review.outputs.review_run }}
+      sha: ${{ steps.review.outputs.review_sha }}
+      version: ${{ steps.review.outputs.review_version }}
+    if: 'startsWith(github.ref, ''refs/tags/v'') || (github.ref == ''refs/heads/dev'' && (github.event_name == ''push'' && startsWith(github.event.head_commit.message,
+      ''chore(release): prepare v'') || github.event_name == ''workflow_dispatch'' && inputs.mode == ''tag''))'
+  rehearsal:
+    name: Release / Rehearsal
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python,rust,sccache,uv,git-cliff
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - name: Verify Exact Commit CI
+      run: mise exec -- uv run --locked --project tools/python python .github/actions/review-release/checks.py
+      env:
+        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        RELEASE_TARGET_SHA: ${{ github.sha }}
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: package-rust-${{ env.PROFILE }}-linux
+        path: target/ci
+        run-id: ${{ needs.review.outputs.run }}
+        github-token: ${{ github.token }}
+    - name: Extract Output
+      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/package-rust-${{
+        env.PROFILE }}-linux.tar.zst --profile ${{ env.PROFILE }}
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: package-rust-${{ env.PROFILE }}-windows
+        path: target/ci
+        run-id: ${{ needs.review.outputs.run }}
+        github-token: ${{ github.token }}
+    - name: Extract Output
+      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/package-rust-${{
+        env.PROFILE }}-windows.tar.zst --profile ${{ env.PROFILE }}
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: package-python-${{ env.PROFILE }}-linux
+        path: target/ci
+        run-id: ${{ needs.review.outputs.run }}
+        github-token: ${{ github.token }}
+    - name: Extract Output
+      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/package-python-${{
+        env.PROFILE }}-linux.tar.zst --profile ${{ env.PROFILE }}
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      with:
+        name: package-python-${{ env.PROFILE }}-windows
+        path: target/ci
+        run-id: ${{ needs.review.outputs.run }}
+        github-token: ${{ github.token }}
+    - name: Extract Output
+      run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/package-python-${{
+        env.PROFILE }}-windows.tar.zst --profile ${{ env.PROFILE }}
+    - run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.build
+      env:
+        BUILD_SCRIPT: mise run release:rehearse
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    needs:
+    - review
+    if: '!startsWith(github.ref, ''refs/tags/'')'
+    permissions:
+      contents: read
+      actions: read
+  tag:
+    name: Release / Tag
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MISE_ENABLE_TOOLS: python,rust,sccache,uv,git-cliff
+      COMPILER_CACHE_BACKEND: disk
+      COMPILER_CACHE_MODE: READ_WRITE
+      SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
+      SCCACHE_CACHE_SIZE: 8G
+    steps:
+    - name: Configure Checkout Git
+      run: git config --global core.longpaths true
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        fetch-depth: 0
+    - id: setup
+      uses: ./.github/actions/setup
+      with:
+        platform: ${{ runner.os == 'Windows' && 'windows' || 'unix' }}
+        caches: '{"mise": {"key": "helios-v1-mise-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''mise.lock'') }}-<RUNNER_IMAGE_ID>-<MISE_ROOT_ID>",
+          "path": "<MISE_DATA_DIR>"}, "cargo_downloads": {"key": "helios-v1-cargo-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''Cargo.lock'')
+          }}", "path": ".cache/cargo/registry/\n.cache/cargo/git/"}, "uv": {"key": "helios-v1-uv-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(''uv.lock'',
+          ''mise.lock'') }}", "path": ".cache/uv/"}, "sccache": {"key": "helios-v1-sccache-${{ runner.os }}-${{ runner.arch }}-${{ env.PROFILE
+          }}-${{ hashFiles(''Cargo.lock'', ''mise.lock'') }}", "path": ".cache/sccache/"}}'
+        cache-backend: disk
+        cache-mode: READ_WRITE
+        bootstrap: '[]'
+        free-disk: 'true'
+    - name: Verify Exact Commit CI
+      run: mise exec -- uv run --locked --project tools/python python .github/actions/review-release/checks.py
+      env:
+        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        RELEASE_TARGET_SHA: ${{ github.sha }}
+    - run: mise run release:tag
+      env:
+        RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        CRATES_BOOTSTRAP_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GITHUB_TOKEN: ${{ github.token }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.mise-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.mise-cache-primary-key }}
+        path: ${{ steps.setup.outputs.mise-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.cargo_downloads-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.cargo_downloads-cache-primary-key }}
+        path: ${{ steps.setup.outputs.cargo_downloads-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.uv-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.uv-cache-primary-key }}
+        path: ${{ steps.setup.outputs.uv-path }}
+    - uses: ./.github/actions/save-caches
+      if: success() && github.event_name != 'pull_request' && steps.setup.outputs.sccache-cache-hit != 'true'
+      with:
+        key: ${{ steps.setup.outputs.sccache-cache-primary-key }}
+        path: ${{ steps.setup.outputs.sccache-path }}
+    environment: release
+    permissions:
+      contents: write
+      pull-requests: read
+      actions: read
+      checks: read
+      id-token: write
+    concurrency:
+      group: stable-publication
+      cancel-in-progress: false
+    needs:
+    - review
+    - rehearsal
+    if: github.ref == 'refs/heads/dev'
+  publish:
+    name: Release / Publish
+    uses: ./.github/workflows/publish.yml
+    needs:
+    - review
+    with:
+      channel: stable
+      profile: release
+      build-run: ${{ needs.review.outputs.run }}
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+      actions: read
+      id-token: write
+    secrets: inherit
+  verify:
+    name: Release / Verify
+    uses: ./.github/workflows/verify.yml
+    needs:
+    - review
+    - publish
+    with:
+      channel: stable
+      profile: release
+      build-run: ${{ needs.review.outputs.run }}
+    permissions:
+      contents: read
+      actions: read

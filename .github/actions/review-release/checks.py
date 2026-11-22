@@ -33,7 +33,7 @@ def green(sha: str, pages) -> bool:
     if not runs:
         return False
     run = max(runs, key=lambda item: item["id"])
-    # Tag Shares This Workflow; The Required Validation Gate Must Finish Before Tag Can Start.
+    # Release Waits For This Exact Dev Commit's Aggregate Validation Gate.
     if run.get("status") == "completed" and run.get("conclusion") != "success":
         raise ValueError("target commit CI failed")
 

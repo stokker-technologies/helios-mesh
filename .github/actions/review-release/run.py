@@ -17,6 +17,7 @@ from pathlib import Path
 
 # Third Party Imports
 # Local Imports
+from helios_mesh_tools.release import policy, registry
 # Type Checking Imports
 
 # === Public Exports === #
@@ -197,8 +198,10 @@ def lookup():
                 raise ValueError("review package expired")
     if not isinstance(run["id"], int) or run["id"] <= 0:
         raise ValueError("invalid review run ID")
-    if tag and not any(
-        job.get("name", "").endswith("Release / Rehearsal") and job.get("conclusion" if github else "status") == "success" for job in jobs
+    if tag and github:
+        registry.rehearsal(policy.policy(Path.cwd(), "release"), sha)
+    if tag and not github and not any(
+        job.get("name", "").endswith("Release / Rehearsal") and job.get("status") == "success" for job in jobs
     ):
         raise ValueError("release review has no successful rehearsal")
     protected = os.environ.get("GITHUB_REF_PROTECTED") == "true" or os.environ.get("CI_COMMIT_REF_PROTECTED") == "true"

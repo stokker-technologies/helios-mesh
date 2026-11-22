@@ -39,10 +39,8 @@ outputs:
 runs:
   using: composite
   steps:
-  - shell: python
-    run: |-
-      import os, runpy
-      runpy.run_path(os.path.join(os.environ['GITHUB_ACTION_PATH'], 'run.py'), run_name='__main__')
+  - shell: bash
+    run: mise exec -- uv run --locked --project tools/python python "$GITHUB_ACTION_PATH/run.py"
     id: review
     env:
       REVIEW_REQUIRED: ${{ inputs.required }}
