@@ -114,7 +114,8 @@ jobs:
       run: mise exec -- uv run --locked --project tools/python python -m helios_mesh_tools.ci.artifacts extract --archive target/ci/package-python-${{
         env.PROFILE }}-windows.tar.zst --profile ${{ env.PROFILE }}
       if: '!inputs.report'
-    - run: mise run ${{ inputs.channel == 'stable' && 'release:publish' || 'release:nightly' }}
+    - name: Publish GitHub Release
+      run: mise run ${{ inputs.channel == 'stable' && 'release:publish' || 'release:nightly' }}
       env:
         GH_TOKEN: ${{ github.token }}
       if: '!inputs.report'

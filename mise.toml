@@ -271,8 +271,8 @@ description = "Prepare The Release Branch"
 run = "uv run --locked --project tools/python python -m helios_mesh_tools.release.run prepare"
 
 [tasks."release:publish"]
-description = "Publish A Tagged Release"
-run = [{ task = "release:publish:assets" }, { task = "release:publish:python" }, { task = "release:publish:finalize" }]
+description = "Publish A Tagged GitHub Release"
+run = [{ task = "release:publish:assets" }, { task = "release:publish:finalize" }]
 
 [tasks."release:publish:assets"]
 description = "Draft The Release With Its Signed Assets"
