@@ -15,6 +15,7 @@
 import argparse
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -42,6 +43,22 @@ ROOT = Path(__file__).resolve().parents[5]
 # === Public Functions === #
 
 
+def wheel(directory: Path, selected: str, version: str) -> Path:
+    """Require One CPython 3.10+ Stable-ABI Wheel For The Selected Platform."""
+    wheels = sorted(directory.glob("*.whl"))
+    if len(wheels) != 1:
+        raise ValueError(f"run the matching Product Build to produce exactly one wheel for {selected}: {directory}")
+    source = wheels[0]
+    platform_tag = {
+        "linux-x86_64": r"manylinux_2_[0-9]+_x86_64(?:\.manylinux2014_x86_64)?",
+        "windows-x86_64": "win_amd64",
+    }[selected]
+    pattern = rf"helios_mesh-{re.escape(version)}-cp310-abi3-{platform_tag}\.whl"
+    if source.is_symlink() or re.fullmatch(pattern, source.name) is None:
+        raise ValueError(f"rebuild the Python wheel for {selected} with CPython 3.10+ ABI3 and a portable platform tag: {source.name}")
+    return source
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--profile", choices=("dev", "release"), default="dev")
@@ -51,8 +68,8 @@ def main() -> None:
     product = paths.output(ROOT, "build", options.profile)
     destination = paths.output(ROOT, "package", options.profile) / options.language
     if options.language == "python":
-        if not any((product / "python").glob("*.whl")):
-            raise ValueError("missing native wheels; run the matching Product Build first")
+        version = tomllib.loads((ROOT / "Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"]
+        wheel(product / "python", paths.target(), version)
         paths.replace(ROOT, product / "python", destination)
         return
 

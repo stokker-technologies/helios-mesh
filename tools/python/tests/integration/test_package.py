@@ -35,6 +35,45 @@ from helios_mesh_tools.package import product
 
 
 class PackageTests(unittest.TestCase):
+    def test_python_package_uses_one_matching_built_wheel(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        (root / "Cargo.toml").write_text('[workspace.package]\nversion = "0.1.5"\n')
+        for selected, tag in (("linux-x86_64", "manylinux_2_39_x86_64"), ("windows-x86_64", "win_amd64")):
+            built = root / "target/build/dev" / selected / "python"
+            built.mkdir(parents=True)
+            name = f"helios_mesh-0.1.5-cp310-abi3-{tag}.whl"
+            (built / name).write_bytes(b"built wheel")
+            with (
+                patch.object(product, "ROOT", root),
+                patch.object(product.paths, "target", return_value=selected),
+                patch("sys.argv", ["package", "--language", "python"]),
+                patch.object(product.subprocess, "run") as compile_command,
+            ):
+                product.main()
+            self.assertEqual((root / "target/package/dev" / selected / "python" / name).read_bytes(), b"built wheel")
+            compile_command.assert_not_called()
+
+    def test_rejects_incomplete_or_incompatible_wheel_sets(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        directory = Path(temporary.name)
+        cases = (
+            (),
+            ("helios_mesh-0.1.5-cp315-cp315-win_amd64.whl",),
+            ("helios_mesh-0.1.5-cp310-abi3-linux_x86_64.whl",),
+            ("helios_mesh-0.1.4-cp310-abi3-win_amd64.whl",),
+            ("helios_mesh-0.1.5-cp310-abi3-win_amd64.whl", "helios_mesh-0.1.5-cp315-cp315-win_amd64.whl"),
+        )
+        for index, names in enumerate(cases):
+            built = directory / str(index)
+            built.mkdir()
+            for name in names:
+                (built / name).write_bytes(b"wheel")
+            with self.subTest(names=names), self.assertRaises(ValueError):
+                product.wheel(built, "windows-x86_64", "0.1.5")
+
     def test_pinned_converter(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

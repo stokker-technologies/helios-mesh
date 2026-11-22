@@ -19,6 +19,8 @@ exclude = ["**/__pycache__/**", "**/*.pyc"]
 python-source = "python"
 module-name = "helios_mesh._native"
 features = ["pyo3/extension-module"]
+# Refuse Native Linux Tags When The Extension Cannot Pass The Manylinux Audit.
+compatibility = "pypi"
 
 [tool.uv]
 cache-keys = [{ file = "pyproject.toml" }, { file = "Cargo.toml" }, { file = "src/**/*.rs" }]
