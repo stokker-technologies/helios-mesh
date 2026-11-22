@@ -31,8 +31,9 @@ from .. import policy, temporary
 from ..package import product
 from ..package.changelog import notes
 from ..process import spawn_flags
+from ..screenshots.run import capture
 from ..test import archive
-from . import layout, pins, registry, screenshots, version
+from . import layout, pins, registry, version
 
 # Type Checking Imports
 
@@ -230,7 +231,7 @@ def prepare(directory: Path, settings: dict) -> None:
     for command in commands:
         policy.execute(directory, policy.command(command, "release.lock_commands"))
     if policy.policy(directory, "screenshots").get("scenes"):
-        screenshots.capture(directory)
+        capture(directory)
     print(f"Prepared v{planned}; review the changes, or let Release / Prepare open the release review")
 
 
