@@ -166,7 +166,7 @@ target = "linux-x86_64"
 
 [version]
 files = ["Cargo.toml"]
-value = "0.1.4"
+value = "0.1.5"
 
 [conventions.testing.deadlines]
 unit = 60
