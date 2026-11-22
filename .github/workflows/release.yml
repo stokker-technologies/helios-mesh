@@ -187,7 +187,7 @@ jobs:
     - name: Verify Exact Commit CI
       run: mise exec -- uv run --locked --project tools/python python .github/actions/review-release/checks.py
       env:
-        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GH_TOKEN: ${{ github.token }}
         RELEASE_TARGET_SHA: ${{ github.sha }}
     - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
       with:
@@ -286,7 +286,7 @@ jobs:
     - name: Verify Exact Commit CI
       run: mise exec -- uv run --locked --project tools/python python .github/actions/review-release/checks.py
       env:
-        GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        GH_TOKEN: ${{ github.token }}
         RELEASE_TARGET_SHA: ${{ github.sha }}
     - run: mise run release:tag
       env:
