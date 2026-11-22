@@ -12,6 +12,7 @@
 
 # Standard Library Imports
 import copy
+import hashlib
 import os
 import runpy
 import tempfile
@@ -22,7 +23,7 @@ from unittest.mock import patch
 # Third Party Imports
 
 # Local Imports
-from helios_mesh_tools.release import registry
+from helios_mesh_tools.release import layout, registry, run
 
 # Type Checking Imports
 
@@ -38,6 +39,36 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 class ReleaseGateTests(unittest.TestCase):
+    def test_release_dry_stages_both_wheels_and_checksums(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        (root / "tools").mkdir()
+        (root / "tools/project.toml").write_text("")
+        targets = ["linux-x86_64", "windows-x86_64"]
+        settings = {"product": "helios-mesh", "targets": targets}
+        wheels = []
+        for selected, tag in zip(targets, ("manylinux_2_39_x86_64", "win_amd64"), strict=True):
+            source = root / "target/package/dev" / selected / "python" / f"helios_mesh-0.1.5-cp310-abi3-{tag}.whl"
+            source.parent.mkdir(parents=True)
+            source.write_bytes(selected.encode())
+            wheels.append(source)
+
+        self.enterContext(patch.object(run, "release_tag", return_value="v0.1.5"))
+        self.enterContext(patch.object(run.version, "run"))
+        self.enterContext(patch.object(run, "_native", return_value="other"))
+        run.dry(root, settings, profile="dev", require_all=True, release_notes="")
+        files = layout.uploads(root, staged=True)
+        wheel_names = {item["name"] for item in files if item["name"].endswith(".whl")}
+        self.assertEqual(wheel_names, {source.name for source in wheels})
+        checksums = (root / "target/release-assets/any/SHA256SUMS").read_text()
+        for source in wheels:
+            self.assertIn(f"{hashlib.sha256(source.read_bytes()).hexdigest()}  {source.name}\n", checksums)
+
+        wheels[-1].unlink()
+        with self.assertRaises(ValueError):
+            run.dry(root, settings, profile="dev", require_all=True, release_notes="")
+
     def test_wheel_profile(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
