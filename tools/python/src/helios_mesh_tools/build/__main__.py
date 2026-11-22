@@ -22,7 +22,7 @@ from pathlib import Path
 
 # Third Party Imports
 # Local Imports
-from .. import temporary
+from .. import process, temporary
 from . import cargo, paths, storage
 
 # Type Checking Imports
@@ -67,7 +67,7 @@ def main() -> None:
     with messages.open("w", encoding="utf-8") as output:
         subprocess.run(
             command,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            creationflags=process.spawn_flags(),
             stdin=sys.stdin,
             stderr=sys.stderr,
             env=environment,
@@ -104,7 +104,7 @@ def main() -> None:
     ]
     subprocess.run(
         command,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        creationflags=process.spawn_flags(),
         stdin=sys.stdin,
         stdout=sys.stdout,
         stderr=sys.stderr,
@@ -130,7 +130,7 @@ def main() -> None:
         command = ["cargo", "build", *arguments]
         subprocess.run(
             command,
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            creationflags=process.spawn_flags(),
             stdin=sys.stdin,
             stdout=sys.stdout,
             stderr=sys.stderr,
