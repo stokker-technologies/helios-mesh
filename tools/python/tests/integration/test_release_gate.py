@@ -25,7 +25,9 @@ from unittest.mock import patch
 
 # Local Imports
 from helios_mesh_tools import policy
+from helios_mesh_tools.build import paths
 from helios_mesh_tools.release import registry
+from helios_mesh_tools.release.run import native_target
 from helios_mesh_tools.screenshots import run
 
 # Type Checking Imports
@@ -42,6 +44,24 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 class ReleaseGateTests(unittest.TestCase):
+    def test_native_target(self) -> None:
+        targets = ["linux-x86_64", "windows-x86_64", "macos-aarch64"]
+        for system, machine, expected in (
+            ("Linux", "x86_64", targets[0]),
+            ("Windows", "AMD64", targets[1]),
+            ("Darwin", "arm64", targets[2]),
+        ):
+            with (
+                self.subTest(system=system),
+                patch.object(paths.platform, "system", return_value=system),
+                patch.object(paths.platform, "machine", return_value=machine),
+            ):
+                self.assertEqual(native_target({"targets": targets}), expected)
+                with self.assertRaises(policy.ToolError):
+                    native_target({"targets": []})
+        with patch.object(paths.platform, "system", return_value="unknown"), self.assertRaises(ValueError):
+            native_target({"targets": targets})
+
     def test_screenshot_contract(self) -> None:
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)

@@ -15,7 +15,6 @@ import base64
 import hashlib
 import json
 import os
-import platform
 import re
 import shutil
 import subprocess
@@ -28,6 +27,7 @@ from pathlib import Path
 # Third Party Imports
 # Local Imports
 from .. import policy, temporary
+from ..build import paths
 from ..package import product
 from ..package.changelog import notes
 from ..process import spawn_flags
@@ -87,9 +87,7 @@ def release_tag(directory: Path) -> str:
 
 
 def native_target(settings: dict) -> str:
-    system = {"Linux": "linux", "Windows": "windows", "Darwin": "macos"}.get(platform.system())
-    architecture = {"amd64": "x86_64", "arm64": "aarch64"}.get(platform.machine().lower(), platform.machine().lower())
-    selected = f"{system}-{architecture}"
+    selected = paths.target()
     if selected not in settings.get("targets", []):
         raise policy.ToolError(f"native target {selected} is not one of release.targets")
     return selected
@@ -159,7 +157,7 @@ def stage(
     plugins = layout.plugins(directory, settings, tag, targets, profile)
     for selected in targets:
         # Only the native target's executables can run here; other targets arrive verified by their Package jobs.
-        if selected == _native():
+        if selected == paths.target():
             product.verify(directory, profile, selected)
         (root / selected).mkdir(parents=True)
         declared = assets(directory, settings, selected, tag, profile, signed=signed)
@@ -315,7 +313,7 @@ def stage_packages(
     stage(directory, settings, tag, present, profile=profile, source_revision=source_revision, release_notes=release_notes)
     files = layout.uploads(directory, staged=True)
     _checksums(root / SHARED / SUMS, {item["name"]: item for item in files})
-    native = _native()
+    native = paths.target()
     if native in present:
         # The staged bytes themselves run, from an isolated directory, exactly as a user's download would.
         product.verify(directory, profile, native, root / native)
@@ -690,12 +688,6 @@ def _bytes(root: Path, item: dict) -> bytes:
 def _describe(root: Path, path: Path) -> dict:
     data = path.read_bytes()
     return {"name": path.name, "path": path.relative_to(root).as_posix(), "sha256": hashlib.sha256(data).hexdigest(), "size": len(data)}
-
-
-def _native() -> str:
-    system = {"Linux": "linux", "Windows": "windows", "Darwin": "macos"}.get(platform.system(), "")
-    architecture = {"amd64": "x86_64", "arm64": "aarch64"}.get(platform.machine().lower(), platform.machine().lower())
-    return f"{system}-{architecture}"
 
 
 def _online(settings: dict) -> bool:
