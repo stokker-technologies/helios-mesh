@@ -93,7 +93,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      MISE_ENABLE_TOOLS: python
+      MISE_ENABLE_TOOLS: python,uv
       COMPILER_CACHE_BACKEND: disk
       COMPILER_CACHE_MODE: READ_WRITE
       SCCACHE_DIR: ${{ github.workspace }}/.cache/sccache
