@@ -19,9 +19,8 @@ from pathlib import Path
 
 # Third Party Imports
 # Local Imports
-# isort: split
-from ..test import archive
 from .. import policy
+from ..test import archive
 
 # Type Checking Imports
 
