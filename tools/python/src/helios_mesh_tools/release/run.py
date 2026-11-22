@@ -431,6 +431,7 @@ def verify(directory: Path, settings: dict) -> None:
         downloads = {item["name"]: prefix + _quote(item["name"]) for item in remote["assets"]["links"]}
     if set(downloads) != set(inventory):
         raise policy.ToolError("published downloads differ from upload.json")
+    product.wheel_inventory(list(downloads), settings["targets"], tag[1:])
     with temporary.directory() as root:
         for name, item in inventory.items():
             data = registry.verify_download(settings, downloads[name], item)
