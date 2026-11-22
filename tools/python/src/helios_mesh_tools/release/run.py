@@ -32,11 +32,11 @@ import helios_mesh_tools.package.run
 from ..process import spawn_flags
 
 # isort: split
-from .. import temporary
+from .. import policy, temporary
 from ..package import product
 from ..package.changelog import notes
 from ..test import archive
-from . import layout, pins, policy, registry, screenshots, version
+from . import layout, pins, registry, screenshots, version
 
 # Type Checking Imports
 
@@ -802,8 +802,8 @@ def _tracked(directory: Path, *patterns: str) -> list[str]:
 
 
 def _task_defined(directory: Path, name: str) -> bool:
-    with (directory / "mise.toml").open("rb") as file:
-        return name in tomllib.load(file).get("tasks", {})
+    settings = tomllib.loads((directory / "mise.toml").read_text(encoding="utf-8"))
+    return name in settings.get("tasks", {})
 
 
 # === Entry Point === #

@@ -32,7 +32,8 @@ from ..process import spawn_flags
 # isort: split
 from ..build import storage
 from ..package import changelog
-from . import pins, policy
+from .. import policy
+from . import pins
 
 # Type Checking Imports
 

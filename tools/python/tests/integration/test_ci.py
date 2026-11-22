@@ -24,7 +24,8 @@ from unittest.mock import patch
 # Local Imports
 from helios_mesh_tools.ci import nightly
 from helios_mesh_tools.package import product
-from helios_mesh_tools.release import policy, registry
+from helios_mesh_tools import policy
+from helios_mesh_tools.release import registry
 
 # Type Checking Imports
 

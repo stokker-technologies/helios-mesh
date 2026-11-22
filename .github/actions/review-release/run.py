@@ -17,7 +17,8 @@ from pathlib import Path
 
 # Third Party Imports
 # Local Imports
-from helios_mesh_tools.release import policy, registry
+from helios_mesh_tools import policy
+from helios_mesh_tools.release import registry
 # Type Checking Imports
 
 # === Public Exports === #
