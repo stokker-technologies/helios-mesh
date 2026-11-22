@@ -27,11 +27,13 @@ from pathlib import Path
 
 # Third Party Imports
 # Local Imports
+import helios_mesh_tools.package.run
+
 from ..process import spawn_flags
 
 # isort: split
 from .. import temporary
-from ..package import run as packages
+from ..package import product
 from ..package.changelog import notes
 from ..test import archive
 from . import layout, pins, policy, registry, screenshots, version
@@ -102,8 +104,9 @@ def assets(directory: Path, settings: dict, selected: str, tag: str, profile: st
     """The Declared Release Downloads Of One Target, From Its Existing Package Of The Profile."""
     profile = policy.profile() if profile is None else profile
     result = []
-    tools = [{**item, "kind": "tool"} for item in packages.packaged(directory, profile, selected)]
-    declared = settings.get("assets", []) + tools
+    tools = [{**item, "kind": "tool"} for item in helios_mesh_tools.package.run.packaged(directory, profile, selected)]
+    wheel = product.wheel(directory / "target/package" / profile / selected / "python", selected, tag[1:])
+    declared = settings.get("assets", []) + tools + [{"path": wheel.relative_to(directory).as_posix(), "target": selected}]
     for definition in declared:
         profiles = definition.get("profiles", ["dev", "release"])
         if (
@@ -162,7 +165,7 @@ def stage(
     for selected in targets:
         # Only the native target's executables can run here; other targets arrive verified by their Package jobs.
         if selected == _native():
-            packages.verify(directory, profile, selected)
+            helios_mesh_tools.package.run.verify(directory, profile, selected)
         (root / selected).mkdir(parents=True)
         declared = assets(directory, settings, selected, tag, profile, signed=signed)
         for asset in declared:
@@ -320,7 +323,7 @@ def dry(
     native = _native()
     if native in present:
         # The staged bytes themselves run, from an isolated directory, exactly as a user's download would.
-        packages.verify(directory, profile, native, root / native)
+        helios_mesh_tools.package.run.verify(directory, profile, native, root / native)
     print(f"staged {len(files) - 1} download(s) and {SUMS} for {', '.join(present) or 'no target'} in {root.relative_to(directory)}")
 
 
@@ -435,7 +438,7 @@ def verify(directory: Path, settings: dict) -> None:
         _checksums(root / SUMS, inventory)
         registry.verify_signatures(directory, settings, root, list(inventory))
         native = native_target(settings)
-        packages.installed(directory, {**settings, "tag": tag}, root, native)
+        helios_mesh_tools.package.run.installed(directory, {**settings, "tag": tag}, root, native)
     policy.write_json(directory / "target/state/release-publication.json", {"sha": sha, "tag": tag, "verified": True})
 
 

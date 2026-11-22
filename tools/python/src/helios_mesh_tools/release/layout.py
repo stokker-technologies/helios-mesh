@@ -57,10 +57,12 @@ def asset_name(directory: Path, settings: dict, definition: dict, selected: str,
     """Accept Only The Locked Download Kinds; Product Examples And Registry Artifacts Stay Out."""
     if source.name == "latest.json":
         return "latest.json"
+    if source.suffix == ".whl":
+        return source.name
     parts = source.relative_to(directory).parts
     extension = settings.get("plugin_extension")
     plugin_bundle = extension is not None and source.suffix == f".{extension}"
-    if source.suffix.lower() in {".sig", ".whl"} or plugin_bundle or "python" in parts or "examples" in parts:
+    if source.suffix.lower() == ".sig" or plugin_bundle or "python" in parts or "examples" in parts:
         return None
     kind = definition.get("kind", "installer")
     if kind not in {"installer", "tool", "distribution"}:
